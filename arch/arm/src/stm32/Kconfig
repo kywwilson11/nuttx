@@ -3030,6 +3030,7 @@ config STM32_LPUART1
 	bool "LPUART1"
 	default n
 	depends on STM32_HAVE_LPUART1
+	select STM32_USART
 
 config STM32_LTDC
 	bool "LTDC"
@@ -3321,12 +3322,6 @@ config STM32_UART8
 	bool "UART8"
 	default n
 	depends on STM32_HAVE_UART8
-	select STM32_USART
-
-config STM32_LPUART1
-	bool "LPUART1"
-	default n
-	depends on STM32_HAVE_LPUART1
 	select STM32_USART
 
 config STM32_USB
