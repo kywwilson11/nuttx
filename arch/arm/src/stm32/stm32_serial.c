@@ -137,31 +137,56 @@
 #    endif
 
 #    if defined(CONFIG_LPUART1_RXDMA) && !defined(DMAMAP_LPUART1_RX)
-#      error "UART8 DMA channel not defined (DMAMAP_UART8_RX)"
+#      error "LPUART1 DMA channel not defined (DMAMAP_LPUART1_RX)"
 #    endif
 
 #  elif defined(CONFIG_STM32_HAVE_IP_DMA_V1)
 
-#    if defined(CONFIG_USART1_RXDMA) || defined(CONFIG_USART2_RXDMA) || \
-      defined(CONFIG_USART3_RXDMA)
-#      ifndef CONFIG_STM32_DMA1
-#        error STM32 USART1/2/3 receive DMA requires CONFIG_STM32_DMA1
-#      endif
-#    endif
+/* STM32G4XXX uses DMAMUX for DMA Mappings */
 
-#    if defined(CONFIG_UART4_RXDMA) || defined(CONFIG_UART5_RXDMA)
-#      ifndef CONFIG_STM32_DMA2
-#        error STM32 UART4/5 receive DMA requires CONFIG_STM32_DMA2
+#    if defined(CONFIG_STM32_STM32G4XXX)
+
+#      if defined(CONFIG_USART1_RXDMA) || defined(CONFIG_USART2_RXDMA) || \
+        defined(CONFIG_USART3_RXDMA) || defined (CONFIG_UART4_RXDMA) || \
+        defined(CONFIG_UART5_RXDMA) || defined (CONFIG_LPUART1_RXDMA)
+#        ifndef CONFIG_STM32_DMA1
+#          error STM32 USART1/2/3 and UART4/5 and LPUART1 \
+                 receive DMA requires CONFIG_STM32_DMA1
+#        endif
 #      endif
-#    endif
+
+#      define DMAMAP_USART1_RX  DMAMAP_DMA12_USART1RX_0
+#      define DMAMAP_USART2_RX  DMAMAP_DMA12_USART2RX_0
+#      define DMAMAP_USART3_RX  DMAMAP_DMA12_USART3RX_0
+#      define DMAMAP_UART4_RX   DMAMAP_DMA12_UART4RX_0
+#      define DMAMAP_UART5_RX   DMAMAP_DMA12_UART5RX_0
+#      define DMAMAP_LPUART1_RX DMAMAP_DMA12_LPUART1RX_0
+
+#    else
+
+#      if defined(CONFIG_USART1_RXDMA) || defined(CONFIG_USART2_RXDMA) || \
+        defined(CONFIG_USART3_RXDMA)
+
+#        ifndef CONFIG_STM32_DMA1
+#          error STM32 USART1/2/3 receive DMA requires CONFIG_STM32_DMA1
+#        endif
+#      endif
+
+#      if defined(CONFIG_UART4_RXDMA) || defined(CONFIG_UART5_RXDMA)
+#        ifndef CONFIG_STM32_DMA2
+#          error STM32 UART4/5 receive DMA requires CONFIG_STM32_DMA2
+#        endif
+#      endif
 
 /* There are no optional DMA channel assignments for the F1 */
+#      define DMAMAP_USART1_RX  DMACHAN_USART1_RX
+#      define DMAMAP_USART2_RX  DMACHAN_USART2_RX
+#      define DMAMAP_USART3_RX  DMACHAN_USART3_RX
+#      define DMAMAP_UART4_RX   DMACHAN_UART4_RX
+#      define DMAMAP_UART5_RX   DMACHAN_UART5_RX
+#      define DMAMAP_LPUART1_RX DMAMAP_DMA12_LPUART1RX_0
 
-#    define DMAMAP_USART1_RX  DMACHAN_USART1_RX
-#    define DMAMAP_USART2_RX  DMACHAN_USART2_RX
-#    define DMAMAP_USART3_RX  DMACHAN_USART3_RX
-#    define DMAMAP_UART4_RX   DMACHAN_UART4_RX
-#    define DMAMAP_UART5_RX   DMACHAN_UART5_RX
+#    endif
 
 #  endif
 
@@ -293,30 +318,48 @@
 #      error "UART8 DMA channel not defined (DMAMAP_UART8_TX)"
 #    endif
 
-#    if defined(CONFIG_LPUART1_TXDMA) && !defined(DMAMAP_LPUART1_TX)
-#      error "UART8 DMA channel not defined (DMAMAP_UART8_TX)"
-#    endif
-
 #  elif defined(CONFIG_STM32_HAVE_IP_DMA_V1)
 
-#    if defined(CONFIG_USART1_TXDMA) || defined(CONFIG_USART2_TXDMA) || \
-      defined(CONFIG_USART3_TXDMA)
-#      ifndef CONFIG_STM32_DMA1
-#        error STM32 USART1/2/3 receive DMA requires CONFIG_STM32_DMA1
-#      endif
-#    endif
+/* STM32G4XXX uses DMAMUX for DMA Mappings */
 
-#    if defined(CONFIG_UART4_TXDMA) || defined(CONFIG_UART5_TXDMA)
-#      ifndef CONFIG_STM32_DMA2
-#        error STM32 UART4/5 receive DMA requires CONFIG_STM32_DMA2
-#      endif
-#    endif
+#    if defined(CONFIG_STM32_STM32G4XXX)
 
-#    define DMAMAP_USART1_TX  DMACHAN_USART1_TX
-#    define DMAMAP_USART2_TX  DMACHAN_USART2_TX
-#    define DMAMAP_USART3_TX  DMACHAN_USART3_TX
-#    define DMAMAP_UART4_TX   DMACHAN_UART4_TX
-#    define DMAMAP_UART5_TX   DMACHAN_UART5_TX
+#      if defined(CONFIG_USART1_TXDMA) || defined(CONFIG_USART2_TXDMA) || \
+        defined(CONFIG_USART3_TXDMA) || defined(CONFIG_UART4_TX) || \
+        defined(CONFIG_UART5_TXDMA) || defined(CONFIG_LPUART1_TXDMA) 
+#        ifndef CONFIG_STM32_DMA1
+#          error STM32 USART1/2/3 and UART4/5 and LPUART1 transmit DMA \
+                 requires CONFIG_STM32_DMA1
+#        endif
+#      endif
+
+#      define DMAMAP_USART1_TX  DMAMAP_DMA12_USART1TX_0
+#      define DMAMAP_USART2_TX  DMAMAP_DMA12_USART2TX_0
+#      define DMAMAP_USART3_TX  DMAMAP_DMA12_USART3TX_0
+#      define DMAMAP_UART4_TX   DMAMAP_DMA12_UART4TX_0
+#      define DMAMAP_UART5_TX   DMAMAP_DMA12_UART5TX_0
+#      define DMAMAP_LPUART1_TX DMAMAP_DMA12_LPUART1TX_0
+
+#    else
+#      if defined(CONFIG_USART1_TXDMA) || defined(CONFIG_USART2_TXDMA) || \
+        defined(CONFIG_USART3_TXDMA)
+#        ifndef CONFIG_STM32_DMA1
+#          error STM32 USART1/2/3 receive DMA requires CONFIG_STM32_DMA1
+#        endif
+#      endif
+
+#      if defined(CONFIG_UART4_TXDMA) || defined(CONFIG_UART5_TXDMA)
+#        ifndef CONFIG_STM32_DMA2
+#          error STM32 UART4/5 transmit DMA requires CONFIG_STM32_DMA2
+#        endif
+#      endif
+
+#      define DMAMAP_USART1_TX  DMACHAN_USART1_TX
+#      define DMAMAP_USART2_TX  DMACHAN_USART2_TX
+#      define DMAMAP_USART3_TX  DMACHAN_USART3_TX
+#      define DMAMAP_UART4_TX   DMACHAN_UART4_TX
+#      define DMAMAP_UART5_TX   DMACHAN_UART5_TX
+#    endif
 
 #  endif
 
@@ -549,7 +592,7 @@ static void up_dma_rxcallback(DMA_HANDLE handle, uint8_t status, void *arg);
 #endif
 
 #ifdef CONFIG_PM
-static void stm32serial_pm_setsuspend(bool suspend);
+static void up_pm_setsuspend(bool suspend);
 static void up_pm_notify(struct pm_callback_s *cb, int dowmin,
                          enum pm_state_e pmstate);
 static int  up_pm_prepare(struct pm_callback_s *cb, int domain,
@@ -729,7 +772,7 @@ static struct up_dev_s g_lpuart1priv =
 {
   .dev =
     {
-#  if CONSOLE_UART == 1
+#  if CONSOLE_LPUART == 1
       .isconsole = true,
 #  endif
       .recv      =
@@ -772,12 +815,15 @@ static struct up_dev_s g_lpuart1priv =
   .iflow         = true,
   .rts_gpio      = GPIO_LPUART1_RTS,
 #  endif
+#  ifdef CONFIG_LPUART1_TXDMA
+  .txdma_channel = DMAMAP_LPUART1_TX,
+#  endif
 #  ifdef CONFIG_LPUART1_RXDMA
-  .rxdma_channel = DMAMAP_LPUSART_RX,
+  .rxdma_channel = DMAMAP_LPUART1_RX,
   .rxfifo        = g_lpuart1rxfifo,
 #  endif
 
-#  ifdef CONFIG_USART1_RS485
+#  ifdef CONFIG_LPUART1_RS485
   .rs485_dir_gpio = GPIO_LPUART1_RS485_DIR,
 #    if (CONFIG_USART1_RS485_DIR_POLARITY == 0)
   .rs485_dir_polarity = false,
@@ -793,7 +839,7 @@ static struct up_dev_s g_usart1priv =
 {
   .dev =
     {
-#  if CONSOLE_UART == 2
+#  if CONSOLE_UART == 1
       .isconsole = true,
 #  endif
       .recv      =
@@ -866,7 +912,7 @@ static struct up_dev_s g_usart2priv =
 {
   .dev =
     {
-#  if CONSOLE_UART == 3
+#  if CONSOLE_UART == 2
       .isconsole = true,
 #  endif
       .recv      =
@@ -935,7 +981,7 @@ static struct up_dev_s g_usart3priv =
 {
   .dev =
     {
-#  if CONSOLE_UART == 4
+#  if CONSOLE_UART == 3
       .isconsole = true,
 #  endif
       .recv      =
@@ -1004,7 +1050,7 @@ static struct up_dev_s g_uart4priv =
 {
   .dev =
     {
-#  if CONSOLE_UART == 5
+#  if CONSOLE_UART == 4
       .isconsole = true,
 #  endif
       .recv      =
@@ -1073,7 +1119,7 @@ static struct up_dev_s g_uart5priv =
 {
   .dev =
     {
-#  if CONSOLE_UART == 6
+#  if CONSOLE_UART == 5
       .isconsole = true,
 #  endif
       .recv     =
@@ -1142,7 +1188,7 @@ static struct up_dev_s g_usart6priv =
 {
   .dev =
     {
-#  if CONSOLE_UART == 7
+#  if CONSOLE_UART == 6
       .isconsole = true,
 #  endif
       .recv     =
@@ -1211,7 +1257,7 @@ static struct up_dev_s g_uart7priv =
 {
   .dev =
     {
-#  if CONSOLE_UART == 8
+#  if CONSOLE_UART == 7
       .isconsole = true,
 #  endif
       .recv     =
@@ -1280,7 +1326,7 @@ static struct up_dev_s g_uart8priv =
 {
   .dev =
     {
-#  if CONSOLE_UART == 9
+#  if CONSOLE_UART == 8
       .isconsole = true,
 #  endif
       .recv     =
@@ -1342,36 +1388,42 @@ static struct up_dev_s g_uart8priv =
 };
 #endif
 
-/* This table lets us iterate over the configured USARTs */
+/* This table lets us iterate over the configured LPUARTs */
 
-static struct up_dev_s * const g_uart_devs[STM32_NUSART + STM32_NLPUART] =
+static struct up_dev_s * const g_lpuart_devs[STM32_NLPUART] =
 {
 #ifdef CONFIG_STM32_LPUART1_SERIALDRIVER
   [0] = &g_lpuart1priv,
 #endif
+};
+
+/* This table lets us iterate over the configured USARTs */
+
+static struct up_dev_s * const g_uart_devs[STM32_NUSART] =
+{
 #ifdef CONFIG_STM32_USART1_SERIALDRIVER
-  [1] = &g_usart1priv,
+  [0] = &g_usart1priv,
 #endif
 #ifdef CONFIG_STM32_USART2_SERIALDRIVER
-  [2] = &g_usart2priv,
+  [1] = &g_usart2priv,
 #endif
 #ifdef CONFIG_STM32_USART3_SERIALDRIVER
-  [3] = &g_usart3priv,
+  [2] = &g_usart3priv,
 #endif
 #ifdef CONFIG_STM32_UART4_SERIALDRIVER
-  [4] = &g_uart4priv,
+  [3] = &g_uart4priv,
 #endif
 #ifdef CONFIG_STM32_UART5_SERIALDRIVER
-  [5] = &g_uart5priv,
+  [4] = &g_uart5priv,
 #endif
 #ifdef CONFIG_STM32_USART6_SERIALDRIVER
-  [6] = &g_usart6priv,
+  [5] = &g_usart6priv,
 #endif
 #ifdef CONFIG_STM32_UART7_SERIALDRIVER
-  [7] = &g_uart7priv,
+  [6] = &g_uart7priv,
 #endif
 #ifdef CONFIG_STM32_UART8_SERIALDRIVER
-  [8] = &g_uart8priv,
+  [7] = &g_uart8priv,
 #endif
 };
 
@@ -1379,7 +1431,20 @@ static struct up_dev_s * const g_uart_devs[STM32_NUSART + STM32_NLPUART] =
 static  struct pm_callback_s g_serialcb =
 {
   .notify  = up_pm_notify,
-  .prepare = up_pm_prepare,
+  .prepare = up_pm_prepare
+};
+
+struct serialpm_s
+{
+  struct pm_callback_s pm_cb;
+  bool serial_suspended;
+};
+
+static struct serialpm_s g_serialpm =
+{
+  .pm_cb.notify  = up_pm_notify,
+  .pm_cb.prepare = up_pm_prepare,
+  .serial_suspended = false
 };
 #endif
 
@@ -1557,26 +1622,10 @@ static void up_set_format(struct uart_dev_s *dev)
 
   if (priv->islowpower == true)
     {
-      if (!(priv->apbclock & 0xff000000))
-        {
-          brr = ((priv->apbclock << 8) / priv->baud);
-        }
-      else
-        {
-          uint32_t apbclock_upper = priv->apbclock & 0xff000000;
-          uint32_t apbclock_lower = priv->apbclock & 0x00ffffff;
-          brr = (apbclock_upper / priv->baud) << 8;
-          brr += ((apbclock_lower << 8) / priv->baud);
-
-          /* 64-bit product required to avoid overflow */
-
-          /* 64-bit impelmentation of lpuart brr calculation
-           * uint64_t lpuart_brr = (priv->apbclock);
-           * lpuart_brr = (lpuart_brr << 8);
-           * lpuart_brr /= priv->baud;
-           * brr = (uint32_t) lpuart_brr;
-           */
-        }
+      uint32_t apbclock_upper = priv->apbclock & 0xff000000;
+      uint32_t apbclock_lower = priv->apbclock & 0x00ffffff;
+      brr = (apbclock_upper / priv->baud) << 8;
+      brr += ((apbclock_lower << 8) / priv->baud);
     }
   else
     {
@@ -1767,7 +1816,7 @@ static void up_set_format(struct uart_dev_s *dev)
 #endif /* CONFIG_SUPPRESS_UART_CONFIG */
 
 /****************************************************************************
- * Name: stm32serial_setsuspend
+ * Name: up_setsuspend
  *
  * Description:
  *   Suspend or resume serial peripheral.
@@ -1777,9 +1826,9 @@ static void up_set_format(struct uart_dev_s *dev)
 /* TODO - Review this section for LPUART incompatibility */
 
 #ifdef CONFIG_PM
-static void stm32serial_setsuspend(struct uart_dev_s *dev, bool suspend)
+static void up_setsuspend(struct uart_dev_s *dev, bool suspend)
 {
-  struct stm32_serial_s *priv = (struct stm32_serial_s *)dev->priv;
+  struct up_dev_s *priv = (struct up_dev_s *)dev->priv;
 #ifdef SERIAL_HAVE_DMA
   bool dmarestored = false;
 #endif
@@ -1805,11 +1854,11 @@ static void stm32serial_setsuspend(struct uart_dev_s *dev, bool suspend)
 
       /* Disable interrupts to prevent Tx. */
 
-      stm32serial_disableusartint(priv, &priv->suspended_ie);
+      up_disableusartint(priv, &priv->suspended_ie);
 
       /* Wait last Tx to complete. */
 
-      while ((stm32serial_getreg(priv, STM32_USART_ISR_OFFSET) &
+      while ((up_serialin(priv, STM32_USART_ISR_OFFSET) &
               USART_ISR_TC) == 0);
 
 #ifdef SERIAL_HAVE_DMA
@@ -1841,7 +1890,7 @@ static void stm32serial_setsuspend(struct uart_dev_s *dev, bool suspend)
 #ifdef CONFIG_SERIAL_IFLOWCONTROL
           if (priv->iflow)
             {
-              stm32serial_dmaiflowrestart(priv);
+              up_dma_iflowrestart(priv);
             }
           else
 #endif
@@ -1851,7 +1900,7 @@ static void stm32serial_setsuspend(struct uart_dev_s *dev, bool suspend)
                * to DMA buffer before suspending).
                */
 
-              stm32serial_dmareenable(priv);
+              up_dma_reenable(priv);
               priv->rxdmasusp = false;
             }
 
@@ -1861,7 +1910,7 @@ static void stm32serial_setsuspend(struct uart_dev_s *dev, bool suspend)
 
       /* Re-enable interrupts to resume Tx. */
 
-      stm32serial_restoreusartint(priv, priv->suspended_ie);
+      up_restoreusartint(priv, priv->suspended_ie);
 
 #ifdef CONFIG_SERIAL_IFLOWCONTROL
       if (priv->iflow)
@@ -1886,7 +1935,7 @@ static void stm32serial_setsuspend(struct uart_dev_s *dev, bool suspend)
 
       if (priv->rxdma != NULL)
         {
-          stm32serial_dmarxcallback(priv->rxdma, 0, priv);
+          up_dma_rxcallback(priv->rxdma, 0, priv);
         }
 
       leave_critical_section(flags);
@@ -1896,7 +1945,7 @@ static void stm32serial_setsuspend(struct uart_dev_s *dev, bool suspend)
 #endif
 
 /****************************************************************************
- * Name: stm32serial_pm_setsuspend
+ * Name: up_pm_setsuspend
  *
  * Description:
  *   Suspend or resume serial peripherals for/from deep-sleep/stop modes.
@@ -1904,7 +1953,7 @@ static void stm32serial_setsuspend(struct uart_dev_s *dev, bool suspend)
  ****************************************************************************/
 
 #ifdef CONFIG_PM
-static void stm32serial_pm_setsuspend(bool suspend)
+static void up_pm_setsuspend(bool suspend)
 {
   int n;
 
@@ -1915,16 +1964,28 @@ static void stm32serial_pm_setsuspend(bool suspend)
 
   g_serialpm.serial_suspended = suspend;
 
-  for (n = 0; n < STM32_NLPUART + STM32_NUSART + STM32_NUART; n++)
+  for (n = 0; n < STM32_NUSART; n++)
     {
-      struct stm32_serial_s *priv = g_uart_devs[n];
+      struct up_dev_s *priv = g_uart_devs[n];
 
       if (!priv || !priv->initialized)
         {
           continue;
         }
 
-      stm32serial_setsuspend(&priv->dev, suspend);
+      up_setsuspend(&priv->dev, suspend);
+    }
+
+  for (n = 0; n < STM32_NLPUART; n++)
+    {
+      struct up_dev_s *priv = g_lpuart_devs[n];
+
+      if (!priv || !priv->initialized)
+        {
+          continue;
+        }
+
+      up_setsuspend(&priv->dev, suspend);
     }
 }
 #endif
@@ -3321,6 +3382,126 @@ static bool up_txready(struct uart_dev_s *dev)
 }
 
 /****************************************************************************
+ * Name: up_dma_reenable
+ *
+ * Description:
+ *   Call to re-enable RX DMA.
+ *
+ ****************************************************************************/
+
+#if defined(SERIAL_HAVE_DMA)
+static void up_dma_reenable(struct stm32_serial_s *priv)
+{
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  if (priv->iflow)
+    {
+      /* Configure for non-circular DMA reception into the RX FIFO */
+
+      stm32_dmasetup(priv->rxdma,
+                       priv->usartbase + STM32_USART_RDR_OFFSET,
+                       (uint32_t)priv->rxfifo,
+                       RXDMA_BUFFER_SIZE,
+                       SERIAL_DMA_IFLOW_CONTROL_WORD);
+    }
+  else
+#endif
+    {
+      /* Configure for circular DMA reception into the RX FIFO */
+
+      stm32_dmasetup(priv->rxdma,
+                       priv->usartbase + STM32_USART_RDR_OFFSET,
+                       (uint32_t)priv->rxfifo,
+                       RXDMA_BUFFER_SIZE,
+                       SERIAL_DMA_CONTROL_WORD);
+    }
+
+  /* Reset our DMA shadow pointer to match the address just
+   * programmed above.
+   */
+
+  priv->rxdmanext = 0;
+
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  if (priv->iflow)
+    {
+      /* Start the DMA channel, and arrange for callbacks at the full point
+       * in the FIFO. After buffer gets full, hardware flow-control kicks
+       * in and DMA transfer is stopped.
+       */
+
+      stm32_dmastart(priv->rxdma, stm32serial_dmarxcallback,
+                      (void *)priv, false);
+    }
+  else
+#endif
+    {
+      /* Start the DMA channel, and arrange for callbacks at the half and
+       * full points in the FIFO.  This ensures that we have half a FIFO
+       * worth of time to claim bytes before they are overwritten.
+       */
+
+      stm32_dmastart(priv->rxdma, stm32serial_dmarxcallback,
+                      (void *)priv, true);
+    }
+
+#ifdef CONFIG_PM
+  /* Clear DMA suspended flag. */
+
+  priv->rxdmasusp = false;
+#endif
+}
+#endif
+
+/****************************************************************************
+ * Name: up_dma_iflowrestart
+ *
+ * Description:
+ *   Call to restart RX DMA for input flow-controlled USART
+ *
+ ****************************************************************************/
+
+#if defined(SERIAL_HAVE_DMA) && defined(CONFIG_SERIAL_IFLOWCONTROL)
+static bool up_dma_iflowrestart(struct stm32_serial_s *priv)
+{
+  if (!priv->rxenable)
+    {
+      /* Rx not enabled by upper layer. */
+
+      return false;
+    }
+
+  if (priv->rxdmanext != RXDMA_BUFFER_SIZE)
+    {
+#ifdef CONFIG_PM
+      if (priv->rxdmasusp)
+        {
+          /* Rx DMA in suspended state. */
+
+          if (up_dma_rxavailable(&priv->dev))
+            {
+              /* DMA buffer has unprocessed data, do not re-enable yet. */
+
+              return false;
+            }
+        }
+      else
+#endif
+        {
+          return false;
+        }
+    }
+
+  /* DMA is stopped or suspended and DMA buffer does not have pending data,
+   * re-enabling without data loss is now safe.
+   */
+
+  up_dma_reenable(priv);
+
+  return true;
+}
+#endif
+
+/****************************************************************************
  * Name: up_dma_rxcallback
  *
  * Description:
@@ -3330,13 +3511,41 @@ static bool up_txready(struct uart_dev_s *dev)
  ****************************************************************************/
 
 #ifdef SERIAL_HAVE_RXDMA
-static void up_dma_rxcallback(DMA_HANDLE handle, uint8_t status, void *arg)
+static void up_dma_rxcallback(DMA_HANDLE handle, uint8_t status,
+                                      void *arg)
 {
   struct up_dev_s *priv = (struct up_dev_s *)arg;
 
   if (priv->rxenable && up_dma_rxavailable(&priv->dev))
     {
       uart_recvchars(&priv->dev);
+
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+      if (priv->iflow)
+        {
+          /* Re-enable RX DMA. */
+
+          up_dma_iflowrestart(priv);
+        }
+#endif
+    }
+
+  /* Get the masked USART status word to check and clear error flags.
+   *
+   * When wake-up from low power mode was not fast enough, UART is resumed
+   * too late and sometimes exactly when character was coming over UART,
+   * resulting to frame error.
+   * If error flag is not cleared, Rx DMA will be stuck. Clearing errors
+   * will release Rx DMA.
+   */
+
+  priv->sr = up_serialin(priv, STM32_USART_ISR_OFFSET);
+
+  if ((priv->sr & (USART_ISR_ORE | USART_ISR_NE | USART_ISR_FE)) != 0)
+    {
+      up_serialout(priv, STM32_USART_ICR_OFFSET,
+                           (USART_ICR_NCF | USART_ICR_ORECF |
+                            USART_ICR_FECF));
     }
 }
 #endif
@@ -3365,23 +3574,23 @@ static void up_dma_rxcallback(DMA_HANDLE handle, uint8_t status, void *arg)
 
 #ifdef CONFIG_PM
 static void up_pm_notify(struct pm_callback_s *cb, int domain,
-                                 enum pm_state_e pmstate)
+                         enum pm_state_e pmstate)
 {
   switch (pmstate)
     {
-      case PM_NORMAL:
+      case(PM_NORMAL):
         {
-          stm32serial_pm_setsuspend(false);
+          up_pm_setsuspend(false);
         }
         break;
 
-      case PM_IDLE:
+      case(PM_IDLE):
         {
-          stm32serial_pm_setsuspend(false);
+          up_pm_setsuspend(false);
         }
         break;
 
-      case PM_STANDBY:
+      case(PM_STANDBY):
         {
           /* TODO: Alternative configuration and logic for enabling serial in
            *       Stop 1 mode with HSI16 missing. Current logic allows
@@ -3389,20 +3598,20 @@ static void up_pm_notify(struct pm_callback_s *cb, int domain,
            *       Rx/Tx buffers are empty (checked in pmprepare).
            */
 
-          stm32serial_pm_setsuspend(true);
+          up_pm_setsuspend(true);
         }
         break;
 
-      case PM_SLEEP:
+      case(PM_SLEEP):
         {
-          stm32serial_pm_setsuspend(true);
+          up_pm_setsuspend(true);
         }
         break;
 
       default:
-
-        /* Should not get here */
-
+        {
+          /* Should not get here */
+        }
         break;
     }
 }
@@ -3442,42 +3651,9 @@ static void up_pm_notify(struct pm_callback_s *cb, int domain,
  *
  ****************************************************************************/
 
-/****************************************************************************
- * Name: stm32serial_pmprepare
- *
- * Description:
- *   Request the driver to prepare for a new power state. This is a warning
- *   that the system is about to enter into a new power state. The driver
- *   should begin whatever operations that may be required to enter power
- *   state. The driver may abort the state change mode by returning a
- *   non-zero value from the callback function.
- *
- * Input Parameters:
- *
- *    cb - Returned to the driver. The driver version of the callback
- *         structure may include additional, driver-specific state data at
- *         the end of the structure.
- *
- *    pmstate - Identifies the new PM state
- *
- * Returned Value:
- *   Zero - (OK) means the event was successfully processed and that the
- *          driver is prepared for the PM state change.
- *
- *   Non-zero - means that the driver is not prepared to perform the tasks
- *              needed achieve this power setting and will cause the state
- *              change to be aborted. NOTE: The prepare() method will also
- *              be called when reverting from lower back to higher power
- *              consumption modes (say because another driver refused a
- *              lower power state change). Drivers are not permitted to
- *              return non-zero values when reverting back to higher power
- *              consumption modes!
- *
- ****************************************************************************/
-
 #ifdef CONFIG_PM
 static int up_pm_prepare(struct pm_callback_s *cb, int domain,
-                                 enum pm_state_e pmstate)
+                         enum pm_state_e pmstate)
 {
   int n;
 
@@ -3504,9 +3680,9 @@ static int up_pm_prepare(struct pm_callback_s *cb, int domain,
        * buffers.
        */
 
-      for (n = 0; n < STM32_NLPUART + STM32_NUSART; n++)
+      for (n = 0; n < STM32_NUSART; n++)
         {
-          struct stm32_serial_s *priv = g_uart_devs[n];
+          struct up_dev_s *priv = g_uart_devs[n];
 
           if (!priv || !priv->initialized)
             {
@@ -3534,6 +3710,38 @@ static int up_pm_prepare(struct pm_callback_s *cb, int domain,
               return ERROR;
             }
         }
+
+      for (n = 0; n < STM32_NLPUART; n++)
+        {
+          struct up_dev_s *priv = g_lpuart_devs[n];
+
+          if (!priv || !priv->initialized)
+            {
+              /* Not active, skip. */
+
+              continue;
+            }
+
+          if (priv->suspended)
+            {
+              /* Port already suspended, skip. */
+
+              continue;
+            }
+
+          /* Check if port has data pending (Rx & Tx). */
+
+          if (priv->dev.xmit.head != priv->dev.xmit.tail)
+            {
+              return ERROR;
+            }
+
+          if (priv->dev.recv.head != priv->dev.recv.tail)
+            {
+              return ERROR;
+            }
+        }
+
       break;
 
     default:
@@ -3555,6 +3763,34 @@ static int up_pm_prepare(struct pm_callback_s *cb, int domain,
  ****************************************************************************/
 
 #ifdef USE_SERIALDRIVER
+
+/****************************************************************************
+ * Name: stm32_serial_get_lpuart
+ *
+ * Description:
+ *   Get serial driver structure for STM32 LPUART
+ *
+ ****************************************************************************/
+
+#ifdef HAVE_SERIALDRIVER
+uart_dev_t *stm32_serial_get_lpuart(int lpuart_num)
+{
+  int lpuart_idx = lpuart_num - 1;
+
+  if (lpuart_idx < 0 || lpuart_idx >= STM32_NLPUART || \
+      !g_lpuart_devs[lpuart_idx])
+    {
+      return NULL;
+    }
+
+  if (!g_lpuart_devs[lpuart_idx]->initialized)
+    {
+      return NULL;
+    }
+
+  return &g_lpuart_devs[lpuart_idx]->dev;
+}
+#endif /* HAVE_SERIALDRIVER */
 
 /****************************************************************************
  * Name: stm32_serial_get_uart
@@ -3601,7 +3837,7 @@ void arm_earlyserialinit(void)
 
   /* Disable all USART interrupts */
 
-  for (i = 0; i < STM32_NUSART + STM32_NLPUART; i++)
+  for (i = 0; i < STM32_NUSART; i++)
     {
       if (g_uart_devs[i])
         {
@@ -3609,11 +3845,22 @@ void arm_earlyserialinit(void)
         }
     }
 
+  for (i = 0; i < STM32_NLPUART; i++)
+    {
+      if (g_lpuart_devs[i])
+        {
+          up_disableusartint(g_lpuart_devs[i], NULL);
+        }
+    }
+
   /* Configure whichever one is the console */
 
 #if CONSOLE_UART > 0
   up_setup(&g_uart_devs[CONSOLE_UART - 1]->dev);
+#elif CONSOLE_LPUART > 0
+  up_setup(&g_lpuart_devs[CONSOLE_LPUART - 1]->dev);
 #endif
+
 #endif /* HAVE UART */
 }
 #endif
@@ -3666,11 +3913,30 @@ void arm_serialinit(void)
 #endif
 #endif /* CONSOLE_UART > 0 */
 
+#if CONSOLE_LPUART > 0
+  uart_register("/dev/console", &g_lpuart_devs[CONSOLE_LPUART - 1]->dev);
+
+#ifndef CONFIG_STM32_SERIAL_DISABLE_REORDERING
+  /* If not disabled, register the console UART to ttyS0 and exclude
+   * it from initializing it further down
+   */
+
+  uart_register("/dev/ttyS0", &g_lpuart_devs[CONSOLE_LPUART - 1]->dev);
+  minor = 1;
+#endif
+
+#if defined(SERIAL_HAVE_CONSOLE_RXDMA) || defined(SERIAL_HAVE_CONSOLE_TXDMA)
+  /* If we need to re-initialise the console to enable DMA do that here. */
+
+  up_dma_setup(&g_lpuart_devs[CONSOLE_LPUART - 1]->dev);
+#endif
+#endif /* CONSOLE_LPUART > 0 */
+
   /* Register all remaining USARTs */
 
   strlcpy(devname, "/dev/ttySx", sizeof(devname));
 
-  for (i = 0; i < STM32_NUSART + STM32_NLPUART; i++)
+  for (i = 0; i < STM32_NUSART; i++)
     {
       /* Don't create a device for non-configured ports. */
 
@@ -3693,6 +3959,31 @@ void arm_serialinit(void)
       devname[9] = '0' + minor++;
       uart_register(devname, &g_uart_devs[i]->dev);
     }
+
+  for (i = 0; i < STM32_NLPUART; i++)
+    {
+      /* Don't create a device for non-configured ports. */
+
+      if (g_lpuart_devs[i] == 0)
+        {
+          continue;
+        }
+
+#ifndef CONFIG_STM32_SERIAL_DISABLE_REORDERING
+      /* Don't create a device for the console - we did that above */
+
+      if (g_lpuart_devs[i]->dev.isconsole)
+        {
+          continue;
+        }
+#endif
+
+      /* Register USARTs as devices in increasing order */
+
+      devname[9] = '0' + minor++;
+      uart_register(devname, &g_lpuart_devs[i]->dev);
+    }
+
 #endif /* HAVE UART */
 }
 
@@ -3717,7 +4008,7 @@ void stm32_serial_dma_poll(void)
 #ifdef CONFIG_LPUART1_RXDMA
   if (g_lpuart1priv.rxdma != NULL)
     {
-      stm32serial_dmarxcallback(g_lpuart1priv.rxdma, 0, &g_lpuart1priv);
+      up_dma_rxcallback(g_lpuart1priv.rxdma, 0, &g_lpuart1priv);
     }
 #endif
 
@@ -3809,6 +4100,25 @@ int up_putc(int ch)
   arm_lowputc(ch);
   up_restoreusartint(priv, ie);
 #endif
+#if CONSOLE_LPUART > 0
+  struct up_dev_s *priv = g_lpuart_devs[CONSOLE_LPUART - 1];
+  uint16_t ie;
+
+  up_disableusartint(priv, &ie);
+
+  /* Check for LF */
+
+  if (ch == '\n')
+    {
+      /* Add CR */
+
+      arm_lowputc('\r');
+    }
+
+  arm_lowputc(ch);
+  up_restoreusartint(priv, ie);
+#endif
+
   return ch;
 }
 
@@ -3824,7 +4134,7 @@ int up_putc(int ch)
 
 int up_putc(int ch)
 {
-#if CONSOLE_UART > 0
+#if (CONSOLE_UART || CONSOLE_LPUART) > 0
   /* Check for LF */
 
   if (ch == '\n')

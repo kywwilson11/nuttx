@@ -296,11 +296,13 @@
 #  undef USE_OVER8
 
 /* Calculate USART BAUD rate divider */
-#  ifdef CONFIG_LPUART1_SERIAL_CONSOLE
+#  if CONSOLE_LPUART > 0
 
-#     define STM32_BRR_VALUE \
-          (((STM32_APBCLOCK & 0xff000000) / STM32_CONSOLE_BAUD) << 8) + \
-          (((STM32_APBCLOCK & 0x00ffffff) << 8) / STM32_CONSOLE_BAUD)
+      /* BRR = (256 * APBCLOCK) / (Baud rate) */
+
+#    define STM32_BRR_VALUE \
+            (((STM32_APBCLOCK & 0xff000000) / STM32_CONSOLE_BAUD) << 8) + \
+            (((STM32_APBCLOCK & 0x00ffffff) << 8) / STM32_CONSOLE_BAUD)
 #  else 
 
 #    if defined(CONFIG_STM32_STM32F30XX) || defined(CONFIG_STM32_STM32F33XX) || \
@@ -381,7 +383,7 @@
          (STM32_FRACTION << USART_BRR_FRAC_SHIFT))
 
 #    endif /* CONFIG_STM32_STM32F30XX */
-#  endif /* LPUART1 */
+#  endif /* CONSOLE_LPUART > 0 */
 #endif /* HAVE_CONSOLE */
 
 /****************************************************************************
