@@ -40,6 +40,7 @@
 #include <arch/irq.h>
 
 #include "inode/inode.h"
+#include "fs_heap.h"
 
 /****************************************************************************
  * Private Types
@@ -343,12 +344,22 @@ int file_poll(FAR struct file *filep, FAR struct pollfd *fds, bool setup)
           /* Yes, it does... Setup the poll */
 
           ret = inode->u.i_ops->poll(filep, fds, setup);
+          if (ret < 0)
+            {
+              ferr("poll failed:%p, setup:%d, ret:%d\n",
+                   inode->u.i_ops->poll, setup, ret);
+            }
         }
 #ifndef CONFIG_DISABLE_MOUNTPOINT
       else if (INODE_IS_MOUNTPT(inode) && inode->u.i_mops != NULL &&
                inode->u.i_mops->poll != NULL)
         {
           ret = inode->u.i_mops->poll(filep, fds, setup);
+          if (ret < 0)
+            {
+              ferr("poll failed:%p, setup:%d, ret:%d\n",
+                   inode->u.i_ops->poll, setup, ret);
+            }
         }
 #endif
 
@@ -425,7 +436,7 @@ int poll(FAR struct pollfd *fds, nfds_t nfds, int timeout)
 #ifdef CONFIG_BUILD_KERNEL
   /* Allocate kernel memory for the fds */
 
-  kfds = kmm_malloc(nfds * sizeof(struct pollfd));
+  kfds = fs_heap_malloc(nfds * sizeof(struct pollfd));
   if (!kfds)
     {
       /* Out of memory */
@@ -537,7 +548,7 @@ int poll(FAR struct pollfd *fds, nfds_t nfds, int timeout)
 
   /* Free the temporary buffer */
 
-  kmm_free(kfds);
+  fs_heap_free(kfds);
 
 out_with_cancelpt:
 #endif

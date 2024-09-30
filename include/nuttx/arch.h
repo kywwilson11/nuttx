@@ -439,7 +439,9 @@ void up_release_stack(FAR struct tcb_s *dtcb, uint8_t ttype);
  *
  ****************************************************************************/
 
+#ifndef up_switch_context
 void up_switch_context(FAR struct tcb_s *tcb, FAR struct tcb_s *rtcb);
+#endif
 
 /****************************************************************************
  * Name: up_exit
@@ -769,12 +771,17 @@ void up_extraheaps_init(void);
  * Name: up_textheap_memalign
  *
  * Description:
- *   Allocate memory for text sections with the specified alignment.
+ *   Allocate memory for text with the specified alignment and sectname.
  *
  ****************************************************************************/
 
 #if defined(CONFIG_ARCH_USE_TEXT_HEAP)
+#  if defined(CONFIG_ARCH_USE_SEPARATED_SECTION)
+FAR void *up_textheap_memalign(FAR const char *sectname,
+                               size_t align, size_t size);
+#  else
 FAR void *up_textheap_memalign(size_t align, size_t size);
+#  endif
 #endif
 
 /****************************************************************************
@@ -849,12 +856,17 @@ void up_textheap_data_sync(void);
  * Name: up_dataheap_memalign
  *
  * Description:
- *   Allocate memory for data sections with the specified alignment.
+ *   Allocate memory for data with the specified alignment and sectname.
  *
  ****************************************************************************/
 
 #if defined(CONFIG_ARCH_USE_DATA_HEAP)
+#  if defined(CONFIG_ARCH_USE_SEPARATED_SECTION)
+FAR void *up_dataheap_memalign(FAR const char *sectname,
+                               size_t align, size_t size);
+#  else
 FAR void *up_dataheap_memalign(size_t align, size_t size);
+#  endif
 #endif
 
 /****************************************************************************
@@ -2308,6 +2320,29 @@ int up_cpu_pause(int cpu);
 #endif
 
 /****************************************************************************
+ * Name: up_cpu_pause_async
+ *
+ * Description:
+ *   pause task execution on the CPU
+ *   check whether there are tasks delivered to specified cpu
+ *   and try to run them.
+ *
+ * Input Parameters:
+ *   cpu - The index of the CPU to be paused.
+ *
+ * Returned Value:
+ *   Zero on success; a negated errno value on failure.
+ *
+ * Assumptions:
+ *   Called from within a critical section;
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_SMP
+int up_cpu_pause_async(int cpu);
+#endif
+
+/****************************************************************************
  * Name: up_cpu_pausereq
  *
  * Description:
@@ -2408,7 +2443,7 @@ int up_cpu_paused_restore(void);
  *   state of the task at the head of the g_assignedtasks[cpu] list, and
  *   resume normal tasking.
  *
- *   This function is called after up_cpu_pause in order ot resume operation
+ *   This function is called after up_cpu_pause in order to resume operation
  *   of the CPU after modifying its g_assignedtasks[cpu] list.
  *
  * Input Parameters:
@@ -3049,7 +3084,8 @@ int up_debugpoint_remove(int type, FAR void *addr, size_t size);
  *  Allocate interrupts for MSI/MSI-X vector.
  *
  * Input Parameters:
- *   bus - Bus that PCI device resides
+ *   busno - Bus num that PCI device resides
+ *   devfn - Device and function number
  *   irq - allocated vectors array
  *   num - number of vectors to allocate
  *
@@ -3059,7 +3095,7 @@ int up_debugpoint_remove(int type, FAR void *addr, size_t size);
  *
  ****************************************************************************/
 
-int up_alloc_irq_msi(FAR int *num);
+int up_alloc_irq_msi(uint8_t busno, uint32_t devfn, FAR int *irq, int num);
 
 /****************************************************************************
  * Name: up_release_irq_msi
@@ -3086,7 +3122,6 @@ void up_release_irq_msi(FAR int *irq, int num);
  *  Connect interrupt for MSI/MSI-X.
  *
  * Input Parameters:
- *   bus - Bus that PCI device resides
  *   irq - vectors array
  *   num - number of vectors in array
  *   mar - returned value for Message Address Register
@@ -3097,7 +3132,7 @@ void up_release_irq_msi(FAR int *irq, int num);
  *
  ****************************************************************************/
 
-int up_connect_irq(FAR int *irq, int num,
+int up_connect_irq(FAR const int *irq, int num,
                    FAR uintptr_t *mar, FAR uint32_t *mdr);
 
 /****************************************************************************

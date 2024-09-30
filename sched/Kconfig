@@ -312,7 +312,7 @@ config TICKET_SPINLOCK
 
 config RW_SPINLOCK
 	bool "Support read-write Spinlocks"
-	default y
+	default n
 	---help---
 		Spinlocks are spilit into read and write lock.
 		Reader can take read lock simultaneously and only one writer
@@ -1988,3 +1988,11 @@ config SCHED_EVENTS
 		This option enables event objects. Threads may wait on event
 		objects for specific events, but both threads and ISRs may deliver
 		events to event objects.
+
+config ASSERT_PAUSE_CPU_TIMEOUT
+	int "Timeout in milisecond to pause another CPU when assert"
+	default 2000
+	depends on SMP
+	---help---
+		Timeout in milisecond to pause another CPU when assert. Only available
+		when SMP is enabled.

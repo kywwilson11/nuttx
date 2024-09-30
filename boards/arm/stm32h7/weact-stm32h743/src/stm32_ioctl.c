@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/sim/src/sim/sim_textheap.c
+ * boards/arm/stm32h7/weact-stm32h743/src/stm32_ioctl.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,66 +22,53 @@
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/arch.h>
-#include <nuttx/mm/mm.h>
+#include <nuttx/config.h>
 
-#include "sim_internal.h"
+#include <sys/types.h>
+#include <stdint.h>
+#include <errno.h>
 
-/****************************************************************************
- * Private Data
- ****************************************************************************/
+#include <nuttx/board.h>
 
-static struct mm_heap_s *g_textheap;
+#include "weact-stm32h743.h"
+
+#ifdef CONFIG_BOARDCTL_IOCTL
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_textheap_memalign
+ * Name: board_ioctl
  *
  * Description:
- *   Allocate memory for text sections with the specified alignment.
+ *   The "landing site" for much of the boardctl() interface. Generic board-
+ *   control functions invoked via ioctl() get routed through here.
+ *
+ *   Since we don't do anything unusual at the moment, this function
+ *   accomplishes nothing except avoid a missing-function linker error if
+ *   CONFIG_BOARDCTL_IOCTL is selected.
+ *
+ * Input Parameters:
+ *   cmd - IOCTL command being requested.
+ *   arg - Arguments for the IOCTL.
+ *
+ * Returned Value:
+ *   we don't yet support any boardctl IOCTLs.  This function always returns
+ *  -ENOTTY which is the standard IOCTL return value when a command is not
+ *  supported
  *
  ****************************************************************************/
 
-void *up_textheap_memalign(size_t align, size_t size)
+int board_ioctl(unsigned int cmd, uintptr_t arg)
 {
-  if (g_textheap == NULL)
+  switch (cmd)
     {
-      g_textheap = mm_initialize("textheap",
-                                 host_allocheap(SIM_HEAP_SIZE, true),
-                                 SIM_HEAP_SIZE);
+      default:
+        return -ENOTTY;
     }
 
-  return mm_memalign(g_textheap, align, size);
+  return OK;
 }
 
-/****************************************************************************
- * Name: up_textheap_free
- *
- * Description:
- *   Free memory allocated for text sections.
- *
- ****************************************************************************/
-
-void up_textheap_free(void *p)
-{
-  if (g_textheap != NULL)
-    {
-      mm_free(g_textheap, p);
-    }
-}
-
-/****************************************************************************
- * Name: up_textheap_heapmember
- *
- * Description:
- *   Test if memory is from text heap.
- *
- ****************************************************************************/
-
-bool up_textheap_heapmember(void *p)
-{
-  return g_textheap != NULL && mm_heapmember(g_textheap, p);
-}
+#endif /* CONFIG_BOARDCTL_IOCTL */

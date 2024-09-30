@@ -25,6 +25,7 @@
 #include <nuttx/config.h>
 
 #include <nuttx/kmalloc.h>
+#include <nuttx/list.h>
 #include <nuttx/mm/circbuf.h>
 #include <nuttx/sensors/sensor.h>
 #include <nuttx/sensors/gnss.h>
@@ -73,6 +74,7 @@ struct gnss_sensor_s
 
 struct gnss_user_s
 {
+  struct list_node node;
   FAR struct pollfd *fds;
   size_t pos;
 };
@@ -82,10 +84,12 @@ struct gnss_user_s
 struct gnss_upperhalf_s
 {
   struct gnss_sensor_s         dev[GNSS_MAX_IDX];
+  struct list_node             userlist;
   FAR struct gnss_lowerhalf_s *lower;
   uint8_t                      crefs;
   uint8_t                      flags;
   mutex_t                      lock;
+  mutex_t                      bufferlock;
   sem_t                        buffersem;
   size_t                       parsenext;
   char                         parsebuffer[GNSS_PARSE_BUFFERSIZE];
@@ -247,6 +251,7 @@ static int gnss_open(FAR struct file *filep)
     }
 
   filep->f_priv = user;
+  list_add_tail(&upper->userlist, &user->node);
   user->pos = upper->buffer.head;
 
 out:
@@ -279,6 +284,7 @@ static int gnss_close(FAR struct file *filep)
       upper->crefs--;
     }
 
+  list_delete(&user->node);
   kmm_free(user);
 
 out:
@@ -301,7 +307,7 @@ static ssize_t gnss_read(FAR struct file *filep, FAR char *buffer,
   upper = filep->f_inode->i_private;
   user = filep->f_priv;
 
-  nxmutex_lock(&upper->lock);
+  nxmutex_lock(&upper->bufferlock);
   if (user->pos < upper->buffer.tail)
     {
       user->pos = upper->buffer.tail;
@@ -317,14 +323,14 @@ check:
         }
       else
         {
-          nxmutex_unlock(&upper->lock);
+          nxmutex_unlock(&upper->bufferlock);
           ret = nxsem_wait_uninterruptible(&upper->buffersem);
           if (ret < 0)
             {
               return ret;
             }
 
-          nxmutex_lock(&upper->lock);
+          nxmutex_lock(&upper->bufferlock);
           goto check;
         }
     }
@@ -334,7 +340,7 @@ check:
   user->pos += ret;
 
 out:
-  nxmutex_unlock(&upper->lock);
+  nxmutex_unlock(&upper->bufferlock);
   return ret;
 }
 
@@ -585,8 +591,15 @@ static void gnss_parse(FAR struct gnss_upperhalf_s *upper,
         {
           if (*buffer != '\r' && *buffer != '\n')
             {
-              upper->parsebuffer[upper->parsenext++] = *buffer;
-              continue;
+              if (upper->parsenext + 1 < GNSS_PARSE_BUFFERSIZE)
+                {
+                  upper->parsebuffer[upper->parsenext++] = *buffer;
+                  continue;
+                }
+
+              upper->parsebuffer[upper->parsenext] = '\0';
+              snerr("NMEA buffer overflow, invalid statement:%s\n",
+                    upper->parsebuffer);
             }
 
           upper->parsebuffer[upper->parsenext] = '\0';
@@ -601,6 +614,7 @@ static void gnss_push_data(FAR void *priv, FAR const void *data,
                            size_t bytes, bool is_nmea)
 {
   FAR struct gnss_upperhalf_s *upper = priv;
+  FAR struct gnss_user_s *user;
   int semcount;
 
   if (data == NULL || bytes == 0)
@@ -608,14 +622,20 @@ static void gnss_push_data(FAR void *priv, FAR const void *data,
       return;
     }
 
-  nxmutex_lock(&upper->lock);
+  nxmutex_lock(&upper->bufferlock);
   if (is_nmea)
     {
       gnss_parse(upper, data, bytes);
     }
 
   circbuf_overwrite(&upper->buffer, data, bytes);
-  nxmutex_unlock(&upper->lock);
+
+  list_for_every_entry(&upper->userlist, user, struct gnss_user_s, node)
+    {
+      poll_notify(&user->fds, 1, POLLIN);
+    }
+
+  nxmutex_unlock(&upper->bufferlock);
 
   nxsem_get_value(&upper->buffersem, &semcount);
   while (semcount++ <= 0)
@@ -635,7 +655,6 @@ static void gnss_push_event(FAR void *priv, FAR const void *data,
       return;
     }
 
-  nxmutex_lock(&upper->lock);
   if (type == SENSOR_TYPE_GNSS)
     {
       lower = &upper->dev[GNSS_IDX].lower;
@@ -661,8 +680,6 @@ static void gnss_push_event(FAR void *priv, FAR const void *data,
       lower = &upper->dev[GNSS_GEOFENCE].lower;
       lower->push_event(lower->priv, data, bytes);
     }
-
-  nxmutex_unlock(&upper->lock);
 }
 
 /****************************************************************************
@@ -711,8 +728,10 @@ int gnss_register(FAR struct gnss_lowerhalf_s *lower, int devno,
   upper->lower = lower;
 
   nxmutex_init(&upper->lock);
+  nxmutex_init(&upper->bufferlock);
   nxsem_init(&upper->buffersem, 0, 0);
   gnss_init_data(&upper->gnss);
+  list_initialize(&upper->userlist);
 
   /* GNSS register */
 
@@ -809,6 +828,7 @@ satellite_err:
   sensor_unregister(&upper->dev[GNSS_IDX].lower, devno);
 gnss_err:
   nxmutex_destroy(&upper->lock);
+  nxmutex_destroy(&upper->bufferlock);
   nxsem_destroy(&upper->buffersem);
   kmm_free(upper);
   return ret;

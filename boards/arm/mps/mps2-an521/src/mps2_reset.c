@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/common/arm_switchcontext.c
+ * boards/arm/mps/mps2-an521/src/mps2_reset.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,68 +24,39 @@
 
 #include <nuttx/config.h>
 
-#include <sched.h>
-#include <assert.h>
-#include <debug.h>
 #include <nuttx/arch.h>
-#include <nuttx/sched.h>
+#include <nuttx/board.h>
 
-#include "sched/sched.h"
-#include "group/group.h"
-#include "clock/clock.h"
-#include "arm_internal.h"
+#ifdef CONFIG_BOARDCTL_RESET
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_switch_context
+ * Name: board_reset
  *
  * Description:
- *   A task is currently in the ready-to-run list but has been prepped
- *   to execute. Restore its context, and start execution.
+ *   Reset board.  Support for this function is required by board-level
+ *   logic if CONFIG_BOARDCTL_RESET is selected.
  *
  * Input Parameters:
- *   tcb: Refers to the head task of the ready-to-run list
- *     which will be executed.
- *   rtcb: Refers to the running task which will be blocked.
+ *   status - Status information provided with the reset event.  This
+ *            meaning of this status information is board-specific.  If not
+ *            used by a board, the value zero may be provided in calls to
+ *            board_reset().
+ *
+ * Returned Value:
+ *   If this function returns, then it was not possible to power-off the
+ *   board due to some constraints.  The return value int this case is a
+ *   board-specific reason for the failure to shutdown.
  *
  ****************************************************************************/
 
-void up_switch_context(struct tcb_s *tcb, struct tcb_s *rtcb)
+int board_reset(int status)
 {
-  /* Update scheduler parameters */
-
-  nxsched_suspend_scheduler(rtcb);
-
-  /* Are we in an interrupt handler? */
-
-  if (up_interrupt_context())
-    {
-      /* Update scheduler parameters */
-
-      nxsched_resume_scheduler(tcb);
-    }
-
-  /* No, then we will need to perform the user context switch */
-
-  else
-    {
-      /* Update scheduler parameters */
-
-      nxsched_resume_scheduler(tcb);
-
-      /* Switch context to the context of the task at the head of the
-       * ready to run list.
-       */
-
-      arm_switchcontext(&rtcb->xcp.regs, tcb->xcp.regs);
-
-      /* arm_switchcontext forces a context switch to the task at the
-       * head of the ready-to-run list.  It does not 'return' in the
-       * normal sense.  When it does return, it is because the blocked
-       * task is again ready to run and has execution priority.
-       */
-    }
+  up_systemreset();
+  return 0;
 }
+
+#endif /* CONFIG_BOARDCTL_RESET */

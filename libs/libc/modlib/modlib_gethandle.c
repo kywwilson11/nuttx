@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm64/src/common/arm64_switchcontext.c
+ * libs/libc/modlib/modlib_gethandle.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,69 +23,58 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-
-#include <sched.h>
 #include <assert.h>
 #include <debug.h>
-#include <nuttx/arch.h>
-#include <nuttx/sched.h>
+#include <errno.h>
 
-#include "sched/sched.h"
-#include "group/group.h"
-#include "clock/clock.h"
-#include "arm64_internal.h"
+#include <nuttx/lib/modlib.h>
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_switch_context
+ * Name: modlib_modhandle
  *
  * Description:
- *   A task is currently in the ready-to-run list but has been prepped
- *   to execute. Restore its context, and start execution.
+ *   modlib_modhandle() returns the module handle for the installed
+ *   module with the provided name.  A secondary use of this function is to
+ *   determine if a module has been loaded or not.
  *
  * Input Parameters:
- *   tcb: Refers to the head task of the ready-to-run list
- *     which will be executed.
- *   rtcb: Refers to the running task which will be blocked.
+ *   name   - A pointer to the module name string.
+ *
+ * Returned Value:
+ *   The non-NULL module handle previously returned by modlib_insert() is
+ *   returned on success.  If no module with that name is installed,
+ *   modlib_modhandle() will return a NULL handle and the errno variable
+ *   will be set appropriately.
  *
  ****************************************************************************/
 
-void up_switch_context(struct tcb_s *tcb, struct tcb_s *rtcb)
+#ifdef HAVE_MODLIB_NAMES
+
+FAR void *modlib_gethandle(FAR const char *name)
 {
-  /* Update scheduler parameters */
+  FAR struct module_s *modp;
 
-  nxsched_suspend_scheduler(rtcb);
+  DEBUGASSERT(name != NULL);
 
-  /* Are we in an interrupt handler? */
+  /* Get exclusive access to the module registry */
 
-  if (up_interrupt_context())
+  modlib_registry_lock();
+
+  /* Find the module entry for this name in the registry */
+
+  modp = modlib_registry_find(name);
+  if (modp == NULL)
     {
-      /* Update scheduler parameters */
-
-      nxsched_resume_scheduler(tcb);
+      berr("ERROR: Failed to find module %s\n", name);
+      set_errno(ENOENT);
     }
 
-  /* No, then we will need to perform the user context switch */
-
-  else
-    {
-      /* Update scheduler parameters */
-
-      nxsched_resume_scheduler(tcb);
-
-      /* Switch context to the context of the task at the head of the
-       * ready to run list.
-       */
-
-      arm64_switchcontext(&rtcb->xcp.regs, tcb->xcp.regs);
-
-      /* arm_switchcontext forces a context switch to the task at the
-       * head of the ready-to-run list.  It does not 'return' in the
-       * normal sense.  When it does return, it is because the blocked
-       * task is again ready to run and has execution priority.
-       */
-    }
+  modlib_registry_unlock();
+  return modp;
 }
+
+#endif /* HAVE_MODLIB_NAMES */

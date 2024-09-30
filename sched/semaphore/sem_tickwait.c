@@ -100,14 +100,15 @@ int nxsem_tickwait(FAR sem_t *sem, uint32_t delay)
 
   if (delay == 0)
     {
-      /* Return the errno from nxsem_trywait() */
+      /* Timed out already before waiting */
 
+      ret = -ETIMEDOUT;
       goto out;
     }
 
   /* Start the watchdog with interrupts still disabled */
 
-  wd_start(&rtcb->waitdog, delay, nxsem_timeout, nxsched_gettid());
+  wd_start(&rtcb->waitdog, delay, nxsem_timeout, (uintptr_t)rtcb);
 
   /* Now perform the blocking wait */
 
@@ -149,7 +150,7 @@ out:
 
 int nxsem_tickwait_uninterruptible(FAR sem_t *sem, uint32_t delay)
 {
-  clock_t end = clock_systime_ticks() + delay;
+  clock_t end = clock_systime_ticks() + delay + 1;
   int ret;
 
   for (; ; )
