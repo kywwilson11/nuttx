@@ -1,6 +1,8 @@
 /****************************************************************************
  * libs/libc/misc/lib_memoryregion.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -143,10 +145,10 @@ alloc_memory_region(FAR const char *format)
  *
  ****************************************************************************/
 
-void free_memory_region(FAR struct memory_region_s *region)
+void free_memory_region(FAR const struct memory_region_s *region)
 {
   if (region != NULL)
     {
-      lib_free(region);
+      lib_free((FAR void *)region);
     }
 }
