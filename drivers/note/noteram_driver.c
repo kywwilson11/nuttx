@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <nuttx/spinlock.h>
 #include <nuttx/sched.h>
@@ -419,6 +420,7 @@ static int noteram_open(FAR struct file *filep)
 int noteram_close(FAR struct file *filep)
 {
   FAR struct noteram_dump_context_s *ctx = filep->f_priv;
+
   kmm_free(ctx);
   return OK;
 }
@@ -621,11 +623,12 @@ static void noteram_dump_init_context(FAR struct noteram_dump_context_s *ctx)
 }
 
 /****************************************************************************
- * Name: get_task_name
+ * Name: get_taskname
  ****************************************************************************/
 
 static const char *get_taskname(pid_t pid)
 {
+#if CONFIG_DRIVERS_NOTE_TASKNAME_BUFSIZE > 0
   FAR const char *taskname;
 
   taskname = note_get_taskname(pid);
@@ -633,6 +636,7 @@ static const char *get_taskname(pid_t pid)
     {
       return taskname;
     }
+#endif
 
   return "<noname>";
 }
@@ -1015,7 +1019,27 @@ static int noteram_dump_one(FAR uint8_t *p, FAR struct lib_outstream_s *s,
       }
       break;
 #endif
+#ifdef CONFIG_SCHED_INSTRUMENTATION_HEAP
+    case NOTE_HEAP_ADD:
+    case NOTE_HEAP_REMOVE:
+    case NOTE_HEAP_ALLOC:
+    case NOTE_HEAP_FREE:
+      {
+        FAR struct note_heap_s *nmm = (FAR struct note_heap_s *)p;
+        FAR const char *name[] =
+          {
+            "add", "remove", "malloc", "free"
+          };
 
+        ret += noteram_dump_header(s, &nmm->nmm_cmn, ctx);
+        ret += lib_sprintf(s, "tracing_mark_write: C|%d|Heap Usage|%d|%s"
+                           ": heap: %p size:%" PRIiPTR ", address: %p\n",
+                           pid, nmm->used,
+                           name[note->nc_type - NOTE_HEAP_ADD],
+                           nmm->heap, nmm->size, nmm->mem);
+      }
+      break;
+#endif
     default:
       break;
     }

@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/qemu/qemu_cpuboot.c
+ * arch/arm/src/goldfish/goldfish_cpuboot.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,16 +30,23 @@
 #include <nuttx/arch.h>
 #include <nuttx/sched.h>
 #include <arch/irq.h>
+#include <init/init.h>
+#include <debug.h>
 
-#include "init/init.h"
 #include "arm_internal.h"
 #include "sctlr.h"
 #include "scu.h"
 #include "gic.h"
 
+/****************************************************************************
+ * Public Data
+ ****************************************************************************/
+
 /* Symbols defined via the linker script */
 
+#ifdef CONFIG_ARCH_LOWVECTORS
 extern uint8_t _vector_start[]; /* Beginning of vector block */
+#endif
 
 /****************************************************************************
  * Public Functions
@@ -59,14 +66,13 @@ extern uint8_t _vector_start[]; /* Beginning of vector block */
  *
  * Input Parameters:
  *   cpu - The CPU index.  This is the same value that would be obtained by
- *      calling this_cpu();
+ *      calling up_cpu_index();
  *
  * Returned Value:
  *   Does not return.
  *
  ****************************************************************************/
 
-#ifdef CONFIG_SMP
 void arm_cpu_boot(int cpu)
 {
   /* Enable SMP cache coherency for the CPU */
@@ -108,8 +114,11 @@ void arm_cpu_boot(int cpu)
   up_irq_enable();
 #endif
 
-  /* Then transfer control to the IDLE task */
+  /* The next thing that we expect to happen is for logic running on CPU0
+   * to call up_cpu_start() which generate an SGI and a context switch to
+   * the configured NuttX IDLE task.
+   * Transfer control to the IDLE task.
+   */
 
   nx_idle_trampoline();
 }
-#endif /* CONFIG_SMP */
