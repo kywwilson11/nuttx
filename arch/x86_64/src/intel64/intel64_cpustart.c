@@ -47,8 +47,8 @@
  ****************************************************************************/
 
 extern void __ap_entry(void);
-extern int up_pause_handler(int irq, void *c, void *arg);
-extern int up_pause_async_handler(int irq, void *c, void *arg);
+extern int x86_64_smp_call_handler(int irq, void *c, void *arg);
+extern int x86_64_smp_sched_handler(int irq, void *c, void *arg);
 
 /****************************************************************************
  * Private Functions
@@ -80,7 +80,8 @@ static int x86_64_ap_startup(int cpu)
 
   /* Send an INIT IPI to the CPU */
 
-  regval = MSR_X2APIC_ICR_INIT | dest;
+  regval = MSR_X2APIC_ICR_INIT | MSR_X2APIC_ICR_ASSERT
+           | MSR_X2APIC_ICR_LEVEL | dest;
   write_msr(MSR_X2APIC_ICR, regval);
 
   /* Wait for 10 ms */
@@ -95,16 +96,13 @@ static int x86_64_ap_startup(int cpu)
 
   /* Wait for AP ready */
 
-  up_udelay(300);
-  SP_DMB();
-
-  /* Check CPU ready flag */
-
-  if (x86_64_cpu_ready_get(cpu) == false)
+  do
     {
-      sinfo("failed to startup cpu=%d\n", cpu);
-      return -EBUSY;
+      up_udelay(300);
+      SP_DMB();
+      sinfo("wait for startup cpu=%d...\n", cpu);
     }
+  while (x86_64_cpu_ready_get(cpu) == false);
 
   return OK;
 }
@@ -164,10 +162,10 @@ void x86_64_ap_boot(void)
 
   /* Connect Pause IRQ to CPU */
 
-  irq_attach(SMP_IPI_IRQ, up_pause_handler, NULL);
-  irq_attach(SMP_IPI_ASYNC_IRQ, up_pause_async_handler, NULL);
-  up_enable_irq(SMP_IPI_IRQ);
-  up_enable_irq(SMP_IPI_ASYNC_IRQ);
+  irq_attach(SMP_IPI_CALL_IRQ, x86_64_smp_call_handler, NULL);
+  irq_attach(SMP_IPI_SCHED_IRQ, x86_64_smp_sched_handler, NULL);
+  up_enable_irq(SMP_IPI_CALL_IRQ);
+  up_enable_irq(SMP_IPI_SCHED_IRQ);
 
 #ifdef CONFIG_STACK_COLORATION
   /* If stack debug is enabled, then fill the stack with a

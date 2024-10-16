@@ -29,6 +29,7 @@
 
 #include <elf.h>
 #include <arch/elf.h>
+#include <stdbool.h>
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -40,7 +41,7 @@
  * Public Types
  ****************************************************************************/
 
-#ifdef CONFIG_ELF_COREDUMP
+#ifdef CONFIG_COREDUMP
 typedef struct elf_prpsinfo_s
 {
   char           pr_state;    /* Numeric process state */

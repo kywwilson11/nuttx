@@ -41,6 +41,7 @@
 #include <nuttx/fs/procfs.h>
 
 #include "fs_heap.h"
+#include "sched/sched.h"
 
 #if !defined(CONFIG_DISABLE_MOUNTPOINT) && defined(CONFIG_FS_PROCFS) && \
     defined(CONFIG_ARCH_HAVE_TCBINFO) && !defined(CONFIG_FS_PROCFS_EXCLUDE_TCBINFO)
@@ -177,6 +178,20 @@ static int tcbinfo_close(FAR struct file *filep)
 }
 
 /****************************************************************************
+ * Name: tcbinfo_current_regs
+ *
+ * Description:
+ *   A special version of up_current_regs() that is non-optimized.
+ *
+ ****************************************************************************/
+
+nooptimiziation_function
+FAR static void *tcbinfo_current_regs(void)
+{
+  return up_current_regs();
+}
+
+/****************************************************************************
  * Name: tcbinfo_read
  ****************************************************************************/
 
@@ -198,8 +213,9 @@ static ssize_t tcbinfo_read(FAR struct file *filep, FAR char *buffer,
   if (filep->f_pos == 0)
     {
       linesize = procfs_snprintf(attr->line, TCBINFO_LINELEN,
-                                 "pointer %p size %zu\n", &g_tcbinfo,
-                                  sizeof(struct tcbinfo_s));
+                                 "pointer %p size %zu current regs %p\n",
+                                  &g_tcbinfo, sizeof(struct tcbinfo_s),
+                                  tcbinfo_current_regs());
 
       /* Save the linesize in case we are re-entered with f_pos > 0 */
 

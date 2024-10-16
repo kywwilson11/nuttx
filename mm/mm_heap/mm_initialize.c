@@ -141,10 +141,6 @@ void mm_addregion(FAR struct mm_heap_s *heap, FAR void *heapstart,
   memset(heapstart, MM_INIT_MAGIC, heapsize);
 #endif
 
-  /* Register to KASan for access check */
-
-  kasan_register(heapstart, &heapsize);
-
   /* Adjust the provided heap start and size.
    *
    * Note: (uintptr_t)node + MM_SIZEOF_ALLOCNODE is what's actually
@@ -154,7 +150,15 @@ void mm_addregion(FAR struct mm_heap_s *heap, FAR void *heapstart,
 
   heapbase = MM_ALIGN_UP((uintptr_t)heapstart + 2 * MM_SIZEOF_ALLOCNODE) -
              2 * MM_SIZEOF_ALLOCNODE;
-  heapend  = MM_ALIGN_DOWN((uintptr_t)heapstart + (uintptr_t)heapsize);
+  heapsize = heapsize - (heapbase - (uintptr_t)heapstart);
+
+  /* Register KASan for access rights check. We need to register after
+   * address alignment.
+   */
+
+  kasan_register((void *)heapbase, &heapsize);
+
+  heapend  = MM_ALIGN_DOWN((uintptr_t)heapbase + (uintptr_t)heapsize);
   heapsize = heapend - heapbase;
 
 #if defined(CONFIG_FS_PROCFS) && \
@@ -202,10 +206,9 @@ void mm_addregion(FAR struct mm_heap_s *heap, FAR void *heapstart,
 
   mm_addfreechunk(heap, node);
   heap->mm_curused += 2 * MM_SIZEOF_ALLOCNODE;
-  mm_unlock(heap);
-
   sched_note_heap(NOTE_HEAP_ADD, heap, heapstart, heapsize,
                   heap->mm_curused);
+  mm_unlock(heap);
 }
 
 /****************************************************************************
@@ -312,7 +315,11 @@ mm_initialize_pool(FAR const char *name,
 
       for (i = 0; i < MEMPOOL_NPOOLS; i++)
         {
+#  if CONFIG_MM_MIN_BLKSIZE != 0
+          poolsize[i] = (i + 1) * CONFIG_MM_MIN_BLKSIZE;
+#  else
           poolsize[i] = (i + 1) * MM_MIN_CHUNK;
+#  endif
         }
 
       def.poolsize        = poolsize;

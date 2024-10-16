@@ -103,6 +103,23 @@ config ARCH_CHIP_C5471
 	---help---
 		TI TMS320 C5471, A180, or DA180 (ARM7TDMI)
 
+config ARCH_CHIP_CSK6
+	bool "LISTEANAI CSK6 6001A/6011B/6012"
+	select ARCH_HAVE_MPU
+	select ARCH_HAVE_FETCHADD
+	select ARCH_HAVE_I2CRESET
+	select ARCH_HAVE_HEAPCHECK
+	select ARCH_HAVE_PROGMEM
+	select ARCH_HAVE_SPI_BITORDER
+	select ARCH_HAVE_TICKLESS
+	select ARCH_HAVE_TIMEKEEPING
+	select ARM_HAVE_MPU_UNIFIED
+	select ARMV8M_HAVE_STACKCHECK
+	select ARCH_HAVE_ADJTIME
+	select ARCH_CORTEXM33
+	---help---
+		LISTEANAI CSK6 architectures (ARM Cortex-M33).
+
 config ARCH_CHIP_DM320
 	bool "TMS320 DM320"
 	select ARCH_ARM926EJS
@@ -440,23 +457,6 @@ config ARCH_CHIP_STM32
 	select ARCH_HAVE_ADJTIME
 	---help---
 		STMicro STM32 architectures (ARM Cortex-M3/4).
-
-config ARCH_CHIP_CSK6
-	bool "STMicro STM6 6001A/6011B/6012"
-	select ARCH_HAVE_MPU
-	select ARCH_HAVE_FETCHADD
-	select ARCH_HAVE_I2CRESET
-	select ARCH_HAVE_HEAPCHECK
-	select ARCH_HAVE_PROGMEM
-	select ARCH_HAVE_SPI_BITORDER
-	select ARCH_HAVE_TICKLESS
-	select ARCH_HAVE_TIMEKEEPING
-	select ARM_HAVE_MPU_UNIFIED
-	select ARMV8M_HAVE_STACKCHECK
-	select ARCH_HAVE_ADJTIME
-	select ARCH_CORTEXM33
-	---help---
-		LISTEANAI CSK6architectures (ARM Cortex-M33).		
 
 config ARCH_CHIP_STM32F0
 	bool "STMicro STM32 F0"
@@ -819,6 +819,7 @@ config ARCH_CORTEXM0
 	select ARM_THUMB
 	select ARCH_ARMV6M
 	select ARCH_HAVE_IRQPRIO
+	select ARCH_HAVE_IRQTRIGGER
 	select ARCH_HAVE_RAMVECTORS
 	select ARCH_HAVE_RESET
 	select ARCH_HAVE_HARDFAULT_DEBUG
@@ -1287,6 +1288,13 @@ config ARM_MPU_EARLY_RESET
 
 		Note: This can be used without MPU Support enabled.
 
+config ARM_COREDUMP_REGION
+	bool "Add coredump region"
+	depends on COREDUMP
+	default n
+	---help---
+		Add coredump region includes nvic and mpu for cortex-M.
+
 config ARCH_HAVE_LOWVECTORS
 	bool
 
@@ -1382,7 +1390,6 @@ config DEBUG_SECUREFAULT
 
 config ARM_SEMIHOSTING_SYSLOG
 	bool "Semihosting SYSLOG support"
-	select ARCH_SYSLOG
 	select SYSLOG_REGISTER
 	---help---
 		Enable hooks to support semihosting syslog output.

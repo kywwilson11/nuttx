@@ -71,7 +71,7 @@ endif()
 
 if(CONFIG_SMP)
   list(APPEND SRCS arm64_cpuidlestack.c arm64_cpustart.c)
-  list(APPEND SRCS arm64_cpupause.c)
+  list(APPEND SRCS arm64_smpcall.c)
 endif()
 
 if(CONFIG_BUILD_KERNEL)
@@ -89,6 +89,9 @@ if(CONFIG_ARCH_ADDRENV)
   list(APPEND SRCS arm64_addrenv_pgmap.c)
   if(CONFIG_ARCH_STACK_DYNAMIC)
     list(APPEND SRCS arm64_addrenv_ustack.c)
+  endif()
+  if(CONFIG_ARCH_VMA_MAPPING)
+    list(APPEND SRCS arm64_addrenv_shm.c)
   endif()
 endif()
 

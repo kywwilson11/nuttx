@@ -52,6 +52,12 @@ if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/libcxxabi)
   endif()
 endif()
 
+set_property(
+  TARGET nuttx
+  APPEND
+  PROPERTY NUTTX_CXX_INCLUDE_DIRECTORIES
+           ${CMAKE_CURRENT_LIST_DIR}/libcxxabi/include)
+
 nuttx_add_system_library(libcxxabi)
 
 set(SRCS)
@@ -77,9 +83,9 @@ list(APPEND SRCS stdlib_exception.cpp stdlib_new_delete.cpp
 # Internal files
 list(APPEND SRCS abort_message.cpp fallback_malloc.cpp private_typeinfo.cpp)
 
-# Always compile libcxxabi with exception
-list(APPEND SRCS cxa_exception.cpp cxa_personality.cpp)
-target_compile_options(libcxxabi PRIVATE -fexceptions)
+if(CONFIG_CXX_EXCEPTION)
+  list(APPEND SRCS cxa_exception.cpp cxa_personality.cpp)
+endif()
 
 if(CONFIG_LIBCXXABI)
   add_compile_definitions(LIBCXX_BUILDING_LIBCXXABI)
@@ -109,8 +115,9 @@ if(CONFIG_ARCH_ARM)
                              PRIVATE _URC_FATAL_PHASE1_ERROR=_URC_FAILURE)
 endif()
 
+target_compile_definitions(libcxxabi PRIVATE LIBCXXABI_NON_DEMANGLING_TERMINATE)
+
 target_sources(libcxxabi PRIVATE ${TARGET_SRCS})
-target_compile_options(libcxxabi PRIVATE -frtti)
 target_include_directories(
   libcxxabi BEFORE PRIVATE ${CMAKE_CURRENT_LIST_DIR}/libcxxabi/include
                            ${CMAKE_CURRENT_LIST_DIR}/libcxx/src)

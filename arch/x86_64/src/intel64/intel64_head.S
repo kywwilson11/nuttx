@@ -195,8 +195,8 @@ __ap_entry:
  ****************************************************************************/
 
 	.code32
-	.section ".multiboot1", "a"
 #ifdef CONFIG_ARCH_MULTIBOOT1
+	.section ".multiboot1", "a"
 .set MB_FLAG_ALIGNED,   1       /* All boot modules must be loaded aligned */
 .set MB_FLAG_MEMINFO,   2       /* Boot with memory maps passing  */
 .set MB_FLAG_VIDEO,     4       /* Enable video mode  */
@@ -398,6 +398,13 @@ ap_start:
 
 	/* Jump to ap_start routine */
 	movabs  $x86_64_ap_boot,   %rbx
+
+	/* We need to simulate the behavior of the call instruction, which by
+	 * default pushes 8 bytes of the RIP. Otherwise, the function's stack
+	 * won't be 16-byte aligned.
+	 */
+
+	pushq   $0
 	jmp     *%rbx
 #endif
 

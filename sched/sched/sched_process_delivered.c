@@ -73,13 +73,7 @@ void nxsched_process_delivered(int cpu)
 
   if ((g_cpu_irqset & (1 << cpu)) == 0)
     {
-      while (!spin_trylock_wo_note(&g_cpu_irqlock))
-        {
-          if (up_cpu_pausereq(cpu))
-            {
-              up_cpu_paused(cpu);
-            }
-        }
+      spin_lock_wo_note(&g_cpu_irqlock);
 
       g_cpu_irqset |= (1 << cpu);
     }
@@ -126,6 +120,7 @@ void nxsched_process_delivered(int cpu)
       dq_addfirst_nonempty((FAR dq_entry_t *)btcb, tasklist);
       btcb->cpu = cpu;
       btcb->task_state = TSTATE_TASK_RUNNING;
+      up_update_task(btcb);
 
       DEBUGASSERT(btcb->flink != NULL);
       DEBUGASSERT(next == btcb->flink);

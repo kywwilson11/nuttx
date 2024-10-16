@@ -72,8 +72,8 @@ ifneq ($(CONFIG_STACK_USAGE_WARNING),0)
   ARCHOPTIMIZATION += -Wstack-usage=$(CONFIG_STACK_USAGE_WARNING)
 endif
 
-ifeq ($(CONFIG_ARCH_COVERAGE_ALL),y)
-  ARCHOPTIMIZATION += -fprofile-generate -ftest-coverage
+ifeq ($(CONFIG_SCHED_GPROF_ALL),y)
+  ARCHOPTIMIZATION += -pg
 endif
 
 ifeq ($(CONFIG_MM_UBSAN_ALL),y)
@@ -213,7 +213,7 @@ ifeq ($(CONFIG_ARM_TOOLCHAIN_CLANG),y)
       TOOLCHAIN_CLANG_CONFIG := $(TOOLCHAIN_CLANG_CONFIG)_nosys
     endif
 
-    ifeq ($(CLANGVER),17.0)
+    ifeq "17.0" "$(word 1, $(sort 17.0 $(CLANGVER)))"
       TOOLCHAIN_CLANG_OPTION = -target
       ARCHCPUFLAGS += --target=arm-none-eabi
     else
@@ -309,11 +309,7 @@ else
    # Wrong warning array subscript [0] is outside array bounds:
    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
 
-   ifeq ($(GCCVER),)
-     export GCCVER := $(shell $(CC) --version | grep gcc | sed -E "s/.* ([0-9]+\.[0-9]+).*/\1/" | cut -d'.' -f1)
-   endif
-
-   ifeq ($(GCCVER),12)
+   ifeq ($(shell expr "$(GCCVER)" \>= 12), 1)
      ARCHOPTIMIZATION += --param=min-pagesize=0
      ifeq ($(CONFIG_ARCH_RAMFUNCS),y)
        LDFLAGS += --no-warn-rwx-segments
@@ -491,13 +487,44 @@ ifeq ($(CONFIG_LIBSUPCXX),y)
   EXTRA_LIBS += $(wildcard $(shell $(CC) $(ARCHCPUFLAGS) --print-file-name=libsupc++.a))
 endif
 
-ifeq ($(CONFIG_ARCH_COVERAGE),y)
+ifeq ($(CONFIG_SCHED_GCOV),y)
   EXTRA_LIBS += $(wildcard $(shell $(CC) $(ARCHCPUFLAGS) --print-file-name=libgcov.a))
 endif
 
 ifeq ($(CONFIG_LIBCXXTOOLCHAIN),y)
   EXTRA_LIBS += $(wildcard $(shell $(CC) $(ARCHCPUFLAGS) --print-file-name=libstdc++.a))
 endif
+
+PICFLAGS = -fpic -fPIE -mno-pic-data-is-text-relative -msingle-pic-base
+
+ifneq ($(CONFIG_BUILD_PIC),)
+  ARCHCFLAGS += $(PICFLAGS) -mpic-register=r9
+  ARCHCXXFLAGS += $(PICFLAGS) -mpic-register=r9
+  LDFLAGS += --emit-relocs
+endif
+
+# Loadable module definitions
+
+CMODULEFLAGS = $(CFLAGS) -fvisibility=hidden -mlong-calls # --target1-abs
+LDMODULEFLAGS = -r -T $(call CONVERT_PATH,$(TOPDIR)/libs/libc/modlib/gnu-elf.ld)
+
+# ELF module definitions
+
+CELFFLAGS = $(CFLAGS) -fvisibility=hidden -mlong-calls # --target1-abs
+CXXELFFLAGS = $(CXXFLAGS)-fvisibility=hidden
+
+ifeq ($(CONFIG_PIC),y)
+  CFLAGS += --fixed-r10
+  CELFFLAGS += $(PICFLAGS) -mpic-register=r10
+  CXXELFFLAGS += $(PICFLAGS) -mpic-register=r10
+
+  # Generate an executable elf, need to ignore undefined symbols
+  LDELFFLAGS += --unresolved-symbols=ignore-in-object-files --emit-relocs
+else
+  LDELFFLAGS += -r
+endif
+
+LDELFFLAGS +=  -e main -T $(call CONVERT_PATH,$(TOPDIR)$(DELIM)libs$(DELIM)libc$(DELIM)modlib$(DELIM)gnu-elf.ld)
 
 # Zig toolchain
 

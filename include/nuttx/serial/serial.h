@@ -310,6 +310,10 @@ struct uart_dev_s
   pid_t                pid;          /* Thread PID to receive signals (-1 if none) */
 #endif
 
+#ifdef CONFIG_TTY_FORCE_PANIC
+  int                  panic_count;
+#endif
+
   /* Terminal control flags */
 
   tcflag_t             tc_iflag;     /* Input modes */
@@ -321,7 +325,6 @@ struct uart_dev_s
   sem_t                xmitsem;      /* Wakeup user waiting for space in xmit.buffer */
   sem_t                recvsem;      /* Wakeup user waiting for data in recv.buffer */
   mutex_t              closelock;    /* Locks out new open while close is in progress */
-  mutex_t              polllock;     /* Manages exclusive access to fds[] */
 
   /* I/O buffers */
 
@@ -561,7 +564,7 @@ int uart_check_special(FAR uart_dev_t *dev, FAR const char *buf,
  ****************************************************************************/
 
 #ifdef CONFIG_SERIAL_GDBSTUB
-int uart_gdbstub_register(FAR uart_dev_t *dev);
+int uart_gdbstub_register(FAR uart_dev_t *dev, FAR const char *path);
 #endif
 
 #undef EXTERN

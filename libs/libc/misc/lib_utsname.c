@@ -48,6 +48,17 @@
 #include <unistd.h>
 
 /****************************************************************************
+ * Private Data
+ ****************************************************************************/
+
+#if defined(__DATE__) && defined(__TIME__) && \
+    !defined(CONFIG_LIBC_UNAME_DISABLE_TIMESTAMP)
+static char g_version[] = CONFIG_VERSION_BUILD " " __DATE__ " " __TIME__;
+#else
+static char g_version[] = CONFIG_VERSION_BUILD;
+#endif
+
+/****************************************************************************
  * Public Functions
  ****************************************************************************/
 
@@ -94,13 +105,7 @@ int uname(FAR struct utsname *name)
 
   strlcpy(name->release,  CONFIG_VERSION_STRING, sizeof(name->release));
 
-#if defined(__DATE__) && defined(__TIME__) && \
-    !defined(CONFIG_LIBC_UNAME_DISABLE_TIMESTAMP)
-  snprintf(name->version, VERSION_NAMELEN, "%s %s %s",
-           CONFIG_VERSION_BUILD, __DATE__, __TIME__);
-#else
-  strlcpy(name->version,  CONFIG_VERSION_BUILD, sizeof(name->version));
-#endif
+  strlcpy(name->version,  g_version, sizeof(name->version));
 
   strlcpy(name->machine,  CONFIG_ARCH, sizeof(name->machine));
 

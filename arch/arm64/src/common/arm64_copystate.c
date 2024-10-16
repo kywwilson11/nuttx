@@ -67,8 +67,8 @@ int arch_save_fpucontext(void *saveregs)
 
   flags = enter_critical_section();
 
-  p_save = (uintptr_t)saveregs + XCPTCONTEXT_GP_SIZE;
-  arm64_fpu_save((struct fpu_reg *)p_save);
+  p_save = (uintptr_t)saveregs + ARM64_CONTEXT_SIZE;
+  arm64_fpu_save((uint64_t *)p_save);
   ARM64_DSB();
 
   leave_critical_section(flags);
@@ -78,7 +78,6 @@ int arch_save_fpucontext(void *saveregs)
 
 int arm64_syscall_save_context(uint64_t * regs)
 {
-  struct regs_context   *f_regs;
   uint64_t              *p_save;
   int                   i;
 
@@ -90,19 +89,18 @@ int arm64_syscall_save_context(uint64_t * regs)
 
   DEBUGASSERT(regs);
 
-  f_regs = (struct regs_context *)regs;
-  DEBUGASSERT(f_regs->regs[REG_X1] != 0 && f_regs->regs[REG_X2] != 0);
+  DEBUGASSERT(regs[REG_X1] != 0 && regs[REG_X2] != 0);
 
-  p_save    = (uint64_t *)f_regs->regs[REG_X2];
+  p_save = (uint64_t *)regs[REG_X2];
 
-  for (i = 0; i < XCPTCONTEXT_GP_REGS; i++)
+  for (i = 0; i < ARM64_CONTEXT_REGS; i++)
     {
       p_save[i] = regs[i];
     }
 
 #ifdef CONFIG_ARCH_FPU
-  rtcb      = (struct tcb_s *)f_regs->regs[REG_X1];
-  p_save += XCPTCONTEXT_GP_REGS;
+  rtcb      = (struct tcb_s *)regs[REG_X1];
+  p_save   += ARM64_CONTEXT_SIZE;
   if (rtcb_cur == rtcb)
     {
       arch_save_fpucontext(p_save);
@@ -110,8 +108,8 @@ int arm64_syscall_save_context(uint64_t * regs)
   else
     {
       p_fpu = (uint64_t *)rtcb->xcp.regs;
-      p_fpu += XCPTCONTEXT_GP_REGS;
-      for (i = 0; i < XCPTCONTEXT_FPU_REGS; i++)
+      p_fpu += ARM64_CONTEXT_REGS;
+      for (i = 0; i < FPU_CONTEXT_REGS; i++)
         {
           p_save[i] = p_fpu[i];
         }

@@ -242,6 +242,13 @@
 #  define this_cpu()                 (0)
 #endif
 
+/* Task Switching Interfaces (non-standard).
+ * These two macros can be called in interrupt context.
+ */
+
+#define nxsched_lock_irq() (up_interrupt_context() ? OK : sched_lock())
+#define nxsched_unlock_irq() (up_interrupt_context() ? OK : sched_unlock())
+
 /****************************************************************************
  * Public Type Definitions
  ****************************************************************************/
@@ -1203,7 +1210,7 @@ pid_t nxtask_start_fork(FAR struct task_tcb_s *child);
 void nxtask_abort_fork(FAR struct task_tcb_s *child, int errcode);
 
 /****************************************************************************
- * Name: group_argvstr
+ * Name: nxtask_argvstr
  *
  * Description:
  *   Safely read the contents of a task's argument vector, into a a safe
@@ -1219,7 +1226,7 @@ void nxtask_abort_fork(FAR struct task_tcb_s *child, int errcode);
  *
  ****************************************************************************/
 
-size_t group_argvstr(FAR struct tcb_s *tcb, FAR char *args, size_t size);
+size_t nxtask_argvstr(FAR struct tcb_s *tcb, FAR char *args, size_t size);
 
 /****************************************************************************
  * Name: group_exitinfo

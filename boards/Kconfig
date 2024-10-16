@@ -4634,14 +4634,14 @@ config BOARD_CRASHDUMP
 config BOARD_COREDUMP_SYSLOG
 	bool "Enable Core dump to syslog"
 	default n
-	depends on ELF_COREDUMP
+	depends on COREDUMP
 	---help---
 		Enable put coredump to syslog when crash.
 
 config BOARD_COREDUMP_BLKDEV
 	bool "Enable Core Dump to block device"
 	default n
-	depends on ELF_COREDUMP
+	depends on COREDUMP
 	---help---
 		Enable save coredump at block device when crash.
 
@@ -4665,6 +4665,13 @@ config BOARD_COREDUMP_COMPRESSION
 	depends on BOARD_COREDUMP_SYSLOG || BOARD_COREDUMP_BLKDEV
 	---help---
 		Enable LZF compression algorithm for core dump content
+
+config BOARD_COREDUMP_BASE64STREAM
+	bool "Enable base64 encoding for output stream"
+	default n
+	depends on BOARD_COREDUMP_SYSLOG
+	---help---
+		Enable based64 encoded stream instead of default hexstream.
 
 config BOARD_ENTROPY_POOL
 	bool "Enable Board level storing of entropy pool structure"
@@ -4888,6 +4895,5 @@ config BOARD_MEMORY_RANGE
 		Memory range of board. format: <start>,<end>,<flags>,....
 		start: start address of memory range
 		end: end address of memory range
-		flags: Readable 0x1, writable 0x2, executable 0x4
-		example:0x1000,0x2000,0x1,0x2000,0x3000,0x3,0x3000,0x4000,0x7
-
+		flags: Executable 0x1, Writable 0x2, Readable 0x4
+		example:{0x1000,0x2000,0x4},{0x2000,0x3000,0x6},{0x3000,0x4000,0x7} ... {0x0,0x0,0x0}

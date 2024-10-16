@@ -124,7 +124,7 @@ next_subdir:
 
           if (subdir != NULL)
             {
-              lib_free(subdir);
+              fs_heap_free(subdir);
               subdir = NULL;
             }
 
@@ -134,7 +134,7 @@ next_subdir:
            */
 
           subdirname = basename((FAR char *)oldpath);
-          ret = asprintf(&subdir, "%s/%s", newpath, subdirname);
+          ret = fs_heap_asprintf(&subdir, "%s/%s", newpath, subdirname);
           if (ret < 0)
             {
               subdir = NULL;
@@ -256,7 +256,7 @@ errout:
   RELEASE_SEARCH(&newdesc);
   if (subdir != NULL)
     {
-      lib_free(subdir);
+      fs_heap_free(subdir);
     }
 
   return ret;
@@ -352,14 +352,6 @@ static int mountptrename(FAR const char *oldpath, FAR struct inode *oldinode,
     {
       struct stat buf;
 
-#ifdef CONFIG_FS_NOTIFY
-      ret = oldinode->u.i_mops->stat(oldinode, oldpath, &buf);
-      if (ret >= 0)
-        {
-          oldisdir = S_ISDIR(buf.st_mode);
-        }
-#endif
-
 next_subdir:
       ret = oldinode->u.i_mops->stat(oldinode, newrelpath, &buf);
       if (ret >= 0)
@@ -396,7 +388,7 @@ next_subdir:
 
                   FAR void *tmp = subdir;
 
-                  ret = asprintf(&subdir, "%s/%s", newrelpath,
+                  ret = fs_heap_asprintf(&subdir, "%s/%s", newrelpath,
                                  subdirname);
                   if (tmp != NULL)
                     {
@@ -434,6 +426,9 @@ next_subdir:
                   goto errout_with_newinode;
                 }
 
+#ifdef CONFIG_FS_NOTIFY
+              oldisdir = S_ISDIR(buf.st_mode);
+#endif
               if (oldinode->u.i_mops->unlink)
                 {
                   /* Attempt to remove the file before doing the rename.
@@ -450,6 +445,18 @@ next_subdir:
                 }
             }
         }
+#ifdef CONFIG_FS_NOTIFY
+      else
+        {
+          ret = oldinode->u.i_mops->stat(oldinode, oldrelpath, &buf);
+          if (ret < 0)
+            {
+              goto errout_with_newinode;
+            }
+
+          oldisdir = S_ISDIR(buf.st_mode);
+        }
+#endif
     }
 
   /* Perform the rename operation using the relative paths at the common
@@ -472,7 +479,7 @@ errout_with_newsearch:
   RELEASE_SEARCH(&newdesc);
   if (subdir != NULL)
     {
-      lib_free(subdir);
+      fs_heap_free(subdir);
     }
 
   return ret;

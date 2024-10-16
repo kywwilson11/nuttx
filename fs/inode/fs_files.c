@@ -210,6 +210,11 @@ static void task_fssync(FAR struct tcb_s *tcb, FAR void *arg)
   int j;
 
   list = files_getlist(tcb);
+  if (list == NULL)
+    {
+      return;
+    }
+
   for (i = 0; i < list->fl_rows; i++)
     {
       for (j = 0; j < CONFIG_NFILE_DESCRIPTORS_PER_BLOCK; j++)
@@ -373,7 +378,7 @@ void files_initlist(FAR struct filelist *list)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_DUMP_ON_EXIT
+#ifdef CONFIG_SCHED_DUMP_ON_EXIT
 void files_dumplist(FAR struct filelist *list)
 {
   int count = files_countlist(list);
@@ -442,12 +447,19 @@ void files_dumplist(FAR struct filelist *list)
 
 FAR struct filelist *files_getlist(FAR struct tcb_s *tcb)
 {
-  FAR struct filelist *list = &tcb->group->tg_filelist;
+  FAR struct filelist *list;
 
-  DEBUGASSERT(list->fl_crefs >= 1);
-  list->fl_crefs++;
+  if (tcb->group != NULL)
+    {
+      list = &tcb->group->tg_filelist;
+      if (list->fl_crefs > 0)
+        {
+          list->fl_crefs++;
+          return list;
+        }
+    }
 
-  return list;
+  return NULL;
 }
 
 /****************************************************************************
@@ -500,16 +512,13 @@ void files_putlist(FAR struct filelist *list)
  * Name: files_countlist
  *
  * Description:
- *   Given a file descriptor, return the corresponding instance of struct
- *   file.
+ *   Get file count from file list.
  *
  * Input Parameters:
- *   fd    - The file descriptor
- *   filep - The location to return the struct file instance
+ *   list - Pointer to the file list structure.
  *
  * Returned Value:
- *   Zero (OK) is returned on success; a negated errno value is returned on
- *   any failure.
+ *   file count of file list.
  *
  ****************************************************************************/
 

@@ -31,6 +31,8 @@
 #include <nuttx/lib/lib.h>
 #include <nuttx/lib/modlib.h>
 
+#include "modlib.h"
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -204,6 +206,59 @@ void modlib_dumpentrypt(FAR struct mod_loadinfo_s *loadinfo)
 #endif
 
 /****************************************************************************
+ * Name: modlib_loadsymtab
+ *
+ * Description:
+ *   Load the symbol table into memory.
+ *
+ ****************************************************************************/
+
+static int modlib_loadsymtab(FAR struct module_s *modp,
+                             FAR struct mod_loadinfo_s *loadinfo)
+{
+  FAR Elf_Shdr *symhdr = &loadinfo->shdr[loadinfo->symtabidx];
+  FAR Elf_Sym *sym = lib_malloc(symhdr->sh_size);
+  int ret;
+  int i;
+
+  if (sym == NULL)
+    {
+      return -ENOMEM;
+    }
+
+  ret = modlib_read(loadinfo, (FAR uint8_t *)sym, symhdr->sh_size,
+                    symhdr->sh_offset);
+
+  if (ret < 0)
+    {
+      berr("Failed to read symbol table\n");
+      lib_free(sym);
+      return ret;
+    }
+
+  for (i = 0; i < symhdr->sh_size / sizeof(Elf_Sym); i++)
+    {
+      if (sym[i].st_shndx != SHN_UNDEF &&
+          sym[i].st_shndx < loadinfo->ehdr.e_shnum)
+        {
+          FAR Elf_Shdr *s = &loadinfo->shdr[sym[i].st_shndx];
+
+          sym[i].st_value = sym[i].st_value + s->sh_addr;
+        }
+    }
+
+  ret = modlib_insertsymtab(modp, loadinfo, symhdr, sym);
+  lib_free(sym);
+  if (ret != 0)
+    {
+      binfo("Failed to export symbols program binary: %d\n", ret);
+      return ret;
+    }
+
+  return ret;
+}
+
+/****************************************************************************
  * Name: modlib_insert
  *
  * Description:
@@ -231,9 +286,11 @@ void modlib_dumpentrypt(FAR struct mod_loadinfo_s *loadinfo)
 
 FAR void *modlib_insert(FAR const char *filename, FAR const char *modname)
 {
+  FAR const struct symtab_s *exports;
   struct mod_loadinfo_s loadinfo;
   FAR struct module_s *modp;
   FAR void (**array)(void);
+  int nexports;
   int ret;
   int i;
 
@@ -291,12 +348,23 @@ FAR void *modlib_insert(FAR const char *filename, FAR const char *modname)
       goto errout_with_registry_entry;
     }
 
+  /* Get the symbol table */
+
+  modlib_getsymtab(&exports, &nexports);
+
   /* Bind the program to the kernel symbol table */
 
-  ret = modlib_bind(modp, &loadinfo);
+  ret = modlib_bind(modp, &loadinfo, exports, nexports);
   if (ret != 0)
     {
       binfo("Failed to bind symbols program binary: %d\n", ret);
+      goto errout_with_load;
+    }
+
+  ret = modlib_loadsymtab(modp, &loadinfo);
+  if (ret != 0)
+    {
+      binfo("Failed to load symbol table: %d\n", ret);
       goto errout_with_load;
     }
 
@@ -304,6 +372,11 @@ FAR void *modlib_insert(FAR const char *filename, FAR const char *modname)
 
   modp->textalloc = (FAR void *)loadinfo.textalloc;
   modp->dataalloc = (FAR void *)loadinfo.datastart;
+#ifdef CONFIG_ARCH_USE_SEPARATED_SECTION
+  modp->sectalloc = (FAR void **)loadinfo.sectalloc;
+  modp->nsect = loadinfo.ehdr.e_shnum;
+#endif
+
 #if defined(CONFIG_FS_PROCFS) && !defined(CONFIG_FS_PROCFS_EXCLUDE_MODULE)
   modp->textsize  = loadinfo.textsize;
   modp->datasize  = loadinfo.datasize;
@@ -332,6 +405,8 @@ FAR void *modlib_insert(FAR const char *filename, FAR const char *modname)
               array[i]();
             }
 
+          modp->initarr = loadinfo.initarr;
+          modp->ninit = loadinfo.ninit;
           modp->finiarr = loadinfo.finiarr;
           modp->nfini = loadinfo.nfini;
           break;

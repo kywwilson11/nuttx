@@ -28,8 +28,10 @@
 
 #include <nuttx/arch.h>
 #include <nuttx/board.h>
+#include <nuttx/cache.h>
 #include <nuttx/coredump.h>
 #include <nuttx/compiler.h>
+#include <nuttx/fs/fs.h>
 #include <nuttx/irq.h>
 #include <nuttx/init.h>
 #include <nuttx/irq.h>
@@ -48,6 +50,7 @@
 
 #include <assert.h>
 #include <debug.h>
+#include <execinfo.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -56,6 +59,7 @@
 #include "irq/irq.h"
 #include "sched/sched.h"
 #include "group/group.h"
+#include "coredump.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -169,11 +173,11 @@ static void stack_dump(uintptr_t sp, uintptr_t stack_top)
 }
 
 /****************************************************************************
- * Name: dump_stack
+ * Name: dump_stackinfo
  ****************************************************************************/
 
-static void dump_stack(FAR const char *tag, uintptr_t sp,
-                       uintptr_t base, size_t size, size_t used)
+static void dump_stackinfo(FAR const char *tag, uintptr_t sp,
+                           uintptr_t base, size_t size, size_t used)
 {
   uintptr_t top = base + size;
 
@@ -271,16 +275,16 @@ static void dump_stacks(FAR struct tcb_s *rtcb, uintptr_t sp)
 #if CONFIG_ARCH_INTERRUPTSTACK > 0
   if (intstack_sp != 0 || force)
     {
-      dump_stack("IRQ",
-                 intstack_sp,
-                 intstack_base,
-                 intstack_size,
+      dump_stackinfo("IRQ",
+                     intstack_sp,
+                     intstack_base,
+                     intstack_size,
 #ifdef CONFIG_STACK_COLORATION
-                 up_check_intstack(cpu)
+                     up_check_intstack(cpu)
 #else
-                 0
+                     0
 #endif
-                 );
+                     );
 
       /* Try to restore SP from current_regs if assert from interrupt. */
 
@@ -297,27 +301,26 @@ static void dump_stacks(FAR struct tcb_s *rtcb, uintptr_t sp)
 #ifdef CONFIG_ARCH_KERNEL_STACK
   if (kernelstack_sp != 0 || force)
     {
-      dump_stack("Kernel",
-                 kernelstack_sp,
-                 kernelstack_base,
-                 kernelstack_size,
-                 0
-                );
+      dump_stackinfo("Kernel",
+                     kernelstack_sp,
+                     kernelstack_base,
+                     kernelstack_size,
+                     0);
     }
 #endif
 
   if (tcbstack_sp != 0 || force)
     {
-      dump_stack("User",
-                 tcbstack_sp,
-                 tcbstack_base,
-                 tcbstack_size,
+      dump_stackinfo("User",
+                     tcbstack_sp,
+                     tcbstack_base,
+                     tcbstack_size,
 #ifdef CONFIG_STACK_COLORATION
-                 up_check_tcbstack(rtcb)
+                     up_check_tcbstack(rtcb)
 #else
-                 0
+                     0
 #endif
-                 );
+                     );
     }
 }
 
@@ -364,7 +367,7 @@ static void dump_task(FAR struct tcb_s *tcb, FAR void *arg)
 
   /* Stringify the argument vector */
 
-  group_argvstr(tcb, args, sizeof(args));
+  nxtask_argvstr(tcb, args, sizeof(args));
 
   /* get the task_state */
 
@@ -435,7 +438,7 @@ static void dump_backtrace(FAR struct tcb_s *tcb, FAR void *arg)
  * Name: dump_filelist
  ****************************************************************************/
 
-#ifdef CONFIG_DUMP_ON_EXIT
+#ifdef CONFIG_SCHED_DUMP_ON_EXIT
 static void dump_filelist(FAR struct tcb_s *tcb, FAR void *arg)
 {
   FAR struct filelist *filelist = &tcb->group->tg_filelist;
@@ -525,10 +528,31 @@ static void dump_tasks(void)
   nxsched_foreach(dump_backtrace, NULL);
 #endif
 
-#ifdef CONFIG_DUMP_ON_EXIT
+#ifdef CONFIG_SCHED_DUMP_ON_EXIT
   nxsched_foreach(dump_filelist, NULL);
 #endif
 }
+
+/****************************************************************************
+ * Name: dump_lockholder
+ ****************************************************************************/
+
+#if CONFIG_LIBC_MUTEX_BACKTRACE > 0
+static void dump_lockholder(pid_t tid)
+{
+  char buf[BACKTRACE_BUFFER_SIZE(CONFIG_LIBC_MUTEX_BACKTRACE)];
+  FAR mutex_t *mutex;
+
+  mutex = (FAR mutex_t *)nxsched_get_tcb(tid)->waitobj;
+
+  backtrace_format(buf, sizeof(buf), mutex->backtrace,
+                   CONFIG_LIBC_MUTEX_BACKTRACE);
+
+  _alert("Mutex holder(%d) backtrace:%s\n", mutex->holder, buf);
+}
+#else
+#  define dump_lockholder(tid)
+#endif
 
 /****************************************************************************
  * Name: dump_deadlock
@@ -545,11 +569,12 @@ static void dump_deadlock(void)
       _alert("Deadlock detected\n");
       while (i-- > 0)
         {
-#ifdef CONFIG_SCHED_BACKTRACE
+#  ifdef CONFIG_SCHED_BACKTRACE
           sched_dumpstack(deadlock[i]);
-#else
+          dump_lockholder(deadlock[i]);
+#  else
           _alert("deadlock pid: %d\n", deadlock[i]);
-#endif
+#  endif
         }
     }
 }
@@ -565,6 +590,7 @@ static noreturn_function int pause_cpu_handler(FAR void *arg)
 {
   memcpy(g_last_regs[this_cpu()], up_current_regs(), sizeof(g_last_regs[0]));
   g_cpu_paused[this_cpu()] = true;
+  up_flush_dcache_all();
   while (1);
 }
 
@@ -718,7 +744,12 @@ static void dump_fatal_info(FAR struct tcb_s *rtcb,
 
 #if defined(CONFIG_BOARD_COREDUMP_SYSLOG) || \
     defined(CONFIG_BOARD_COREDUMP_BLKDEV)
-      /* Dump core information */
+
+  /* Flush previous SYSLOG data before possible long time coredump */
+
+  syslog_flush();
+
+  /* Dump core information */
 
 #  ifdef CONFIG_BOARD_COREDUMP_FULL
   coredump_dump(INVALID_PROCESS_ID);
@@ -742,6 +773,7 @@ static void dump_fatal_info(FAR struct tcb_s *rtcb,
 static void reset_board(void)
 {
 #if CONFIG_BOARD_RESET_ON_ASSERT >= 1
+  up_flush_dcache_all();
   board_reset(CONFIG_BOARD_ASSERT_RESET_VALUE);
 #else
   for (; ; )

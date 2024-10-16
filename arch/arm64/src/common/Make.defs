@@ -76,6 +76,7 @@ endif
 
 ifeq ($(CONFIG_ARCH_HAVE_MPU),y)
 CMN_CSRCS += arm64_mpu.c
+common/arm64_mpu.c_CFLAGS += -fno-sanitize=kernel-address
 endif
 
 ifeq ($(CONFIG_ARM64_PSCI),y)
@@ -84,7 +85,7 @@ endif
 
 ifeq ($(CONFIG_SMP),y)
 CMN_CSRCS += arm64_cpuidlestack.c arm64_cpustart.c
-CMN_CSRCS += arm64_cpupause.c
+CMN_CSRCS += arm64_smpcall.c
 endif
 
 ifeq ($(CONFIG_BUILD_KERNEL),y)
@@ -100,6 +101,9 @@ CMN_CSRCS += arm64_addrenv.c arm64_pgalloc.c arm64_addrenv_perms.c
 CMN_CSRCS += arm64_addrenv_utils.c arm64_addrenv_shm.c arm64_addrenv_pgmap.c
 ifeq ($(CONFIG_ARCH_STACK_DYNAMIC),y)
 CMN_CSRCS += arm64_addrenv_ustack.c
+endif
+ifeq ($(CONFIG_ARCH_VMA_MAPPING),y)
+CMN_CSRCS += arm64_addrenv_shm.c
 endif
 endif
 

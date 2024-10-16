@@ -44,8 +44,11 @@ CHIP_CSRCS += esp32s3_userspace.c
 endif
 
 ifeq ($(CONFIG_SMP),y)
-CHIP_ASRCS  = esp32s3_cpuindex.S
 CHIP_CSRCS += esp32s3_cpuidlestack.c esp32s3_cpustart.c esp32s3_intercpu_interrupt.c
+endif
+
+ifeq ($(CONFIG_ARCH_HAVE_MULTICPU),y)
+CHIP_ASRCS  = esp32s3_cpuindex.S
 endif
 
 ifeq ($(CONFIG_ESP32S3_EFUSE),y)
@@ -201,6 +204,10 @@ ifneq ($(CONFIG_ARCH_CUSTOM_PMINIT),y)
 CHIP_CSRCS += esp32s3_pminitialize.c
 endif
 CHIP_CSRCS += esp32s3_pm.c
+endif
+
+ifeq ($(CONFIG_ESP32S3_OPENETH),y)
+CHIP_CSRCS += esp_openeth.c
 endif
 
 #############################################################################
