@@ -47,8 +47,8 @@
 #define STM32H5_FLASH_BASE     0x08000000     /* 0x08000000-0x0807ffff: FLASH memory */
 #define STM32H5_SRAM1_BASE     0x20000000     /* 0x20000000-0x2002ffff: 192k SRAM1 */
 #define STM32H5_SRAM2_BASE     0x20040000     /* 0x20040000-0x2004ffff:  64k SRAM2 */
-#define STM32H5_SRAM3_BASE     0x20050000     /* 0x20050000-0x2008ffff:  64k SRAM2 */
-                                              /* 0x20090000-0x2009ffff:  Reserved for ECC */
+#define STM32H5_SRAM3_BASE     0x20050000     /* 0x20050000-0x2008ffff: 320k SRAM3 */
+                                              /* 0x20090000-0x2009ffff: Reserved for ECC */
 
 /* System Memory Addresses **************************************************/
 
@@ -59,7 +59,7 @@
 /* Peripheral Base Addresses ************************************************/
 
 #define STM32H5_APB1_BASE      0x40000000     /* 0x40000000-0x4000fbff: APB1 */
-#define STM32H5_APB2_BASE      0x4002C000     /* 0x40012c00-0x40016bff: APB2 */
+#define STM32H5_APB2_BASE      0x40012C00     /* 0x40012c00-0x40016bff: APB2 */
 #define STM32H5_AHB1_BASE      0x40020000     /* 0x40020000-0x400373ff: AHB1 */
 #define STM32H5_AHB2_BASE      0x42020000     /* 0x42020000-0x420c3fff: AHB2 */
 #define STM32H5_APB3_BASE      0x44000400     /* 0x44000400-0x44007fff: APB3 */
