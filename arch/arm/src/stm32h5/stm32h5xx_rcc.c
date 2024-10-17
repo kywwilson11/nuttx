@@ -45,7 +45,7 @@
 /* Same for HSI and MSI */
 
 #define HSIRDY_TIMEOUT HSERDY_TIMEOUT
-#define MSIRDY_TIMEOUT HSERDY_TIMEOUT
+#define LSIRDY_TIMEOUT HSERDY_TIMEOUT
 
 /* HSE divisor to yield ~1MHz RTC clock */
 
@@ -85,22 +85,16 @@ static inline void rcc_enableahb1(void)
 
   regval = getreg32(STM32H5_RCC_AHB1ENR);
 
-#ifdef CONFIG_STM32H5_DMA1
+#ifdef CONFIG_STM32H5_GPDMA1
   /* DMA 1 clock enable */
 
-  regval |= RCC_AHB1ENR_DMA1EN;
+  regval |= RCC_AHB1ENR_GPDMA1EN;
 #endif
 
-#ifdef CONFIG_STM32H5_DMA2
+#ifdef CONFIG_STM32H5_GPDMA2
   /* DMA 2 clock enable */
 
-  regval |= RCC_AHB1ENR_DMA2EN;
-#endif
-
-#ifdef CONFIG_STM32H5_DMAMUX1
-  /* DMAMUX1 clock enable */
-
-  regval |= RCC_AHB1ENR_DMAMUX1EN;
+  regval |= RCC_AHB1ENR_GPDMA2EN;
 #endif
 
 #ifdef CONFIG_STM32H5_FLASHEN
@@ -115,16 +109,63 @@ static inline void rcc_enableahb1(void)
   regval |= RCC_AHB1ENR_CRCEN;
 #endif
 
-#ifdef CONFIG_STM32H5_TSC
-  /* TSC clock enable */
+#ifdef CONFIG_STM32H5_CORDIC
+  /* CORDIC clock enable */
 
-  regval |= RCC_AHB1ENR_TSCEN;
+  regval |= RCC_AHB1ENR_CORDICEN;
 #endif
 
-#ifdef CONFIG_STM32H5_GTZCEN
-  /* TSC clock enable */
+#ifdef CONFIG_STM32H5_FMAC
+  /* FMAC clock enable */
 
-  regval |= RCC_AHB1ENR_GTZEN;
+  regval |= RCC_AHB1ENR_FMACEN;
+#endif
+
+#ifdef CONFIG_STM32H5_RAMCFG
+  /* RAMCFG clock enable */
+
+  regval |= RCC_AHB1ENR_RAMCFGEN;
+#endif
+
+#ifdef CONFIG_STM32H5_ETH
+  /* ETH clock enable */
+
+  regval |= RCC_AHB1ENR_ETHEN;
+#endif
+#ifdef CONFIG_STM32H5_ETHTX
+  /* ETH TX clock enable */
+
+  regval |= RCC_AHB1ENR_ETHTXEN;
+#endif
+
+#ifdef CONFIG_STM32H5_ETHRX
+  /* ETH RX clock enable */
+
+  regval |= RCC_AHB1ENR_ETHRXEN;
+#endif
+
+#ifdef CONFIG_STM32H5_TZSC1
+
+
+  regval |= RCC_AHB1ENR_TZSC1EN;
+#endif
+
+#ifdef CONFIG_STM32H5_BKPRAM
+  /* BKPRAM clock enable */
+
+  regval |= RCC_AHB1ENR_BKPRAMEN;
+#endif
+
+#ifdef CONFIG_STM32H5_DCACHE
+  /* DCACHE clock enable */
+
+  regval |= RCC_AHB1ENR_DCACHEEN;
+#endif
+
+#ifdef CONFIG_STM32H5_SRAM1
+  /* ETH clock enable */
+
+  regval |= RCC_AHB1ENR_SRAM1EN;
 #endif
 
   putreg32(regval, STM32H5_RCC_AHB1ENR);   /* Enable peripherals */
@@ -173,13 +214,29 @@ static inline void rcc_enableahb2(void)
 #if STM32H5_NPORTS > 7
              | RCC_AHB2ENR_GPIOHEN
 #endif
-             );
+#if STM32H5_NPORTS > 7
+             | RCC_AHB2ENR_GPIOIEN
+#endif
+
+	     );
 #endif
 
 #if defined(CONFIG_STM32H5_ADC)
   /* ADC clock enable */
 
   regval |= RCC_AHB2ENR_ADCEN;
+#endif
+
+#ifdef CONFIG_STM32H5_DAC1
+  /* DAC1 clock enable */
+
+  regval |= RCC_AHB2ENR_DAC1EN;
+#endif
+
+#ifdef CONFIG_STM32H5_DCMI_PSSI
+  /* Digital Camera Interface clock enable */
+
+  regval |= RCC_AHB2ENR_DCMI_PSSIEN;
 #endif
 
 #ifdef CONFIG_STM32H5_AES
@@ -200,262 +257,317 @@ static inline void rcc_enableahb2(void)
   regval |= RCC_AHB2ENR_RNGEN;
 #endif
 
-#ifdef CONFIG_STM32H5_PKAEN
+#ifdef CONFIG_STM32H5_PKA
   /* Public Key Accelerator clock enable */
 
   regval |= RCC_AHB2ENR_PKAEN;
 #endif
 
-#ifdef CONFIG_STM32H5_OTFDEC1EN
-  /* On-the-fly-decryption module clock enable */
+#ifdef CONFIG_STM32H5_SAES
+  /* Secure AES coprocessor clock enable */
 
-  regval |= RCC_AHB2ENR_OTFDEC1EN;
+  regval |= RCC_AHB2ENR_SAESEN;
 #endif
 
-#ifdef CONFIG_STM32H5_SDMMC1EN
-  /* SDMMC1 clock enable */
+#ifdef CONFIG_STM32H5_SRAM2
+  /* SRAM2 clock enable */
 
-  regval |= RCC_AHB2ENR_SDMMC1EN;
+  regval |= RCC_AHB2ENR_SRAM2EN;
+#endif
+
+#ifdef CONFIG_STM32H5_SRAM3
+  /* SRAM2 clock enable */
+
+  regval |= RCC_AHB2ENR_SRAM3EN;
 #endif
 
   putreg32(regval, STM32H5_RCC_AHB2ENR);   /* Enable peripherals */
 }
 
 /****************************************************************************
- * Name: rcc_enableahb3
+ * Name: rcc_enableahb4
  *
  * Description:
- *   Enable selected AHB3 peripherals
+ *   Enable selected AHB4 peripherals
  *
  ****************************************************************************/
 
-static inline void rcc_enableahb3(void)
+static inline void rcc_enableahb4(void)
 {
   uint32_t regval;
 
-  /* Set the appropriate bits in the AHB3ENR register to enabled the
-   * selected AHB3 peripherals.
+  /* Set the appropriate bits in the AHB4ENR register to enabled the
+   * selected AHB4 peripherals.
    */
 
-  regval = getreg32(STM32H5_RCC_AHB3ENR);
+  regval = getreg32(STM32H5_RCC_AHB4ENR);
+
+#ifdef CONFIG_STM32H5_OTFDEC1EN
+  /* On-the-fly-decryption module clock enable */
+
+  regval |= RCC_AHB4ENR_OTFDEC1EN;
+#endif
+
+#ifdef CONFIG_STM32H5_SDMMC1
+  /* SDMMC1 clock enable */
+
+  regval |= RCC_AHB4ENR_SDMMC1EN;
+#endif
+
+#ifdef CONFIG_STM32H5_SDMMC2
+  /* SDMMC1 clock enable */
+
+  regval |= RCC_AHB4ENR_SDMMC2EN;
+#endif
+
 
 #ifdef CONFIG_STM32H5_FMC
   /* Flexible memory controller clock enable */
 
-  regval |= RCC_AHB3ENR_FMCEN;
+  regval |= RCC_AHB4ENR_FMCEN;
 #endif
 
 #ifdef CONFIG_STM32H5_OCTOSPI1
   /* OCTOSPI1 module clock enable */
 
-  regval |= RCC_AHB3ENR_OSPI1EN;
+  regval |= RCC_AHB4ENR_OSPI1EN;
 #endif
 
-  putreg32(regval, STM32H5_RCC_AHB3ENR);   /* Enable peripherals */
+  putreg32(regval, STM32H5_RCC_AHB4ENR);   /* Enable peripherals */
 }
 
 /****************************************************************************
- * Name: rcc_enableapb1
+ * Name: rcc_enableapb1l
  *
  * Description:
- *   Enable selected APB1 peripherals
+ *   Enable selected APB1L peripherals
  *
  ****************************************************************************/
 
-static inline void rcc_enableapb1(void)
+static inline void rcc_enableapb1l(void)
 {
   uint32_t regval;
 
-  /* Set the appropriate bits in the APB1ENR register to enabled the
-   * selected APB1 peripherals.
+  /* Set the appropriate bits in the APB1LENR register to enabled the
+   * selected APB1L peripherals.
    */
-
-  regval = getreg32(STM32H5_RCC_APB1ENR1);
+ 
+  regval = getreg32(STM32H5_RCC_APB1LENR);
 
 #ifdef CONFIG_STM32H5_TIM2
-  /* TIM2 clock enable */
+  /* Bit 0:  TIM2 clock enable */
 
-  regval |= RCC_APB1ENR1_TIM2EN;
+  regval |= RCC_APB1LENR_TIM2EN;
 #endif
 
 #ifdef CONFIG_STM32H5_TIM3
-  /* TIM3 clock enable */
+  /* Bit 1:  TIM3 clock enable */
 
-  regval |= RCC_APB1ENR1_TIM3EN;
+  regval |= RCC_APB1LENR_TIM3EN;
 #endif
 
 #ifdef CONFIG_STM32H5_TIM4
-  /* TIM4 clock enable */
+  /* Bit 2:  TIM4 clock enable */
 
-  regval |= RCC_APB1ENR1_TIM4EN;
+  regval |= RCC_APB1LENR_TIM4EN;
 #endif
 
 #ifdef CONFIG_STM32H5_TIM5
-  /* TIM5 clock enable */
+  /* Bit 3:  TIM5 clock enable */
 
-  regval |= RCC_APB1ENR1_TIM5EN;
+  regval |= RCC_APB1LENR_TIM5EN;
 #endif
 
 #ifdef CONFIG_STM32H5_TIM6
-  /* TIM6 clock enable */
+  /* Bit 4:  TIM6 clock enable */
 
-  regval |= RCC_APB1ENR1_TIM6EN;
+  regval |= RCC_APB1LENR_TIM6EN;
 #endif
 
 #ifdef CONFIG_STM32H5_TIM7
-  /* TIM7 clock enable */
+  /* Bit 5:  TIM7 clock enable */
 
-  regval |= RCC_APB1ENR1_TIM7EN;
+  regval |= RCC_APB1LENR_TIM7EN;
 #endif
 
-#ifdef CONFIG_STM32H5_RTC
-  /* RTC APB clock enable */
+#ifdef CONFIG_STM32H5_TIM12
+  /* Bit 5:  TIM12 clock enable */
 
-  regval |= RCC_APB1ENR1_RTCAPBEN;
+  regval |= RCC_APB1LENR_TIM12EN;
 #endif
 
-#ifdef CONFIG_STM32H5_WWDGEN
-  /* Windowed Watchdog clock enable */
+#ifdef CONFIG_STM32H5_TIM13
+  /* Bit 5:  TIM13 clock enable */
 
-  regval |= RCC_APB1ENR1_WWDGEN;
+  regval |= RCC_APB1LENR_TIM13EN;
+#endif
+
+#ifdef CONFIG_STM32H5_TIM14
+  /* Bit 5:  TIM14 clock enable */
+
+  regval |= RCC_APB1LENR_TIM14EN;
 #endif
 
 #ifdef CONFIG_STM32H5_SPI2
-  /* SPI2 clock enable */
+  /* Bit 14: SPI2 clock enable */
 
-  regval |= RCC_APB1ENR1_SPI2EN;
+  regval |= RCC_APB1LENR_SPI2EN;
 #endif
 
 #ifdef CONFIG_STM32H5_SPI3
-  /* SPI3 clock enable */
+  /* Bit 15: SPI3 clock enable */
 
-  regval |= RCC_APB1ENR1_SPI3EN;
+  regval |= RCC_APB1LENR_SPI3EN;
 #endif
 
 #ifdef CONFIG_STM32H5_USART2
-  /* USART 2 clock enable */
+  /* Bit 17: USART2 clock enable */
 
-  regval |= RCC_APB1ENR1_USART2EN;
+  regval |= RCC_APB1LENR_USART2EN;
 #endif
 
 #ifdef CONFIG_STM32H5_USART3
-  /* USART3 clock enable */
+  /* Bit 18: USART3 clock enable */
 
-  regval |= RCC_APB1ENR1_USART3EN;
+  regval |= RCC_APB1LENR_USART3EN;
 #endif
 
 #ifdef CONFIG_STM32H5_UART4
-  /* UART4 clock enable */
+  /* Bit 19: UART4 clock enable */
 
-  regval |= RCC_APB1ENR1_UART4EN;
+  regval |= RCC_APB1LENR_UART4EN;
 #endif
 
 #ifdef CONFIG_STM32H5_UART5
-  /* UART5 clock enable */
+  /* Bit 20: UART5 clock enable */
 
-  regval |= RCC_APB1ENR1_UART5EN;
+  regval |= RCC_APB1LENR_UART5EN;
 #endif
 
 #ifdef CONFIG_STM32H5_I2C1
-  /* I2C1 clock enable */
+  /* Bit 21: I2C1 clock enable */
 
-  regval |= RCC_APB1ENR1_I2C1EN;
+  regval |= RCC_APB1LENR_I2C1EN;
 #endif
 
 #ifdef CONFIG_STM32H5_I2C2
-  /* I2C2 clock enable */
+  /* Bit 22: I2C2 clock enable */
 
-  regval |= RCC_APB1ENR1_I2C2EN;
+  regval |= RCC_APB1LENR_I2C2EN;
 #endif
 
-#ifdef CONFIG_STM32H5_I2C3
-  /* I2C3 clock enable */
+#ifdef CONFIG_STM32H5_I3C1
+  /* Bit 23: I3C1 clock enable */
 
-  regval |= RCC_APB1ENR1_I2C3EN;
+  regval |= RCC_APB1LENR_I3C1EN;
 #endif
 
 #ifdef STM32H5_USE_HSI48
   if (STM32H5_HSI48_SYNCSRC != SYNCSRC_NONE)
     {
-      /* Clock Recovery System clock enable */
+      /* Bit 24: CRS clock enable */
 
-      regval |= RCC_APB1ENR1_CRSEN;
+  regval |= RCC_APB1LENR_CRSEN;
     }
 #endif
 
-  /* Power interface clock enable.  The PWR block is always enabled so that
-   * we can set the internal voltage regulator as required.
+#ifdef CONFIG_STM32H5_USART6
+  /* Bit 25: USART6 clock enable */
+
+  regval |= RCC_APB1LENR_USART6EN;
+#endif
+
+#ifdef CONFIG_STM32H5_USART10
+  /* Bit 26: USART10 clock enable */
+
+  regval |= RCC_APB1LENR_USART10EN;
+#endif
+
+#ifdef CONFIG_STM32H5_USART11
+  /* Bit 27: USART11 clock enable */
+
+  regval |= RCC_APB1LENR_USART11EN;
+#endif
+
+#ifdef CONFIG_STM32H5_CEC
+  /* Bit 28: CEC clock enable */
+
+  regval |= RCC_APB1LENR_CECEN;
+#endif
+
+#ifdef CONFIG_STM32H5_UART7
+  /* Bit 30: UART7 clock enable */
+
+  regval |= RCC_APB1LENR_UART7EN;
+#endif
+
+#ifdef CONFIG_STM32H5_UART8
+  /* Bit 31: UART8 clock enable */
+
+  regval |= RCC_APB1LENR_UART8EN;
+#endif
+
+  putreg32(regval, STM32H5_RCC_APB1LENR);   /* Enable peripherals */
+}
+
+/****************************************************************************
+ * Name: rcc_enableapb1h
+ *
+ * Description:
+ *   Enable selected APB1H peripherals
+ *
+ ****************************************************************************/
+
+static inline void rcc_enableapb1h(void)
+{
+  uint32_t regval;
+
+  /* Set the appropriate bits in the APB1HENR register to enabled the
+   * selected APB1H peripherals.
    */
+  
+  regval = getreg32(STM32H5_RCC_APB1HENR);
 
-  regval |= RCC_APB1ENR1_PWREN;
+#ifdef CONFIG_STM32H5_UART9
+  /* Bit 0:  UART9 clock enable */
 
-#if defined (CONFIG_STM32H5_DAC1)
-  /* DAC1 interface clock enable */
-
-  regval |= RCC_APB1ENR1_DAC1EN;
+  regval |= RCC_APB1HENR_UART9EN;
 #endif
 
-#ifdef CONFIG_STM32H5_OPAMP
-  /* OPAMP clock enable */
+#ifdef CONFIG_STM32H5_UART12
+  /* Bit 1:  UART12 clock enable */
 
-  regval |= RCC_APB1ENR1_OPAMPEN;
+  regval |= RCC_APB1HENR_UART12EN;
 #endif
 
-#ifdef CONFIG_STM32H5_LPTIM1
-  /* Low power timer 1 clock enable */
+#ifdef CONFIG_STM32H5_DTS
+  /* Bit 3:  DTS clock enable */
 
-  regval |= RCC_APB1ENR1_LPTIM1EN;
-#endif
-
-  putreg32(regval, STM32H5_RCC_APB1ENR1);   /* Enable peripherals */
-
-  /* Second APB1 register */
-
-  regval = getreg32(STM32H5_RCC_APB1ENR2);
-
-#ifdef CONFIG_STM32H5_LPUART1
-  /* Low power uart clock enable */
-
-  regval |= RCC_APB1ENR2_LPUART1EN;
-#endif
-
-#ifdef CONFIG_STM32H5_I2C4
-  /* I2C4 clock enable */
-
-  regval |= RCC_APB1ENR2_I2C4EN;
+  regval |= RCC_APB1HENR_DTSEN;
 #endif
 
 #ifdef CONFIG_STM32H5_LPTIM2
-  /* Low power timer 2 clock enable */
+  /* Bit 5:  Low-power Timer 2 clock enable */
 
-  regval |= RCC_APB1ENR2_LPTIM2EN;
+  regval |= RCC_APB1HENR_LPTIM2EN;
 #endif
 
-#ifdef CONFIG_STM32H5_LPTIM3
-  /* Low power timer 3 clock enable */
+#ifdef CONFIG_STM32H5_FDCAN
+  /* Bit 9:  FDCAN clock enable */
 
-  regval |= RCC_APB1ENR2_LPTIM3EN;
-#endif
-
-#ifdef CONFIG_STM32H5_FDCAN1
-  /* FDCAN1 clock enable */
-
-  regval |= RCC_APB1ENR2_FDCAN1EN;
-#endif
-
-#ifdef CONFIG_STM32H5_USBFS
-  /* USB FS clock enable */
-
-  regval |= RCC_APB1ENR2_USBFSEN;
+  regval |= RCC_APB1HENR_FDCANEN;
 #endif
 
 #ifdef CONFIG_STM32H5_UCPD1
-  /* UCPD1 clock enable */
+  /* Bit 23: UCPD1 clock enable */
 
-  regval |= RCC_APB1ENR2_UCPD1EN;
+  regval |= RCC_APB1HENR_UCPD1EN;
 #endif
+  
+  /* Enable APB1H peripherals */
+  
+  putreg32(regval, STM32H5_RCC_APB1HENR);
 
-  putreg32(regval, STM32H5_RCC_APB1ENR2);   /* Enable peripherals */
 }
 
 /****************************************************************************
@@ -476,13 +588,6 @@ static inline void rcc_enableapb2(void)
 
   regval = getreg32(STM32H5_RCC_APB2ENR);
 
-#if defined(CONFIG_STM32H5_SYSCFG) || defined(CONFIG_STM32H5_COMP)
-  /* System configuration controller, comparators, and voltage reference
-   * buffer clock enable
-   */
-
-  regval |= RCC_APB2ENR_SYSCFGEN;
-#endif
 
 #ifdef CONFIG_STM32H5_TIM1
   /* TIM1 clock enable */
@@ -526,6 +631,18 @@ static inline void rcc_enableapb2(void)
   regval |= RCC_APB2ENR_TIM17EN;
 #endif
 
+#ifdef CONFIG_STM32H5_SPI4
+  /* SPI4 clock enable */
+
+  regval |= RCC_APB2ENR_SPI4EN;
+#endif
+
+#ifdef CONFIG_STM32H5_SPI6
+  /* SPI6 clock enable */
+
+  regval |= RCC_APB2ENR_SPI6EN;
+#endif
+
 #ifdef CONFIG_STM32H5_SAI1
   /* SAI1 clock enable */
 
@@ -538,15 +655,118 @@ static inline void rcc_enableapb2(void)
   regval |= RCC_APB2ENR_SAI2EN;
 #endif
 
-#ifdef CONFIG_STM32H5_DFSDM1
-  /* DFSDM clock enable */
+#ifdef CONFIG_STM32H5_USB
+  /* USB clock enable */
 
-  regval |= RCC_APB2ENR_DFSDMEN;
+  regval |= RCC_APB2ENR_USBEN;
 #endif
 
   putreg32(regval, STM32H5_RCC_APB2ENR);   /* Enable peripherals */
 }
 
+/****************************************************************************
+ * Name: rcc_enableapb3
+ *
+ * Description:
+ *   Enable selected APB3 peripherals
+ *
+ ****************************************************************************/
+
+static inline void rcc_enableapb3(void)
+{
+  uint32_t regval;
+
+  /* Set the appropriate bits in the APB2ENR register to enabled the
+   * selected APB2 peripherals.
+   */
+
+  regval = getreg32(STM32H5_RCC_APB3ENR);
+
+
+#ifdef CONFIG_STM32H5_SBS
+  /* Bit 1: SBS clock enable */
+
+  regval |= RCC_APB3ENR_SBSEN;
+#endif
+
+#ifdef CONFIG_STM32H5_SPI5
+  /* Bit 5: SPI5 clock enable */
+
+  regval |= RCC_APB3ENR_SPI5EN;
+#endif
+
+#ifdef CONFIG_STM32H5_LPUART1
+  /* Bit 6: LPUART1 clock enable */
+
+  regval |= RCC_APB3ENR_LPUART1EN;
+#endif
+
+#ifdef CONFIG_STM32H5_I2C3
+  /* Bit 7: I2C3 clock enable */
+
+  regval |= RCC_APB3ENR_I2C3EN;
+#endif
+
+#ifdef CONFIG_STM32H5_I2C4
+  /* Bit 8: I2C4 clock enable */
+
+  regval |= RCC_APB3ENR_I2C4EN;
+#endif
+
+#ifdef CONFIG_STM32H5_I3C2
+  /* Bit 9: I3C2 clock enable */
+
+  regval |= RCC_APB3ENR_I3C2EN;
+#endif
+
+#ifdef CONFIG_STM32H5_LPTIM1
+  /* Bit 11: LPTIM1 clock enable */
+
+  regval |= RCC_APB3ENR_LPTIM1EN;
+#endif
+
+#ifdef CONFIG_STM32H5_LPTIM3
+  /* Bit 12: LPTIM3 clock enable */
+
+  regval |= RCC_APB3ENR_LPTIM3EN;
+#endif
+
+#ifdef CONFIG_STM32H5_LPTIM4
+  /* Bit 13: LPTIM4 clock enable */
+
+  regval |= RCC_APB3ENR_LPTIM4EN;
+#endif
+
+#ifdef CONFIG_STM32H5_LPTIM5
+  /* Bit 14: LPTIM5 clock enable */
+
+  regval |= RCC_APB3ENR_LPTIM5EN;
+#endif
+
+#ifdef CONFIG_STM32H5_LPTIM6
+  /* Bit 15: LPTIM6 clock enable */
+
+  regval |= RCC_APB3ENR_LPTIM6EN;
+#endif
+
+#ifdef CONFIG_STM32H5_VREF
+  /* Bit 20: VREF clock enable */
+
+  regval |= RCC_APB3ENR_VREFEN;
+#endif
+
+#ifdef CONFIG_STM32H5_RTCAPB
+  /* Bit 21: RTCABP clock enable */
+
+  regval |= RCC_APB3ENR_RTCAPBEN;
+#endif
+
+
+  /* Enable peripherals */
+  
+  putreg32(regval, STM32H5_RCC_APB3ENR);   
+
+}
 /****************************************************************************
  * Name: rcc_enableccip
  *
@@ -576,9 +796,11 @@ void stm32h5_rcc_enableperipherals(void)
   rcc_enableccip();
   rcc_enableahb1();
   rcc_enableahb2();
-  rcc_enableahb3();
-  rcc_enableapb1();
+  rcc_enableahb4();
+  rcc_enableapb1l();
+  rcc_enableapb1h();
   rcc_enableapb2();
+  rcc_enableapb3();
 }
 
 /****************************************************************************
@@ -597,7 +819,7 @@ void stm32h5_stdclockconfig(void)
   uint32_t regval;
   volatile int32_t timeout;
 
-#if defined(STM32H5_BOARD_USEHSI) || defined(STM32H5_I2C_USE_HSI16)
+#if defined(STM32H5_BOARD_USEHSI)
   /* Enable Internal High-Speed Clock (HSI) */
 
   regval  = getreg32(STM32H5_RCC_CR);
@@ -622,15 +844,15 @@ void stm32h5_stdclockconfig(void)
 #if defined(STM32H5_BOARD_USEHSI)
   /* Already set above */
 
-#elif defined(STM32H5_BOARD_USEMSI)
-  /* Enable Internal Multi-Speed Clock (MSI) */
+#elif defined(STM32H5_BOARD_USECSI)
+  /* Enable Internal Low Power Internal Clock (CSI) */
 
-  /* Wait until the MSI is either off or ready (or until a timeout elapsed) */
+  /* Wait until the CSI is either off or ready (or until a timeout elapsed) */
 
-  for (timeout = MSIRDY_TIMEOUT; timeout > 0; timeout--)
+  for (timeout = CSIRDY_TIMEOUT; timeout > 0; timeout--)
     {
       if ((regval = getreg32(STM32H5_RCC_CR)),
-          (regval & RCC_CR_MSIRDY) || ~(regval & RCC_CR_MSION))
+          (regval & RCC_CR_CSIRDY) || ~(regval & RCC_CR_CSION))
         {
           /* If so, then break-out with timeout > 0 */
 
@@ -638,19 +860,17 @@ void stm32h5_stdclockconfig(void)
         }
     }
 
-  /* setting MSIRANGE */
-
   regval  = getreg32(STM32H5_RCC_CR);
-  regval |= (STM32H5_BOARD_MSIRANGE | RCC_CR_MSION);    /* Enable MSI and frequency */
+  regval |= RCC_CR_CSION;    /* Enable CSI */
   putreg32(regval, STM32H5_RCC_CR);
 
-  /* Wait until the MSI is ready (or until a timeout elapsed) */
+  /* Wait until the CSI is ready (or until a timeout elapsed) */
 
-  for (timeout = MSIRDY_TIMEOUT; timeout > 0; timeout--)
+  for (timeout = CSIRDY_TIMEOUT; timeout > 0; timeout--)
     {
-      /* Check if the MSIRDY flag is the set in the CR */
+      /* Check if the CSIRDY flag is the set in the CR */
 
-      if ((getreg32(STM32H5_RCC_CR) & RCC_CR_MSIRDY) != 0)
+      if ((getreg32(STM32H5_RCC_CR) & RCC_CR_CSIRDY) != 0)
         {
           /* If so, then break-out with timeout > 0 */
 
@@ -680,7 +900,7 @@ void stm32h5_stdclockconfig(void)
     }
 #else
 
-#  error stm32h5_stdclockconfig(), must have one of STM32H5_BOARD_USEHSI, STM32H5_BOARD_USEMSI, STM32H5_BOARD_USEHSE defined
+#  error stm32h5_stdclockconfig(), must have one of STM32H5_BOARD_USEHSI, STM32H5_BOARD_USECSI, STM32H5_BOARD_USEHSE defined
 
 #endif
 

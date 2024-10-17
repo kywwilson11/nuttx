@@ -672,7 +672,7 @@
 
 #define RCC_AHB1ENR_GPDMA1EN             (1 << 0)  /* Bit 0:  GPDMA1 clock enable */
 #define RCC_AHB1ENR_GPDMA2EN             (1 << 1)  /* Bit 1:  GPDMA2 clock enable */
-#define RCC_AHB1ENR_FLITFEN              (1 << 8)  /* Bit 8:  Flash Interace clock enable */
+#define RCC_AHB1ENR_FLASHEN              (1 << 8)  /* Bit 8:  Flash Interace clock enable */
 #define RCC_AHB1ENR_CRCEN                (1 << 12) /* Bit 12:  CRC clock enable */
 #define RCC_AHB1ENR_CORDICEN             (1 << 14) /* Bit 14:  CORDIC clock enable */
 #define RCC_AHB1ENR_FMACEN               (1 << 15) /* Bit 15:  FMAC clock enable */
