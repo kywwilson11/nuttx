@@ -1,5 +1,5 @@
 /****************************************************************************
- * drivers/serial/uart_bth5.c
+ * include/nuttx/wireless/bluetooth/bt_slip.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,26 +18,32 @@
  *
  ****************************************************************************/
 
+#ifndef __INCLUDE_NUTTX_WIRELESS_BLUETOOTH_BT_SLIP_H
+#define __INCLUDE_NUTTX_WIRELESS_BLUETOOTH_BT_SLIP_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/kmalloc.h>
-#include <nuttx/mutex.h>
-
-#include <debug.h>
-#include <string.h>
+#include <nuttx/config.h>
 
 #include <nuttx/wireless/bluetooth/bt_driver.h>
-#include <nuttx/wireless/bluetooth/bt_slip.h>
-
-#include <nuttx/serial/uart_bth4.h>
 
 /****************************************************************************
- * Public Functions
+ * Name: bt_slip_register
+ *
+ * Description:
+ *   SLIP-HCI initialize function, the h5 hci protocol would call
+ *   this function.
+ *
+ * Parameters:
+ *   drv - SLIP-HCI low bt driver
+ *
+ * Returned Values:
+ *   OK on success; A negated errno value is returned on any failure.
+ *
  ****************************************************************************/
 
-int uart_bth5_register(FAR const char *path, FAR struct bt_driver_s *drv)
-{
-  return uart_bth4_register(path, bt_slip_register(drv));
-}
+FAR struct bt_driver_s *bt_slip_register(FAR struct bt_driver_s *drv);
+
+#endif /* __INCLUDE_NUTTX_WIRELESS_BLUETOOTH_BT_SLIPHCI_H */
