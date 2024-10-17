@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/arm/stm32l5/stm32l562e-dk/include/board.h
+ * boards/arm/stm32h5/nucleo-h563zi/include/board.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -36,44 +36,98 @@
 
 /* Clocking *****************************************************************/
 
-/* Currently the NUCLEO-H563ZI board support is restricted to running NuttX
- * in the Non-Secure domain together with TrustedFirmware-M (TFM).  In this
- * setup the clock configuration is done by TFM, not by NuttX.  The
- * respective code is in STM32CubeL5/Projects/NUCLEO-H563ZI/Applications/TFM/
- * TFM_SBSFU_Boot/Src/boot_hal.c and configures the clocks as follows:
+/* The NUCLEO-H563ZI-Q supports both HSE and LSE crystals (X2 and X3).
+ * However, as shipped, the X3 crystal is not populated.  Therefore the
+ * Nucleo-H563ZI-Q will need to run off the 16MHz HSI clock, or the
+ * 32kHz-synced CSI.  This configuration uses the CSI.
  *
- *   System Clock source : PLL (MSI)
- *   SYSCLK(Hz)          : 110000000
- *   HCLK(Hz)            : 110000000
- *   AHB Prescaler       : 1
- *   APB1 Prescaler      : 1
- *   APB2 Prescaler      : 1
- *   MSI Frequency(Hz)   : 4000000
- *   PLLM                : 1
- *   PLLN                : 55
- *   PLLP                : 2
- *   PLLQ                : 2
- *   PLLR                : 2
+ *   System Clock source : PLL (CSI)
+ *   SYSCLK(Hz)          : 250000000   Determined by PLL1 configuration
+ *   HCLK(Hz)            : 250000000    (STM32H5_RCC_CFGR_HPRE)  (Max 250MHz)
+ *   AHB Prescaler       : 1            (STM32H5_RCC_CFGR_HPRE)  (Max 250MHz)
+ *   APB1 Prescaler      : 1            (STM32H5_RCC_CFGR_PPRE1) (Max 250MHz)
+ *   APB2 Prescaler      : 1            (STM32H5_RCC_CFGR_PPRE2) (Max 250MHz)
+ *   CSI Frequency(Hz)   : 4000000      (nominal)
+ *   PLL1M               : 2            (STM32H5_PLL1CFGR_PLLM)
+ *   PLL1N               : 125          (STM32H5_PLL1CFGR_PLLN)
+ *   PLL1P               : 0            (STM32H5_PLL1CFGR_PLLP)
+ *   PLL1Q               : 0            (STM32H5_PLL1CFGR_PLLQ)
+ *   PLL1R               : 1            (STM32H5_PLL1CFGR_PLLR)
  *   Flash Latency(WS)   : 5
- *   Voltage range       : 0
  */
 
 /* HSI - 16 MHz RC factory-trimmed
  * LSI - 32 KHz RC
- * MSI - 4 MHz, autotrimmed via LSE
+ * CSI - 4 MHz, autotrimmed via LSE
  * HSE - not installed
  * LSE - 32.768 kHz installed
+ * SYSCLK = 250 MHz = (CSI / 2) * 125 
  */
 
 #define STM32H5_HSI_FREQUENCY     16000000ul
 #define STM32H5_LSI_FREQUENCY     32000
-#define STM32H5_MSI_FREQUENCY     4000000ul
 #define STM32H5_LSE_FREQUENCY     32768
 
+#define STM32H5_BOARD_USECSI      1
+
+/* prescaler common to all PLL inputs */
+
+#define STM32H5_PLL1CFGR_PLL1M             RCC_PLL1CFGR_PLL1M(2)
+#define STM32H5_PLL2CFGR_PLL2M             RCC_PLL2CFGR_PLL2M(1)
+#define STM32H5_PLL3CFGR_PLL3M             RCC_PLL3CFGR_PLL3M(1)
+
+/* 'main' PLL1 config; we use this to generate our system clock */
+
+#define STM32H5_PLLCFG_PLLN             RCC_PLL1DIVR_PLL1N(125)
+#define STM32H5_PLLCFG_PLLP             0
+#undef  STM32H5_PLLCFG_PLLP_ENABLED
+#define STM32H5_PLLCFG_PLLQ             0
+#undef STM32H5_PLLCFG_PLLQ_ENABLED
+#define STM32H5_PLLCFG_PLLR             RCC_PLL1DIVR_PLL1R(1)
+#define STM32H5_PLLCFG_PLLR_ENABLED
+
+/* PLL3 config */
+
+
 #define STM32H5_SYSCLK_FREQUENCY  110000000ul
+
+/* Enable CLK48; get it from HSI48 */
+
+#if defined(CONFIG_STM32H5_USBFS) || defined(CONFIG_STM32H5_RNG)
+#  define STM32H5_USE_CLK48       1
+#  define STM32H5_CLK48_SEL       RCC_CCIPR_CLK48SEL_HSI48
+#  define STM32H5_HSI48_SYNCSRC   SYNCSRC_NONE
+#endif
+
+/* Enable LSE (for the RTC and for CSI autotrimming) */
+
+#define STM32H5_USE_LSE           1
+
+/* Configure the HCLK divisor (for the AHB bus, core, memory, and DMA */
+
+#define STM32H5_RCC_CFGR_HPRE     RCC_CFGR_HPRE_SYSCLK      /* HCLK  = SYSCLK / 1 */
 #define STM32H5_HCLK_FREQUENCY    STM32H5_SYSCLK_FREQUENCY
-#define STM32H5_PCLK1_FREQUENCY   STM32H5_HCLK_FREQUENCY
+
+/* Configure the APB1 prescaler */
+
+#define STM32H5_RCC_CFGR_PPRE1    RCC_CFGR_PPRE1_HCLK       /* PCLK1 = HCLK / 1 */
+#define STM32H5_PCLK1_FREQUENCY   (STM32H5_HCLK_FREQUENCY / 1)
+
+#define STM32H5_APB1_TIM2_CLKIN   (STM32H5_PCLK1_FREQUENCY)
+#define STM32H5_APB1_TIM3_CLKIN   (STM32H5_PCLK1_FREQUENCY)
+#define STM32H5_APB1_TIM4_CLKIN   (STM32H5_PCLK1_FREQUENCY)
+#define STM32H5_APB1_TIM5_CLKIN   (STM32H5_PCLK1_FREQUENCY)
+#define STM32H5_APB1_TIM6_CLKIN   (STM32H5_PCLK1_FREQUENCY)
+#define STM32H5_APB1_TIM7_CLKIN   (STM32H5_PCLK1_FREQUENCY)
+
+/* Configure the APB2 prescaler */
+
+#define STM32H5_RCC_CFGR_PPRE2    RCC_CFGR_PPRE2_HCLK       /* PCLK2 = HCLK / 1 */
 #define STM32H5_PCLK2_FREQUENCY   (STM32H5_HCLK_FREQUENCY / 1)
+
+#define STM32H5_APB2_TIM1_CLKIN   (STM32H5_PCLK2_FREQUENCY)
+#define STM32H5_APB2_TIM15_CLKIN  (STM32H5_PCLK2_FREQUENCY)
+#define STM32H5_APB2_TIM16_CLKIN  (STM32H5_PCLK2_FREQUENCY)
 
 /* The timer clock frequencies are automatically defined by hardware.  If the
  * APB prescaler equals 1, the timer clock frequencies are set to the same
@@ -101,13 +155,14 @@
  * bridges SB123 to SB130 are re-worked accordingly).
  */
 
-#define GPIO_USART1_RX   GPIO_USART1_RX_1    /* PA10 */
-#define GPIO_USART1_TX   GPIO_USART1_TX_1    /* PA9  */
+#define GPIO_USART3_RX   GPIO_USART3_RX_4    /* PD9 */
+#define GPIO_USART3_TX   GPIO_USART3_TX_4    /* PD8 */
 
 /* LED definitions **********************************************************/
 
-/* The NUCLEO-H563ZI board has numerous LEDs but only two, LD9 a Red LED,
- * and LD10 a Green LED, that can be controlled by software.
+/* The Nucleo-144 board has numerous LEDs but only three, LD1 a Green LED,
+ * LD2 a Blue LED and LD3 a Red LED, that can be controlled by software.
+ * The following definitions assume the default Solder Bridges are installed.
  *
  * If CONFIG_ARCH_LEDS is not defined, then the user can control the LEDs
  * in any way.
@@ -118,43 +173,47 @@
 
 #define BOARD_LED1        0
 #define BOARD_LED2        1
-#define BOARD_NLEDS       2
+#define BOARD_LED3        2
+#define BOARD_NLEDS       3
 
 #define BOARD_LED_GREEN   BOARD_LED1
-#define BOARD_LED_RED     BOARD_LED2
+#define BOARD_LED_BLUE    BOARD_LED2
+#define BOARD_LED_RED     BOARD_LED3
 
 /* LED bits for use with board_userled_all() */
 
 #define BOARD_LED1_BIT    (1 << BOARD_LED1)
 #define BOARD_LED2_BIT    (1 << BOARD_LED2)
+#define BOARD_LED3_BIT    (1 << BOARD_LED3)
 
 /* If CONFIG_ARCH_LEDS is defined, the usage by the board port is defined in
  * include/board.h and src/stm32_autoleds.c. The LEDs are used to encode OS-
  * related events as follows:
  *
  *
- *   SYMBOL                     Meaning                    LED state
- *                                                        Red   Green
- *   ----------------------  --------------------------  ------ -----
+ *   SYMBOL                     Meaning                      LED state
+ *                                                        Red   Green Blue
+ *   ----------------------  --------------------------  ------ ------ ----
  */
-#define LED_STARTED        0 /* NuttX has been started   OFF    OFF  */
-#define LED_HEAPALLOCATE   1 /* Heap has been allocated  ON     OFF  */
-#define LED_IRQSENABLED    2 /* Interrupts enabled       ON     ON   */
-#define LED_STACKCREATED   3 /* Idle stack created       OFF    ON   */
-#define LED_INIRQ          4 /* In an interrupt          GLOW   N/C  */
-#define LED_SIGNAL         5 /* In a signal handler      GLOW   N/C  */
-#define LED_ASSERTION      6 /* An assertion failed      GLOW   N/C  */
-#define LED_PANIC          7 /* The system has crashed   Blink  OFF  */
-#define LED_IDLE           8 /* MCU is is sleep mode     N/C    ON   */
+#define LED_STARTED        0 /* NuttX has been started   OFF    OFF   OFF  */
+#define LED_HEAPALLOCATE   1 /* Heap has been allocated  OFF    OFF   ON   */
+#define LED_IRQSENABLED    2 /* Interrupts enabled       OFF    ON    OFF  */
+#define LED_STACKCREATED   3 /* Idle stack created       OFF    ON    ON   */
+#define LED_INIRQ          4 /* In an interrupt          N/C    N/C   GLOW */
+#define LED_SIGNAL         5 /* In a signal handler      N/C    GLOW  N/C  */
+#define LED_ASSERTION      6 /* An assertion failed      GLOW   N/C   GLOW */
+#define LED_PANIC          7 /* The system has crashed   Blink  OFF   N/C  */
+#define LED_IDLE           8 /* MCU is is sleep mode     ON     OFF   OFF  */
 
 /* Thus if the Green LED is statically on, NuttX has successfully booted and
- * is, apparently, idleing.  If the Red LED is flashing at approximately 2Hz,
- * then a fatal error has been detected and the system has halted.
+ * is, apparently, running normally.  If the Red LED is flashing at
+ * approximately 2Hz, then a fatal error has been detected and the system
+ * has halted.
  */
 
 /* Button definitions *******************************************************/
 
-/* The Nucleo-L552ZE supports one button:  Pushbutton B1, labeled "User", is
+/* The Nucleo-H563ZI supports one button:  Pushbutton B1, labeled "User", is
  * connected to GPIO PC13.
  * A high value will be sensed when the button is pressed.
  */
@@ -183,7 +242,7 @@ extern "C"
  ****************************************************************************/
 
 /****************************************************************************
- * Name: stm32l5_board_initialize
+ * Name: stm32h5_board_initialize
  *
  * Description:
  *   All STM32H5 architectures must provide the following entry point.
@@ -193,7 +252,7 @@ extern "C"
  *
  ****************************************************************************/
 
-void stm32l5_board_initialize(void);
+void stm32h5_board_initialize(void);
 
 #undef EXTERN
 #if defined(__cplusplus)
@@ -201,4 +260,4 @@ void stm32l5_board_initialize(void);
 #endif
 
 #endif /* __ASSEMBLY__ */
-#endif /* __BOARDS_ARM_STM32H5_NUCLEO_H563ZI_INCLUDE_BOARD_H */
+#endif  /* __BOARDS_ARM_STM32H5_NUCLEO_H563ZI_INCLUDE_BOARD_H */

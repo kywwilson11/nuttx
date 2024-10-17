@@ -119,8 +119,8 @@
 #define STM32_RCC_AHB1LPENR    (STM32H5_RCC_BASE + STM32_RCC_AHB1LPENR_OFFSET)
 #define STM32_RCC_AHB2LPENR    (STM32H5_RCC_BASE + STM32_RCC_AHB2LPENR_OFFSET)
 #define STM32_RCC_AHB4LPENR    (STM32H5_RCC_BASE + STM32_RCC_AHB4LPENR_OFFSET)
-#define STM32_RCC_APB1LPENR1   (STM32H5_RCC_BASE + STM32_RCC_APB1LPENR1_OFFSET)
-#define STM32_RCC_APB1LPENR2   (STM32H5_RCC_BASE + STM32_RCC_APB1LPENR2_OFFSET)
+#define STM32_RCC_APB1LPENR    (STM32H5_RCC_BASE + STM32_RCC_APB1LPENR1_OFFSET)
+#define STM32_RCC_APB1HPENR    (STM32H5_RCC_BASE + STM32_RCC_APB1LPENR2_OFFSET)
 #define STM32_RCC_APB2LPENR    (STM32H5_RCC_BASE + STM32_RCC_APB2LPENR_OFFSET)
 #define STM32_RCC_APB3LPENR    (STM32H5_RCC_BASE + STM32_RCC_APB3LPENR_OFFSET)
 #define STM32_RCC_CCIPR1       (STM32H5_RCC_BASE + STM32_RCC_CCIPR1_OFFSET)
@@ -305,24 +305,17 @@
 
 #define RCC_PLL1CFGR_PLL1GRE_SHIFT          (2) /* Bit 3-2:  */
 #define RCC_PLL1CFGR_PLL1RGE_MASK           (3 << RCC_PLL1CFGR_PLL1RGE_SHIFT)
-#  define RCC_PLL1CFGR_PLL1RGE_NONE         (0 << RCC_PLL1CFGR_PLL1RGE_SHIFT) /* 000: Input Clock Range Frequency 1-2 MHz */
-#  define RCC_PLL1CFGR_PLL1RGE_HSI          (1 << RCC_PLL1CFGR_PLL1RGE_SHIFT) /* 001: Input Clock Range Frequency 2-4 MHz */
-#  define RCC_PLL1CFGR_PLL1RGE_CSI          (2 << RCC_PLL1CFGR_PLL1RGE_SHIFT) /* 010: Input Clock Range Frequency 4-8 MHz **/
-#  define RCC_PLL1CFGR_PLL1RGE_HSE          (3 << RCC_PLL1CFGR_PLL1RGE_SHIFT) /* 011: Input Clock Range Frequency 8-16 MHz **/
+#  define RCC_PLL1CFGR_PLL1RGE_1_2M         (0 << RCC_PLL1CFGR_PLL1RGE_SHIFT) /* 000: Input Clock Range Frequency 1-2 MHz */
+#  define RCC_PLL1CFGR_PLL1RGE_2_4M         (1 << RCC_PLL1CFGR_PLL1RGE_SHIFT) /* 001: Input Clock Range Frequency 2-4 MHz */
+#  define RCC_PLL1CFGR_PLL1RGE_4_8M         (2 << RCC_PLL1CFGR_PLL1RGE_SHIFT) /* 010: Input Clock Range Frequency 4-8 MHz **/
+#  define RCC_PLL1CFGR_PLL1RGE_8_16M        (3 << RCC_PLL1CFGR_PLL1RGE_SHIFT) /* 011: Input Clock Range Frequency 8-16 MHz **/
 
 #define RCC_PLL1CFGR_PLL1FRACEN             (1 << 4) /* PLL1 Fractional Latch Enable */
 #define RCC_PLL1CFGR_PLL1VCOSEL             (1 << 5) /* PLL1 VCO Selection */
 
 #define RCC_PLL1CFGR_PLL1M_SHIFT            (8) /* Bit 13-8:  */
 #define RCC_PLL1CFGR_PLL1M_MASK             (0x3f << RCC_PLL1CFGR_PLL1M_SHIFT)
-#  define RCC_PLL1CFGR_PLL1M_DIS            (0 << RCC_PLL1CFGR_PLL1M_SHIFT)  /* 000000: Prescaler disabled */
-#  define RCC_PLL1CFGR_PLL1M_d1             (1 << RCC_PLL1CFGR_PLL1M_SHIFT)  /* 000001: DIV1 */
-#  define RCC_PLL1CFGR_PLL1M_d2             (2 << RCC_PLL1CFGR_PLL1M_SHIFT)  /* 000010: DIV2 */
-#  define RCC_PLL1CFGR_PLL1M_d4             (4 << RCC_PLL1CFGR_PLL1M_SHIFT)  /* 000100: DIV4 */
-#  define RCC_PLL1CFGR_PLL1M_d8             (8 << RCC_PLL1CFGR_PLL1M_SHIFT)  /* 001000: DIV8 */
-#  define RCC_PLL1CFGR_PLL1M_d16            (16 << RCC_PLL1CFGR_PLL1M_SHIFT) /* 010000: DIV16 */
-#  define RCC_PLL1CFGR_PLL1M_d32            (32 << RCC_PLL1CFGR_PLL1M_SHIFT) /* 100000: DIV32 */
-#  define RCC_PLL1CFGR_PLL1M_d63            (63 << RCC_PLL1CFGR_PLL1M_SHIFT) /* 111111: DIV63 */
+#  define RCC_PLL1CFGR_PLLM(n)              ((n) << RCC_PLL1CFGR_PLLM_SHIFT) /* m = 1..63 */
 
 #define RCC_PLL1CFGR_PLL1PEN                (1 << 16) /* PLL1 DIVP divder output enable */
 #define RCC_PLL1CFGR_PLL1QEN                (1 << 17) /* PLL1 DIVQ divder output enable */
@@ -340,24 +333,17 @@
 
 #define RCC_PLL2CFGR_PLL2GRE_SHIFT          (2) /* Bit 3-2:  */
 #define RCC_PLL2CFGR_PLL2RGE_MASK           (3 << RCC_PLL2CFGR_PLL2RGE_SHIFT)
-#  define RCC_PLL2CFGR_PLL2RGE_NONE         (0 << RCC_PLL2CFGR_PLL2RGE_SHIFT) /* 000: Input Clock Range Frequency 1-2 MHz */
-#  define RCC_PLL2CFGR_PLL2RGE_HSI          (1 << RCC_PLL2CFGR_PLL2RGE_SHIFT) /* 001: Input Clock Range Frequency 2-4 MHz */
-#  define RCC_PLL2CFGR_PLL2RGE_CSI          (2 << RCC_PLL2CFGR_PLL2RGE_SHIFT) /* 010: Input Clock Range Frequency 4-8 MHz **/
-#  define RCC_PLL2CFGR_PLL2RGE_HSE          (3 << RCC_PLL2CFGR_PLL2RGE_SHIFT) /* 011: Input Clock Range Frequency 8-16 MHz **/
+#  define RCC_PLL2CFGR_PLL2RGE_1_2M         (0 << RCC_PLL2CFGR_PLL2RGE_SHIFT) /* 000: Input Clock Range Frequency 1-2 MHz */
+#  define RCC_PLL2CFGR_PLL2RGE_2_4M          (1 << RCC_PLL2CFGR_PLL2RGE_SHIFT) /* 001: Input Clock Range Frequency 2-4 MHz */
+#  define RCC_PLL2CFGR_PLL2RGE_4_8M          (2 << RCC_PLL2CFGR_PLL2RGE_SHIFT) /* 010: Input Clock Range Frequency 4-8 MHz **/
+#  define RCC_PLL2CFGR_PLL2RGE_8_16M          (3 << RCC_PLL2CFGR_PLL2RGE_SHIFT) /* 011: Input Clock Range Frequency 8-16 MHz **/
 
 #define RCC_PLL2CFGR_PLL2FRACEN             (1 << 4) /* PLL2 Fractional Latch Enable */
 #define RCC_PLL2CFGR_PLL2VCOSEL             (1 << 5) /* PLL2 VCO Selection */
 
 #define RCC_PLL2CFGR_PLL2M_SHIFT            (8) /* Bit 13-8:  */
 #define RCC_PLL2CFGR_PLL2M_MASK             (0x3f << RCC_PLL2CFGR_PLL2M_SHIFT)
-#  define RCC_PLL2CFGR_PLL2M_DIS            (0 << RCC_PLL2CFGR_PLL2M_SHIFT)  /* 000000: Prescaler disabled */
-#  define RCC_PLL2CFGR_PLL2M_d1             (1 << RCC_PLL2CFGR_PLL2M_SHIFT)  /* 000001: DIV1 */
-#  define RCC_PLL2CFGR_PLL2M_d2             (2 << RCC_PLL2CFGR_PLL2M_SHIFT)  /* 000010: DIV2 */
-#  define RCC_PLL2CFGR_PLL2M_d4             (4 << RCC_PLL2CFGR_PLL2M_SHIFT)  /* 000100: DIV4 */
-#  define RCC_PLL2CFGR_PLL2M_d8             (8 << RCC_PLL2CFGR_PLL2M_SHIFT)  /* 001000: DIV8 */
-#  define RCC_PLL2CFGR_PLL2M_d16            (16 << RCC_PLL2CFGR_PLL2M_SHIFT) /* 010000: DIV16 */
-#  define RCC_PLL2CFGR_PLL2M_d32            (32 << RCC_PLL2CFGR_PLL2M_SHIFT) /* 100000: DIV32 */
-#  define RCC_PLL2CFGR_PLL2M_d63            (63 << RCC_PLL2CFGR_PLL2M_SHIFT) /* 111111: DIV63 */
+#  define RCC_PLL2CFGR_PLLM(n)              ((n) << RCC_PLL2CFGR_PLLM_SHIFT) /* m = 1..63 */
 
 #define RCC_PLL2CFGR_PLL2PEN                (1 << 16) /* PLL2 DIVP divder output enable */
 #define RCC_PLL2CFGR_PLL2QEN                (1 << 17) /* PLL2 DIVQ divder output enable */
@@ -375,10 +361,10 @@
 
 #define RCC_PLL3CFGR_PLL3GRE_SHIFT          (2) /* Bit 3-2:  */
 #define RCC_PLL3CFGR_PLL3RGE_MASK           (3 << RCC_PLL3CFGR_PLL3RGE_SHIFT)
-#  define RCC_PLL3CFGR_PLL3RGE_NONE         (0 << RCC_PLL3CFGR_PLL3RGE_SHIFT) /* 000: Input Clock Range Frequency 1-2 MHz */
-#  define RCC_PLL3CFGR_PLL3RGE_HSI          (1 << RCC_PLL3CFGR_PLL3RGE_SHIFT) /* 001: Input Clock Range Frequency 2-4 MHz */
-#  define RCC_PLL3CFGR_PLL3RGE_CSI          (2 << RCC_PLL3CFGR_PLL3RGE_SHIFT) /* 010: Input Clock Range Frequency 4-8 MHz **/
-#  define RCC_PLL3CFGR_PLL3RGE_HSE          (3 << RCC_PLL3CFGR_PLL3RGE_SHIFT) /* 011: Input Clock Range Frequency 8-16 MHz **/
+#  define RCC_PLL3CFGR_PLL3RGE_1_2M         (0 << RCC_PLL3CFGR_PLL3RGE_SHIFT) /* 000: Input Clock Range Frequency 1-2 MHz */
+#  define RCC_PLL3CFGR_PLL3RGE_2_4M          (1 << RCC_PLL3CFGR_PLL3RGE_SHIFT) /* 001: Input Clock Range Frequency 2-4 MHz */
+#  define RCC_PLL3CFGR_PLL3RGE_4_8M          (2 << RCC_PLL3CFGR_PLL3RGE_SHIFT) /* 010: Input Clock Range Frequency 4-8 MHz **/
+#  define RCC_PLL3CFGR_PLL3RGE_8_16M          (3 << RCC_PLL3CFGR_PLL3RGE_SHIFT) /* 011: Input Clock Range Frequency 8-16 MHz **/
 
 #define RCC_PLL3CFGR_PLL3FRACEN             (1 << 4) /* PLL3 Fractional Latch Enable */
 #define RCC_PLL3CFGR_PLL3VCOSEL             (1 << 5) /* PLL3 VCO Selection */
@@ -402,127 +388,55 @@
 
 #define RCC_PLL1DIVR_PLL1N_SHIFT            (0) /* Bits 8-0:  */
 #define RCC_PLL1DIVR_PLL1N_MASK             (0x1ff << RCC_PLL1DIVR_PLL1N_SHIFT)
-#  define RCC_PLL1DIVR_PLL1N_4              (0x003 << RCC_PLL1DIVR_PLL1N_SHIFT)  /* PLL1N = 4 */
-#  define RCC_PLL1DIVR_PLL1N_5              (0x004 << RCC_PLL1DIVR_PLL1N_SHIFT)  /* PLL1N = 5 */
-#  define RCC_PLL1DIVR_PLL1N_6              (0x005 << RCC_PLL1DIVR_PLL1N_SHIFT)  /* PLL1N = 6 */
-#  define RCC_PLL1DIVR_PLL1N_6              (0x080 << RCC_PLL1DIVR_PLL1N_SHIFT)  /* PLL1N = 129 */
-#  define RCC_PLL1DIVR_PLL1N_6              (0x1ff << RCC_PLL1DIVR_PLL1N_SHIFT)  /* PLL1N = 512 */
+#  define RCC_PLL1DIVR_PLL1N(n)             ((n-1) << RCC_PLL1DIVR_PLL1N_SHIFT) /* m = 4..512 */
 
 #define RCC_PLL1DIVR_PLL1P_SHIFT            (9) /* Bits 15-9:  */
 #define RCC_PLL1DIVR_PLL1P_MASK             (0x7f << RCC_PLL1DIVR_PLL1P_SHIFT)
-#  define RCC_PLL1DIVR_PLL1P_VCO1d2         (1 << RCC_PLL1DIVR_PLL1P_SHIFT)   /* 0000001: pll1_p_ck = vco1_ck / 2 */
-#  define RCC_PLL1DIVR_PLL1P_VCO1d4         (3 << RCC_PLL1DIVR_PLL1P_SHIFT)   /* 0000011: pll1_p_ck = vco1_ck / 4 */
-#  define RCC_PLL1DIVR_PLL1P_VCO1d8         (7 << RCC_PLL1DIVR_PLL1P_SHIFT)   /* 0000111: pll1_p_ck = vco1_ck / 8 */
-#  define RCC_PLL1DIVR_PLL1P_VCO1d16        (15 << RCC_PLL1DIVR_PLL1P_SHIFT)  /* 0001111: pll1_p_ck = vco1_ck / 16 */
-#  define RCC_PLL1DIVR_PLL1P_VCO1d32        (31 << RCC_PLL1DIVR_PLL1P_SHIFT)  /* 0011111: pll1_p_ck = vco1_ck / 32 */
-#  define RCC_PLL1DIVR_PLL1P_VCO1d64        (63 << RCC_PLL1DIVR_PLL1P_SHIFT)  /* 0111111: pll1_p_ck = vco1_ck / 64 */
-#  define RCC_PLL1DIVR_PLL1P_VCO1d128       (127 << RCC_PLL1DIVR_PLL1P_SHIFT) /* 1111111: pll1_p_ck = vco1_ck / 128 */
+#  define RCC_PLL1DIVR_PLL1P(n)             ((n-1) << RCC_PLL1DIVR_PLL1P_SHIFT) /* m = 2..128 evens */
 
 #define RCC_PLL1DIVR_PLL1Q_SHIFT            (16) /* Bits 22-16:  */
 #define RCC_PLL1DIVR_PLL1Q_MASK             (0x7f << RCC_PLL1DIVR_PLL1Q_SHIFT)
-#  define RCC_PLL1DIVR_PLL1Q_VCO1d1         (0 << RCC_PLL1DIVR_PLL1Q_SHIFT)   /* 0000000: pll1_p_ck = vco1_ck / 1 */
-#  define RCC_PLL1DIVR_PLL1Q_VCO1d2         (1 << RCC_PLL1DIVR_PLL1Q_SHIFT)   /* 0000001: pll1_p_ck = vco1_ck / 2 */
-#  define RCC_PLL1DIVR_PLL1Q_VCO1d4         (3 << RCC_PLL1DIVR_PLL1Q_SHIFT)   /* 0000011: pll1_p_ck = vco1_ck / 4 */
-#  define RCC_PLL1DIVR_PLL1Q_VCO1d8         (7 << RCC_PLL1DIVR_PLL1Q_SHIFT)   /* 0000111: pll1_p_ck = vco1_ck / 8 */
-#  define RCC_PLL1DIVR_PLL1Q_VCO1d16        (15 << RCC_PLL1DIVR_PLL1Q_SHIFT)  /* 0001111: pll1_p_ck = vco1_ck / 16 */
-#  define RCC_PLL1DIVR_PLL1Q_VCO1d32        (31 << RCC_PLL1DIVR_PLL1Q_SHIFT)  /* 0011111: pll1_p_ck = vco1_ck / 32 */
-#  define RCC_PLL1DIVR_PLL1Q_VCO1d64        (63 << RCC_PLL1DIVR_PLL1Q_SHIFT)  /* 0111111: pll1_p_ck = vco1_ck / 64 */
-#  define RCC_PLL1DIVR_PLL1Q_VCO1d128       (127 << RCC_PLL1DIVR_PLL1Q_SHIFT) /* 1111111: pll1_p_ck = vco1_ck / 128 */
+#  define RCC_PLL1DIVR_PLL1Q(n)             ((n-1) << RCC_PLL1DIVR_PLL1Q_SHIFT) /* m = 1..128 */
 
 #define RCC_PLL1DIVR_PLL1R_SHIFT            (24) /* Bits 30-24:  */
 #define RCC_PLL1DIVR_PLL1R_MASK             (0x7f << RCC_PLL1DIVR_PLL1R_SHIFT)
-#  define RCC_PLL1DIVR_PLL1R_VCO1d1         (0 << RCC_PLL1DIVR_PLL1R_SHIFT)   /* 0000000: pll1_p_ck = vco1_ck / 1 */
-#  define RCC_PLL1DIVR_PLL1R_VCO1d2         (1 << RCC_PLL1DIVR_PLL1R_SHIFT)   /* 0000001: pll1_p_ck = vco1_ck / 2 */
-#  define RCC_PLL1DIVR_PLL1R_VCO1d4         (3 << RCC_PLL1DIVR_PLL1R_SHIFT)   /* 0000011: pll1_p_ck = vco1_ck / 4 */
-#  define RCC_PLL1DIVR_PLL1R_VCO1d8         (7 << RCC_PLL1DIVR_PLL1R_SHIFT)   /* 0000111: pll1_p_ck = vco1_ck / 8 */
-#  define RCC_PLL1DIVR_PLL1R_VCO1d16        (15 << RCC_PLL1DIVR_PLL1R_SHIFT)  /* 0001111: pll1_p_ck = vco1_ck / 16 */
-#  define RCC_PLL1DIVR_PLL1R_VCO1d32        (31 << RCC_PLL1DIVR_PLL1R_SHIFT)  /* 0011111: pll1_p_ck = vco1_ck / 32 */
-#  define RCC_PLL1DIVR_PLL1R_VCO1d64        (63 << RCC_PLL1DIVR_PLL1R_SHIFT)  /* 0111111: pll1_p_ck = vco1_ck / 64 */
-#  define RCC_PLL1DIVR_PLL1R_VCO1d128       (127 << RCC_PLL1DIVR_PLL1R_SHIFT) /* 1111111: pll1_p_ck = vco1_ck / 128 */
+#  define RCC_PLL1DIVR_PLL1R(n)             ((n-1) << RCC_PLL1DIVR_PLL1R_SHIFT) /* m = 1..128 */
 
 /* PLL2 dividers register */
 
 #define RCC_PLL2DIVR_PLL2N_SHIFT            (0) /* Bits 8-0:  */
 #define RCC_PLL2DIVR_PLL2N_MASK             (0x1ff << RCC_PLL2DIVR_PLL2N_SHIFT)
-#  define RCC_PLL2DIVR_PLL2N_4              (0x003 << RCC_PLL2DIVR_PLL2N_SHIFT)  /* PLL2N = 4 */
-#  define RCC_PLL2DIVR_PLL2N_5              (0x004 << RCC_PLL2DIVR_PLL2N_SHIFT)  /* PLL2N = 5 */
-#  define RCC_PLL2DIVR_PLL2N_6              (0x005 << RCC_PLL2DIVR_PLL2N_SHIFT)  /* PLL2N = 6 */
-#  define RCC_PLL2DIVR_PLL2N_6              (0x080 << RCC_PLL2DIVR_PLL2N_SHIFT)  /* PLL2N = 129 */
-#  define RCC_PLL2DIVR_PLL2N_6              (0x1ff << RCC_PLL2DIVR_PLL2N_SHIFT)  /* PLL2N = 512 */
+#  define RCC_PLL2DIVR_PLL2N(n)             ((n-1) << RCC_PLL2DIVR_PLL2N_SHIFT) /* m = 4..512 */
 
 #define RCC_PLL2DIVR_PLL2P_SHIFT            (9) /* Bits 15-9:  */
 #define RCC_PLL2DIVR_PLL2P_MASK             (0x7f << RCC_PLL2DIVR_PLL2P_SHIFT)
-#  define RCC_PLL2DIVR_PLL2P_VCO1d2         (1 << RCC_PLL2DIVR_PLL2P_SHIFT)   /* 0000001: pll2_p_ck = vco1_ck / 2 */
-#  define RCC_PLL2DIVR_PLL2P_VCO1d4         (3 << RCC_PLL2DIVR_PLL2P_SHIFT)   /* 0000011: pll2_p_ck = vco1_ck / 4 */
-#  define RCC_PLL2DIVR_PLL2P_VCO1d8         (7 << RCC_PLL2DIVR_PLL2P_SHIFT)   /* 0000111: pll2_p_ck = vco1_ck / 8 */
-#  define RCC_PLL2DIVR_PLL2P_VCO1d16        (15 << RCC_PLL2DIVR_PLL2P_SHIFT)  /* 0001111: pll2_p_ck = vco1_ck / 16 */
-#  define RCC_PLL2DIVR_PLL2P_VCO1d32        (31 << RCC_PLL2DIVR_PLL2P_SHIFT)  /* 0011111: pll2_p_ck = vco1_ck / 32 */
-#  define RCC_PLL2DIVR_PLL2P_VCO1d64        (63 << RCC_PLL2DIVR_PLL2P_SHIFT)  /* 0111111: pll2_p_ck = vco1_ck / 64 */
-#  define RCC_PLL2DIVR_PLL2P_VCO1d128       (127 << RCC_PLL2DIVR_PLL2P_SHIFT) /* 1111111: pll2_p_ck = vco1_ck / 128 */
+#  define RCC_PLL2DIVR_PLL2P(n)             ((n-1) << RCC_PLL2DIVR_PLL2P_SHIFT) /* m = 2..128 evens */
 
 #define RCC_PLL2DIVR_PLL2Q_SHIFT            (16) /* Bits 22-16:  */
 #define RCC_PLL2DIVR_PLL2Q_MASK             (0x7f << RCC_PLL2DIVR_PLL2Q_SHIFT)
-#  define RCC_PLL2DIVR_PLL2Q_VCO1d1         (0 << RCC_PLL2DIVR_PLL2Q_SHIFT)   /* 0000000: pll2_q_ck = vco1_ck / 1 */
-#  define RCC_PLL2DIVR_PLL2Q_VCO1d2         (1 << RCC_PLL2DIVR_PLL2Q_SHIFT)   /* 0000001: pll2_q_ck = vco1_ck / 2 */
-#  define RCC_PLL2DIVR_PLL2Q_VCO1d4         (3 << RCC_PLL2DIVR_PLL2Q_SHIFT)   /* 0000011: pll2_q_ck = vco1_ck / 4 */
-#  define RCC_PLL2DIVR_PLL2Q_VCO1d8         (7 << RCC_PLL2DIVR_PLL2Q_SHIFT)   /* 0000111: pll2_q_ck = vco1_ck / 8 */
-#  define RCC_PLL2DIVR_PLL2Q_VCO1d16        (15 << RCC_PLL2DIVR_PLL2Q_SHIFT)  /* 0001111: pll2_q_ck = vco1_ck / 16 */
-#  define RCC_PLL2DIVR_PLL2Q_VCO1d32        (31 << RCC_PLL2DIVR_PLL2Q_SHIFT)  /* 0011111: pll2_q_ck = vco1_ck / 32 */
-#  define RCC_PLL2DIVR_PLL2Q_VCO1d64        (63 << RCC_PLL2DIVR_PLL2Q_SHIFT)  /* 0111111: pll2_q_ck = vco1_ck / 64 */
-#  define RCC_PLL2DIVR_PLL2Q_VCO1d128       (127 << RCC_PLL2DIVR_PLL2Q_SHIFT) /* 1111111: pll2_q_ck = vco1_ck / 128 */
+#  define RCC_PLL2DIVR_PLL2Q(n)             ((n-1) << RCC_PLL2DIVR_PLL2Q_SHIFT) /* m = 1..128 */
 
 #define RCC_PLL2DIVR_PLL2R_SHIFT            (24) /* Bits 30-24:  */
 #define RCC_PLL2DIVR_PLL2R_MASK             (0x7f << RCC_PLL2DIVR_PLL2R_SHIFT)
-#  define RCC_PLL2DIVR_PLL2R_VCO1d1         (0 << RCC_PLL2DIVR_PLL2R_SHIFT)   /* 0000000: pll2_r_ck = vco1_ck / 1 */
-#  define RCC_PLL2DIVR_PLL2R_VCO1d2         (1 << RCC_PLL2DIVR_PLL2R_SHIFT)   /* 0000001: pll2_r_ck = vco1_ck / 2 */
-#  define RCC_PLL2DIVR_PLL2R_VCO1d4         (3 << RCC_PLL2DIVR_PLL2R_SHIFT)   /* 0000011: pll2_r_ck = vco1_ck / 4 */
-#  define RCC_PLL2DIVR_PLL2R_VCO1d8         (7 << RCC_PLL2DIVR_PLL2R_SHIFT)   /* 0000111: pll2_r_ck = vco1_ck / 8 */
-#  define RCC_PLL2DIVR_PLL2R_VCO1d16        (15 << RCC_PLL2DIVR_PLL2R_SHIFT)  /* 0001111: pll2_r_ck = vco1_ck / 16 */
-#  define RCC_PLL2DIVR_PLL2R_VCO1d32        (31 << RCC_PLL2DIVR_PLL2R_SHIFT)  /* 0011111: pll2_r_ck = vco1_ck / 32 */
-#  define RCC_PLL2DIVR_PLL2R_VCO1d64        (63 << RCC_PLL2DIVR_PLL2R_SHIFT)  /* 0111111: pll2_r_ck = vco1_ck / 64 */
-#  define RCC_PLL2DIVR_PLL2R_VCO1d128       (127 << RCC_PLL2DIVR_PLL2R_SHIFT) /* 1111111: pll2_r_ck = vco1_ck / 128 */
+#  define RCC_PLL2DIVR_PLL2R(n)             ((n-1) << RCC_PLL2DIVR_PLL2R_SHIFT) /* m = 1..128 */
 
 /* PLL3 dividers register */
 
 #define RCC_PLL3DIVR_PLL3N_SHIFT            (0) /* Bits 8-0:  */
 #define RCC_PLL3DIVR_PLL3N_MASK             (0x1ff << RCC_PLL3DIVR_PLL3N_SHIFT)
-#  define RCC_PLL3DIVR_PLL3N_4              (0x003 << RCC_PLL3DIVR_PLL3N_SHIFT)  /* PLL3N = 4 */
-#  define RCC_PLL3DIVR_PLL3N_5              (0x004 << RCC_PLL3DIVR_PLL3N_SHIFT)  /* PLL3N = 5 */
-#  define RCC_PLL3DIVR_PLL3N_6              (0x005 << RCC_PLL3DIVR_PLL3N_SHIFT)  /* PLL3N = 6 */
-#  define RCC_PLL3DIVR_PLL3N_6              (0x080 << RCC_PLL3DIVR_PLL3N_SHIFT)  /* PLL3N = 129 */
-#  define RCC_PLL3DIVR_PLL3N_6              (0x1ff << RCC_PLL3DIVR_PLL3N_SHIFT)  /* PLL3N = 512 */
+#  define RCC_PLL3DIVR_PLL3N(n)             ((n-1) << RCC_PLL3DIVR_PLL3N_SHIFT) /* m = 4..512 */
 
 #define RCC_PLL3DIVR_PLL3P_SHIFT            (9) /* Bits 15-9:  */
 #define RCC_PLL3DIVR_PLL3P_MASK             (0x7f << RCC_PLL3DIVR_PLL3P_SHIFT)
-#  define RCC_PLL3DIVR_PLL3P_VCO1d2         (1 << RCC_PLL3DIVR_PLL3P_SHIFT)   /* 0000001: pll3_p_ck = vco1_ck / 2 */
-#  define RCC_PLL3DIVR_PLL3P_VCO1d4         (3 << RCC_PLL3DIVR_PLL3P_SHIFT)   /* 0000011: pll3_p_ck = vco1_ck / 4 */
-#  define RCC_PLL3DIVR_PLL3P_VCO1d8         (7 << RCC_PLL3DIVR_PLL3P_SHIFT)   /* 0000111: pll3_p_ck = vco1_ck / 8 */
-#  define RCC_PLL3DIVR_PLL3P_VCO1d16        (15 << RCC_PLL3DIVR_PLL3P_SHIFT)  /* 0001111: pll3_p_ck = vco1_ck / 16 */
-#  define RCC_PLL3DIVR_PLL3P_VCO1d32        (31 << RCC_PLL3DIVR_PLL3P_SHIFT)  /* 0011111: pll3_p_ck = vco1_ck / 32 */
-#  define RCC_PLL3DIVR_PLL3P_VCO1d64        (63 << RCC_PLL3DIVR_PLL3P_SHIFT)  /* 0111111: pll3_p_ck = vco1_ck / 64 */
-#  define RCC_PLL3DIVR_PLL3P_VCO1d128       (127 << RCC_PLL3DIVR_PLL3P_SHIFT) /* 1111111: pll3_p_ck = vco1_ck / 128 */
+#  define RCC_PLL3DIVR_PLL3P(n)             ((n-1) << RCC_PLL3DIVR_PLL3P_SHIFT) /* m = 2..128 evens */
 
 #define RCC_PLL3DIVR_PLL3Q_SHIFT            (16) /* Bits 22-16:  */
 #define RCC_PLL3DIVR_PLL3Q_MASK             (0x7f << RCC_PLL3DIVR_PLL3Q_SHIFT)
-#  define RCC_PLL3DIVR_PLL3Q_VCO1d1         (0 << RCC_PLL3DIVR_PLL3Q_SHIFT)   /* 0000000: pll3_q_ck = vco1_ck / 1 */
-#  define RCC_PLL3DIVR_PLL3Q_VCO1d2         (1 << RCC_PLL3DIVR_PLL3Q_SHIFT)   /* 0000001: pll3_q_ck = vco1_ck / 2 */
-#  define RCC_PLL3DIVR_PLL3Q_VCO1d4         (3 << RCC_PLL3DIVR_PLL3Q_SHIFT)   /* 0000011: pll3_q_ck = vco1_ck / 4 */
-#  define RCC_PLL3DIVR_PLL3Q_VCO1d8         (7 << RCC_PLL3DIVR_PLL3Q_SHIFT)   /* 0000111: pll3_q_ck = vco1_ck / 8 */
-#  define RCC_PLL3DIVR_PLL3Q_VCO1d16        (15 << RCC_PLL3DIVR_PLL3Q_SHIFT)  /* 0001111: pll3_q_ck = vco1_ck / 16 */
-#  define RCC_PLL3DIVR_PLL3Q_VCO1d32        (31 << RCC_PLL3DIVR_PLL3Q_SHIFT)  /* 0011111: pll3_q_ck = vco1_ck / 32 */
-#  define RCC_PLL3DIVR_PLL3Q_VCO1d64        (63 << RCC_PLL3DIVR_PLL3Q_SHIFT)  /* 0111111: pll3_q_ck = vco1_ck / 64 */
-#  define RCC_PLL3DIVR_PLL3Q_VCO1d128       (127 << RCC_PLL3DIVR_PLL3Q_SHIFT) /* 1111111: pll3_q_ck = vco1_ck / 128 */
+#  define RCC_PLL3DIVR_PLL3Q(n)             ((n-1) << RCC_PLL3DIVR_PLL3Q_SHIFT) /* m = 1..128 */
 
 #define RCC_PLL3DIVR_PLL3R_SHIFT            (24) /* Bits 30-24:  */
 #define RCC_PLL3DIVR_PLL3R_MASK             (0x7f << RCC_PLL3DIVR_PLL3R_SHIFT)
-#  define RCC_PLL3DIVR_PLL3R_VCO1d1         (0 << RCC_PLL3DIVR_PLL3R_SHIFT)   /* 0000000: pll3_r_ck = vco1_ck / 1 */
-#  define RCC_PLL3DIVR_PLL3R_VCO1d2         (1 << RCC_PLL3DIVR_PLL3R_SHIFT)   /* 0000001: pll3_r_ck = vco1_ck / 2 */
-#  define RCC_PLL3DIVR_PLL3R_VCO1d4         (3 << RCC_PLL3DIVR_PLL3R_SHIFT)   /* 0000011: pll3_r_ck = vco1_ck / 4 */
-#  define RCC_PLL3DIVR_PLL3R_VCO1d8         (7 << RCC_PLL3DIVR_PLL3R_SHIFT)   /* 0000111: pll3_r_ck = vco1_ck / 8 */
-#  define RCC_PLL3DIVR_PLL3R_VCO1d16        (15 << RCC_PLL3DIVR_PLL3R_SHIFT)  /* 0001111: pll3_r_ck = vco1_ck / 16 */
-#  define RCC_PLL3DIVR_PLL3R_VCO1d32        (31 << RCC_PLL3DIVR_PLL3R_SHIFT)  /* 0011111: pll3_r_ck = vco1_ck / 32 */
-#  define RCC_PLL3DIVR_PLL3R_VCO1d64        (63 << RCC_PLL3DIVR_PLL3R_SHIFT)  /* 0111111: pll3_r_ck = vco1_ck / 64 */
-#  define RCC_PLL3DIVR_PLL3R_VCO1d128       (127 << RCC_PLL3DIVR_PLL3R_SHIFT) /* 1111111: pll3_r_ck = vco1_ck / 128 */
+#  define RCC_PLL3DIVR_PLL3R(n)             ((n-1) << RCC_PLL3DIVR_PLL3R_SHIFT) /* m = 1..128 */
 
 
 /* Clock interrupt enable register */
@@ -600,7 +514,7 @@
 #define RCC_AHB4RSTR_SDMMC1RST           (1 << 11) /* Bit 11: SDMMC1RST blocks reset  */
 #define RCC_AHB4RSTR_SDMMC2RST           (1 << 12) /* Bit 12: SDMMC2RST blocks reset  */
 #define RCC_AHB4RSTR_FMCRST              (1 << 16) /* Bit 16: FMC block reset */
-#define RCC_AHB4RSTR_OCTOSPI1RST         (1 << 20) /* Bit 20: OCTOSPI1 block reset */
+#define RCC_AHB4RSTR_OSPI1RST            (1 << 20) /* Bit 20: OCTOSPI1 block reset */
 
 /* APB1 Peripheral reset register 1 */
 
@@ -711,11 +625,11 @@
 
 /* AHB4 Peripheral Clock enable register */
 
-#define RCC_AHB4ENR_OTFDEC1EN            (1 << 7)   /* Bit  7: OTFDEC1 clock enable */
+#define RCC_AHB4ENR_OTFDEC1EN            (1 << 7)   /* Bit  7: On-the-fly decryption module clock enable */
 #define RCC_AHB4ENR_SDMMC1EN             (1 << 11)  /* Bit 11: SDMMC1 clock enable */
 #define RCC_AHB4ENR_SDMMC2EN             (1 << 12)  /* Bit 12: SDMMC2 clock enable */
 #define RCC_AHB4ENR_FMCEN                (1 << 16)  /* Bit 16: Flexible memory controller module enable */
-#define RCC_AHB4ENR_OCTOSPI1EN           (1 << 20)  /* Bit 20: OCTOSPI1 module enable */
+#define RCC_AHB4ENR_OSPI1EN              (1 << 20)  /* Bit 20: OCTOSPI1 module enable */
 
 /* APB1 Peripheral clock enable register 1 */
 
@@ -741,7 +655,7 @@
 #define RCC_APB1LENR_USART6EN          (1 << 25) /* Bit 25: USART6 clock enable */
 #define RCC_APB1LENR_USART10EN         (1 << 26) /* Bit 26: USART10 clock enable */
 #define RCC_APB1LENR_USART11EN         (1 << 27) /* Bit 27: USART11 clock enable */
-#define RCC_APB1LENR_CRSEN             (1 << 28) /* Bit 28: CEC clock enable */
+#define RCC_APB1LENR_CECEN             (1 << 28) /* Bit 28: CEC clock enable */
 #define RCC_APB1LENR_UART7EN           (1 << 30) /* Bit 30: UART7 clock enable */
 #define RCC_APB1LENR_UART8EN           (1 << 31) /* Bit 31: UART8 clock enable */
 
@@ -832,7 +746,7 @@
 #define RCC_AHB4LPENR_SDMMC1LPEN             (1 << 11)  /* Bit 11: SDMMC1 clock enable during sleep mode */
 #define RCC_AHB4LPENR_SDMMC2LPEN             (1 << 12)  /* Bit 12: SDMMC2 clock enable during sleep mode */
 #define RCC_AHB4LPENR_FMCLPEN                (1 << 16)  /* Bit 16: Flexible memory controller module enable */
-#define RCC_AHB4LPENR_OCTOSPI1LPEN           (1 << 20)  /* Bit 20: OCTOSPI1 module clock enable during sleep mode */
+#define RCC_AHB4LPENR_OSPI1LPEN              (1 << 20)  /* Bit 20: OCTOSPI1 module clock enable during sleep mode */
 
 /* APB1 Peripheral clock enable register 1 */
 
