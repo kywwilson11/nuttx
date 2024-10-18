@@ -51,6 +51,7 @@
 
 #define HSE_DIVISOR (STM32H5_HSE_FREQUENCY + 500000) / 1000000
 
+/* TODO: Fix this CCIPR does not have this bit */
 /* Determine if board wants to use HSI48 as 48 MHz oscillator. */
 
 #if defined(CONFIG_STM32H5_HAVE_HSI48) && defined(STM32H5_USE_CLK48)
@@ -768,19 +769,22 @@ static inline void rcc_enableapb3(void)
 
 }
 /****************************************************************************
- * Name: rcc_enableccip
+ * Name: rcc_enableccip1
  *
  * Description:
  *   Set peripherals independent clock configuration.
  *
  ****************************************************************************/
 
-static inline void rcc_enableccip(void)
+static inline void rcc_enableccip1(void)
 {
-  /* Certain peripherals have no clock selected even when their enable bit is
-   * set. Set some defaults in the CCIPR register so those peripherals
-   * will at least have a clock.
-   */
+  uint32_t regval;
+  volatile int32_t timeout;
+
+  regval  = getreg32(STM32H5_RCC_CCIPR1);
+
+
+
 }
 
 /****************************************************************************
@@ -946,26 +950,30 @@ void stm32h5_stdclockconfig(void)
         {
         }
 
+      
+      regval  = getreg32(STM32H5_RCC_CFGR2);
       /* Set the HCLK source/divider */
 
-      regval  = getreg32(STM32H5_RCC_CFGR2);
       regval &= ~RCC_CFGR2_HPRE_MASK;
       regval |= STM32H5_RCC_CFGR2_HPRE;
-      putreg32(regval, STM32H5_RCC_CFGR2);
-
-      /* Set the PCLK2 divider */
-
-      regval  = getreg32(STM32H5_RCC_CFGR2);
-      regval &= ~RCC_CFGR2_PPRE2_MASK;
-      regval |= STM32H5_RCC_CFGR2_PPRE2;
-      putreg32(regval, STM32H5_RCC_CFGR2);
 
       /* Set the PCLK1 divider */
 
-      regval  = getreg32(STM32H5_RCC_CFGR2);
       regval &= ~RCC_CFGR2_PPRE1_MASK;
       regval |= STM32H5_RCC_CFGR2_PPRE1;
+
+      /* Set the PCLK2 divider */
+
+      regval &= ~RCC_CFGR2_PPRE2_MASK;
+      regval |= STM32H5_RCC_CFGR2_PPRE2;
+
+      /* Set the PCLK3 divider */
+
+      regval &= ~RCC_CFGR2_PPRE3_MASK;
+      regval |= STM32H5_RCC_CFGR2_PPRE3;
+
       putreg32(regval, STM32H5_RCC_CFGR2);
+
 
 #ifdef CONFIG_STM32H5_RTC_HSECLOCK
       /* Set the RTC clock divisor */
@@ -976,32 +984,13 @@ void stm32h5_stdclockconfig(void)
       putreg32(regval, STM32H5_RCC_CFGR1);
 #endif
 
-      /* Set the PLL1 source and main divider */
-
-      regval  = getreg32(STM32H5_RCC_PLL1CFGR);
-
       /* Configure PLL1 */
 
-      /* Set the PLL dividers and multipliers to configure PLL1 */
+      /* PLL1CFGR */
 
-      regval = (STM32H5_PLL1CFGR_PLLM | STM32H5_PLL1CFGR_PLLP | 
-		STM32H5_PLL1CFGR_PLLQ | STM32H5_PLL1CFGR_PLLR);
-
-#ifdef STM32H5_PLLCFG_PLLP_ENABLED
-      regval |= RCC_PLL1CFGR_PLLPEN;
-#endif
-#ifdef STM32H5_PLLCFG_PLLQ_ENABLED
-      regval |= RCC_PLL1CFGR_PLLQEN;
-#endif
-#ifdef STM32H5_PLLCFG_PLLR_ENABLED
-      regval |= RCC_PLL1CFGR_PLLREN;
-#endif
-
-      /* XXX The choice of clock source to PLL1 (all three) is independent
-       * of the sys clock source choice, review the STM32H5_BOARD_USEHSI
-       * name; probably split it into two, one for PLL source and one
-       * for sys clock source.
-       */
+      regval  = getreg32(STM32H5_RCC_PLL1CFGR);
+      
+      /* Set the PLL1 source and main divider */
 
 #ifdef STM32H5_BOARD_USEHSI
       regval |= RCC_PLL1CFGR_PLL1SRC_HSI;
@@ -1010,8 +999,47 @@ void stm32h5_stdclockconfig(void)
 #else /* if STM32H5_BOARD_USEHSE */
       regval |= RCC_PLL1CFGR_PLL1SRC_HSE;
 #endif
+     
+      /* Set RGE, FRACEN, VCOSEL, and M from board.h */
 
+      regval |= (STM32H5_PLL1CFGR_PLL1RGE | STM32H5_PLL1CFGR_PLL1FRACEN | 
+		 STM32H5_PLL1CFGR_PLL1VCOSEL | STM32H5_PLL1CFGR_PLL1M);
+
+#ifdef STM32H5_PLL1CFG_PLL1P_ENABLED
+      regval |= RCC_PLL1CFGR_PLL1PEN;
+#endif
+#ifdef STM32H5_PLL1CFG_PLL1Q_ENABLED
+      regval |= RCC_PLL1CFGR_PLL1QEN;
+#endif
+#ifdef STM32H5_PLL1CFG_PLL1R_ENABLED
+      regval |= RCC_PLL1CFGR_PLL1REN;
+#endif
+      
       putreg32(regval, STM32H5_RCC_PLL1CFGR);
+
+
+      /* PLL1DIVR and PLL1FRACR */
+      
+      /* Get settings from board.h */
+     
+      /* PLL1DIVR */
+
+      regval  = getreg32(STM32H5_RCC_PLL1DIVR);
+      regval = (STM32H5_PLL1DIVR_PLLN | STM32H5_PLL1DIVR_PLLP | 
+		STM32H5_PLL1DIVR_PLLQ | STM32H5_PLL1DIVR_PLLR);
+      putreg32(regval, STM32H5_RCC_PLL1DIVR);
+      
+      /* PLL1FRACR */
+
+      regval  = getreg32(STM32H5_RCC_PLL1FRACR);
+      regval |= STM32H5_PLL1FRACR_PLL1FRACN;
+      putreg32(regval, STM32H5_RCC_PLL1FRACR);
+
+      /* XXX The choice of clock source to PLL1 (all three) is independent
+       * of the sys clock source choice, review the STM32H5_BOARD_USEHSI
+       * name; probably split it into two, one for PLL source and one
+       * for sys clock source.
+       */
 
       /* Enable PLL1 */
 
@@ -1025,32 +1053,13 @@ void stm32h5_stdclockconfig(void)
         {
         }
 
-      /* Set the PLL2 source and main divider */
-
-      regval  = getreg32(STM32H5_RCC_PLL2CFGR);
-
       /* Configure PLL2 */
 
-      /* Set the PLL dividers and multipliers to configure PLL2 */
+      /* PLL2CFGR */
 
-      regval = (STM32H5_PLL2CFGR_PLLM | STM32H5_PLL2CFGR_PLLP | 
-		STM32H5_PLL2CFGR_PLLQ | STM32H5_PLL2CFGR_PLLR);
-
-#ifdef STM32H5_PLLCFG_PLLP_ENABLED
-      regval |= RCC_PLL2CFGR_PLLPEN;
-#endif
-#ifdef STM32H5_PLLCFG_PLLQ_ENABLED
-      regval |= RCC_PLL2CFGR_PLLQEN;
-#endif
-#ifdef STM32H5_PLLCFG_PLLR_ENABLED
-      regval |= RCC_PLL2CFGR_PLLREN;
-#endif
-
-      /* XXX The choice of clock source to PLL (all three) is independent
-       * of the sys clock source choice, review the STM32H5_BOARD_USEHSI
-       * name; probably split it into two, one for PLL source and one
-       * for sys clock source.
-       */
+      regval  = getreg32(STM32H5_RCC_PLL2CFGR);
+      
+      /* Set the PLL2 source and main divider */
 
 #ifdef STM32H5_BOARD_USEHSI
       regval |= RCC_PLL2CFGR_PLL2SRC_HSI;
@@ -1059,87 +1068,130 @@ void stm32h5_stdclockconfig(void)
 #else /* if STM32H5_BOARD_USEHSE */
       regval |= RCC_PLL2CFGR_PLL2SRC_HSE;
 #endif
+     
+      /* Set RGE, FRACEN, VCOSEL, and M from board.h */
 
+      regval |= (STM32H5_PLL2CFGR_PLL2RGE | STM32H5_PLL2CFGR_PLL2FRACEN | 
+		 STM32H5_PLL2CFGR_PLL2VCOSEL | STM32H5_PLL2CFGR_PLL2M);
+
+#ifdef STM32H5_PLL2CFG_PLL2P_ENABLED
+      regval |= RCC_PLL2CFGR_PLL2PEN;
+#endif
+#ifdef STM32H5_PLL2CFG_PLL2Q_ENABLED
+      regval |= RCC_PLL2CFGR_PLL2QEN;
+#endif
+#ifdef STM32H5_PLL2CFG_PLL2R_ENABLED
+      regval |= RCC_PLL2CFGR_PLL2REN;
+#endif
+      
       putreg32(regval, STM32H5_RCC_PLL2CFGR);
 
-      /* Enable the main PLL */
+
+      /* PLL2DIVR and PLL2FRACR */
+      
+      /* Get settings from board.h */
+     
+      /* PLL2DIVR */
+
+      regval  = getreg32(STM32H5_RCC_PLL2DIVR);
+      regval = (STM32H5_PLL2DIVR_PLLN | STM32H5_PLL2DIVR_PLLP | 
+		STM32H5_PLL2DIVR_PLLQ | STM32H5_PLL2DIVR_PLLR);
+      putreg32(regval, STM32H5_RCC_PLL2DIVR);
+      
+      /* PLL2FRACR */
+
+      regval  = getreg32(STM32H5_RCC_PLL2FRACR);
+      regval |= STM32H5_PLL2FRACR_PLL2FRACN;
+      putreg32(regval, STM32H5_RCC_PLL2FRACR);
+
+      /* XXX The choice of clock source to PLL2 (all three) is independent
+       * of the sys clock source choice, review the STM32H5_BOARD_USEHSI
+       * name; probably split it into two, one for PLL source and one
+       * for sys clock source.
+       */
+
+      /* Enable PLL2 */
 
       regval  = getreg32(STM32H5_RCC_CR);
       regval |= RCC_CR_PLL2ON;
       putreg32(regval, STM32H5_RCC_CR);
 
-      /* Wait until the PLL is ready */
+      /* Wait until PLL2 is ready */
 
       while ((getreg32(STM32H5_RCC_CR) & RCC_CR_PLL2RDY) == 0)
         {
         }
 
-#ifdef CONFIG_STM32H5_SAI1PLL
-      /* Configure SAI1 PLL */
 
-      regval  = getreg32(STM32H5_RCC_PLLSAI1CFG);
 
-      /* Set the PLL dividers and multipliers to configure the SAI1 PLL */
+      /* Configure PLL3 */
 
-      regval = (STM32H5_PLLSAI1CFG_PLLN | STM32H5_PLLSAI1CFG_PLLP
-                 | STM32H5_PLLSAI1CFG_PLLQ | STM32H5_PLLSAI1CFG_PLLR);
+      /* PLL3CFGR */
 
-#ifdef STM32H5_PLLSAI1CFG_PLLP_ENABLED
-      regval |= RCC_PLLSAI1CFG_PLLPEN;
+      regval  = getreg32(STM32H5_RCC_PLL3CFGR);
+      
+      /* Set the PLL3 source and main divider */
+
+#ifdef STM32H5_BOARD_USEHSI
+      regval |= RCC_PLL3CFGR_PLL3SRC_HSI;
+#elif defined(STM32H5_BOARD_USECSI)
+      regval |= RCC_PLL3CFGR_PLL3SRC_CSI;
+#else /* if STM32H5_BOARD_USEHSE */
+      regval |= RCC_PLL3CFGR_PLL3SRC_HSE;
 #endif
-#ifdef STM32H5_PLLSAI1CFG_PLLQ_ENABLED
-      regval |= RCC_PLLSAI1CFG_PLLQEN;
-#endif
-#ifdef STM32H5_PLLSAI1CFG_PLLR_ENABLED
-      regval |= RCC_PLLSAI1CFG_PLLREN;
-#endif
+     
+      /* Set RGE, FRACEN, VCOSEL, and M from board.h */
 
-      putreg32(regval, STM32H5_RCC_PLLSAI1CFG);
+      regval |= (STM32H5_PLL3CFGR_PLL3RGE | STM32H5_PLL3CFGR_PLL3FRACEN | 
+		 STM32H5_PLL3CFGR_PLL3VCOSEL | STM32H5_PLL3CFGR_PLL3M);
 
-      /* Enable the SAI1 PLL */
+#ifdef STM32H5_PLL3CFG_PLL3P_ENABLED
+      regval |= RCC_PLL3CFGR_PLL3PEN;
+#endif
+#ifdef STM32H5_PLL3CFG_PLL3Q_ENABLED
+      regval |= RCC_PLL3CFGR_PLL3QEN;
+#endif
+#ifdef STM32H5_PLL3CFG_PLL3R_ENABLED
+      regval |= RCC_PLL3CFGR_PLL3REN;
+#endif
+      
+      putreg32(regval, STM32H5_RCC_PLL3CFGR);
+
+
+      /* PLL3DIVR and PLL3FRACR */
+      
+      /* Get settings from board.h */
+     
+      /* PLL3DIVR */
+
+      regval  = getreg32(STM32H5_RCC_PLL3DIVR);
+      regval = (STM32H5_PLL3DIVR_PLLN | STM32H5_PLL3DIVR_PLLP | 
+		STM32H5_PLL3DIVR_PLLQ | STM32H5_PLL3DIVR_PLLR);
+      putreg32(regval, STM32H5_RCC_PLL3DIVR);
+      
+      /* PLL3FRACR */
+
+      regval  = getreg32(STM32H5_RCC_PLL3FRACR);
+      regval |= STM32H5_PLL3FRACR_PLL3FRACN;
+      putreg32(regval, STM32H5_RCC_PLL3FRACR);
+
+      /* XXX The choice of clock source to PLL3 (all three) is independent
+       * of the sys clock source choice, review the STM32H5_BOARD_USEHSI
+       * name; probably split it into two, one for PLL source and one
+       * for sys clock source.
+       */
+
+      /* Enable PLL3 */
 
       regval  = getreg32(STM32H5_RCC_CR);
-      regval |= RCC_CR_PLLSAI1ON;
+      regval |= RCC_CR_PLL3ON;
       putreg32(regval, STM32H5_RCC_CR);
 
-      /* Wait until the PLL is ready */
+      /* Wait until PLL3 is ready */
 
-      while ((getreg32(STM32H5_RCC_CR) & RCC_CR_PLLSAI1RDY) == 0)
+      while ((getreg32(STM32H5_RCC_CR) & RCC_CR_PLL3RDY) == 0)
         {
         }
-#endif
-
-#ifdef CONFIG_STM32H5_SAI2PLL
-      /* Configure SAI2 PLL */
-
-      regval  = getreg32(STM32H5_RCC_PLLSAI2CFG);
-
-      /* Set the PLL dividers and multipliers to configure the SAI2 PLL */
-
-      regval = (STM32H5_PLLSAI2CFG_PLLN | STM32H5_PLLSAI2CFG_PLLP |
-                STM32H5_PLLSAI2CFG_PLLR);
-
-#ifdef STM32H5_PLLSAI2CFG_PLLP_ENABLED
-      regval |= RCC_PLLSAI2CFG_PLLPEN;
-#endif
-#ifdef STM32H5_PLLSAI2CFG_PLLR_ENABLED
-      regval |= RCC_PLLSAI2CFG_PLLREN;
-#endif
-
-      putreg32(regval, STM32H5_RCC_PLLSAI2CFG);
-
-      /* Enable the SAI2 PLL */
-
-      regval  = getreg32(STM32H5_RCC_CR);
-      regval |= RCC_CR_PLLSAI2ON;
-      putreg32(regval, STM32H5_RCC_CR);
-
-      /* Wait until the PLL is ready */
-
-      while ((getreg32(STM32H5_RCC_CR) & RCC_CR_PLLSAI2RDY) == 0)
-        {
-        }
-#endif
 
       /* Enable FLASH 5 wait states */
 

@@ -37,101 +37,101 @@
 
 #define STM32H5_RCC_CR_OFFSET         0x0000  /* Clock control register */
 #define STM32H5_RCC_HSICFGR_OFFSET    0x0010  /* HSI Calibration Register */
-#define STM32_RCC_CRRCR_OFFSET        0x0014  /* RCC clock recovery RC register */
-#define STM32_RCC_CFGR1_OFFSET        0x001c  /* RCC clock configuration register 1 */
-#define STM32_RCC_CFGR2_OFFSET        0x0020  /* RCC clock configuration register 2 */
-#define STM32_RCC_PLL1CFGR_OFFSET     0x0028  /* RCC PLL1 configuration register */
-#define STM32_RCC_PLL2CFGR_OFFSET     0x002c  /* RCC PLL2 configuration register */
-#define STM32_RCC_PLL3CFGR_OFFSET     0x0030  /* RCC PLL3 configuration register */
-#define STM32_RCC_PLL1DIVR_OFFSET     0x0034  /* RCC PLL1 dividers register */
-#define STM32_RCC_PLL1FRACR_OFFSET    0x0038  /* RCC PLL1 fractional divider register */
-#define STM32_RCC_PLL2DIVR_OFFSET     0x003c  /* RCC PLL2 dividers register */
-#define STM32_RCC_PLL2FRACR_OFFSET    0x0040  /* RCC PLL2 fractional divider register */
-#define STM32_RCC_PLL3DIVR_OFFSET     0x0044  /* RCC PLL3 dividers register */
-#define STM32_RCC_PLL3FRACR_OFFSET    0x0048  /* RCC PLL3 fractional divider register */
-#define STM32_RCC_CIER_OFFSET         0x0050  /* RCC clock interrupt enable register */
-#define STM32_RCC_CIFR_OFFSET         0x0054  /* RCC clock interrupt flag register */
-#define STM32_RCC_CICR_OFFSET         0x0058  /* RCC clock interrupt clear register */
-#define STM32_RCC_AHB1RSTR_OFFSET     0x0060  /* RCC AHB1 peripheral reset register */
-#define STM32_RCC_AHB2RSTR_OFFSET     0x0064  /* RCC AHB2 peripheral reset register 1 */
-#define STM32_RCC_AHB4RSTR_OFFSET     0x006c  /* RCC AHB4 peripheral reset register*/
-#define STM32_RCC_APB1LRSTR_OFFSET    0x0074  /* RCC APB1 peripheral reset register 1 */
-#define STM32_RCC_APB1HRSTR_OFFSET    0x0078  /* RCC APB1 peripheral reset register 2 */
-#define STM32_RCC_APB2RSTR_OFFSET     0x007c  /* RCC APB2 peripheral reset register */
-#define STM32_RCC_APB3RSTR_OFFSET     0x0080  /* RCC APB3 peripheral reset register */
-#define STM32_RCC_AHB1ENR_OFFSET      0x0088  /* RCC AHB1 peripheral clock enable register */
-#define STM32_RCC_AHB2ENR_OFFSET      0x008c  /* RCC AHB2 peripheral clock enable register */
-#define STM32_RCC_AHB4ENR_OFFSET      0x0094  /* RCC AHB4 peripheral clock enable register */
-#define STM32_RCC_APB1ENR1_OFFSET     0x009c  /* RCC APB1 peripheral clock enable register 1 */
-#define STM32_RCC_APB1ENR2_OFFSET     0x00a0  /* RCC APB1 peripheral clock enable register 2 */
-#define STM32_RCC_APB2ENR_OFFSET      0x00a4  /* RCC APB2 peripheral clock enable register */
-#define STM32_RCC_APB3ENR_OFFSET      0x00a8  /* RCC APB3 peripheral clock enable register */
-#define STM32_RCC_AHB1LPENR_OFFSET    0x00b0  /* RCC AHB1 peripheral clocks enable in Sleep and Stop modes register */
-#define STM32_RCC_AHB2LPENR_OFFSET    0x00b4  /* RCC AHB2 peripheral clocks enable in Sleep and Stop modes register */
-#define STM32_RCC_AHB4LPENR_OFFSET    0x00bc  /* RCC AHB3 peripheral clocks enable in Sleep and Stop modes register */
-#define STM32_RCC_APB1LPENR1_OFFSET   0x00c4  /* RCC APB1 peripheral clocks enable in Sleep and Stop modes register 1 */
-#define STM32_RCC_APB1LPENR2_OFFSET   0x00c8  /* RCC APB1 peripheral clocks enable in Sleep and Stop modes register 2 */
-#define STM32_RCC_APB2LPENR_OFFSET    0x00cc  /* RCC APB2 peripheral clocks enable in Sleep and Stop modes register */
-#define STM32_RCC_APB3LPENR_OFFSET    0x00d0  /* RCC APB3 peripheral clocks enable in Sleep and Stop modes register */
-#define STM32_RCC_CCIPR1_OFFSET       0x00d8  /* RCC peripherals independent clock configuration register 1 */
-#define STM32_RCC_CCIPR2_OFFSET       0x00dc  /* RCC peripherals independent clock configuration register 2 */
-#define STM32_RCC_CCIPR3_OFFSET       0x00e0  /* RCC peripherals independent clock configuration register 3 */
-#define STM32_RCC_CCIPR4_OFFSET       0x00e4  /* RCC peripherals independent clock configuration register 5 */
-#define STM32_RCC_CCIPR5_OFFSET       0x00e8  /* RCC peripherals independent clock configuration register 5 */
-#define STM32_RCC_BDCR_OFFSET         0x00f0  /* RCC Backup domain control register */
-#define STM32_RCC_RSR_OFFSET          0x00f4  /* RCC control/status register */ /* TODO: CSR in U5 */
-#define STM32_RCC_SECCFGR_OFFSET      0x0110  /* RCC secure configuration register */
-#define STM32_RCC_PRIVCFGR_OFFSET     0x0114  /* RCC privilege configuration register */
+#define STM32H5_RCC_CRRCR_OFFSET        0x0014  /* RCC clock recovery RC register */
+#define STM32H5_RCC_CFGR1_OFFSET        0x001c  /* RCC clock configuration register 1 */
+#define STM32H5_RCC_CFGR2_OFFSET        0x0020  /* RCC clock configuration register 2 */
+#define STM32H5_RCC_PLL1CFGR_OFFSET     0x0028  /* RCC PLL1 configuration register */
+#define STM32H5_RCC_PLL2CFGR_OFFSET     0x002c  /* RCC PLL2 configuration register */
+#define STM32H5_RCC_PLL3CFGR_OFFSET     0x0030  /* RCC PLL3 configuration register */
+#define STM32H5_RCC_PLL1DIVR_OFFSET     0x0034  /* RCC PLL1 dividers register */
+#define STM32H5_RCC_PLL1FRACR_OFFSET    0x0038  /* RCC PLL1 fractional divider register */
+#define STM32H5_RCC_PLL2DIVR_OFFSET     0x003c  /* RCC PLL2 dividers register */
+#define STM32H5_RCC_PLL2FRACR_OFFSET    0x0040  /* RCC PLL2 fractional divider register */
+#define STM32H5_RCC_PLL3DIVR_OFFSET     0x0044  /* RCC PLL3 dividers register */
+#define STM32H5_RCC_PLL3FRACR_OFFSET    0x0048  /* RCC PLL3 fractional divider register */
+#define STM32H5_RCC_CIER_OFFSET         0x0050  /* RCC clock interrupt enable register */
+#define STM32H5_RCC_CIFR_OFFSET         0x0054  /* RCC clock interrupt flag register */
+#define STM32H5_RCC_CICR_OFFSET         0x0058  /* RCC clock interrupt clear register */
+#define STM32H5_RCC_AHB1RSTR_OFFSET     0x0060  /* RCC AHB1 peripheral reset register */
+#define STM32H5_RCC_AHB2RSTR_OFFSET     0x0064  /* RCC AHB2 peripheral reset register 1 */
+#define STM32H5_RCC_AHB4RSTR_OFFSET     0x006c  /* RCC AHB4 peripheral reset register*/
+#define STM32H5_RCC_APB1LRSTR_OFFSET    0x0074  /* RCC APB1 peripheral reset register 1 */
+#define STM32H5_RCC_APB1HRSTR_OFFSET    0x0078  /* RCC APB1 peripheral reset register 2 */
+#define STM32H5_RCC_APB2RSTR_OFFSET     0x007c  /* RCC APB2 peripheral reset register */
+#define STM32H5_RCC_APB3RSTR_OFFSET     0x0080  /* RCC APB3 peripheral reset register */
+#define STM32H5_RCC_AHB1ENR_OFFSET      0x0088  /* RCC AHB1 peripheral clock enable register */
+#define STM32H5_RCC_AHB2ENR_OFFSET      0x008c  /* RCC AHB2 peripheral clock enable register */
+#define STM32H5_RCC_AHB4ENR_OFFSET      0x0094  /* RCC AHB4 peripheral clock enable register */
+#define STM32H5_RCC_APB1ENR1_OFFSET     0x009c  /* RCC APB1 peripheral clock enable register 1 */
+#define STM32H5_RCC_APB1ENR2_OFFSET     0x00a0  /* RCC APB1 peripheral clock enable register 2 */
+#define STM32H5_RCC_APB2ENR_OFFSET      0x00a4  /* RCC APB2 peripheral clock enable register */
+#define STM32H5_RCC_APB3ENR_OFFSET      0x00a8  /* RCC APB3 peripheral clock enable register */
+#define STM32H5_RCC_AHB1LPENR_OFFSET    0x00b0  /* RCC AHB1 peripheral clocks enable in Sleep and Stop modes register */
+#define STM32H5_RCC_AHB2LPENR_OFFSET    0x00b4  /* RCC AHB2 peripheral clocks enable in Sleep and Stop modes register */
+#define STM32H5_RCC_AHB4LPENR_OFFSET    0x00bc  /* RCC AHB3 peripheral clocks enable in Sleep and Stop modes register */
+#define STM32H5_RCC_APB1LPENR1_OFFSET   0x00c4  /* RCC APB1 peripheral clocks enable in Sleep and Stop modes register 1 */
+#define STM32H5_RCC_APB1LPENR2_OFFSET   0x00c8  /* RCC APB1 peripheral clocks enable in Sleep and Stop modes register 2 */
+#define STM32H5_RCC_APB2LPENR_OFFSET    0x00cc  /* RCC APB2 peripheral clocks enable in Sleep and Stop modes register */
+#define STM32H5_RCC_APB3LPENR_OFFSET    0x00d0  /* RCC APB3 peripheral clocks enable in Sleep and Stop modes register */
+#define STM32H5_RCC_CCIPR1_OFFSET       0x00d8  /* RCC peripherals independent clock configuration register 1 */
+#define STM32H5_RCC_CCIPR2_OFFSET       0x00dc  /* RCC peripherals independent clock configuration register 2 */
+#define STM32H5_RCC_CCIPR3_OFFSET       0x00e0  /* RCC peripherals independent clock configuration register 3 */
+#define STM32H5_RCC_CCIPR4_OFFSET       0x00e4  /* RCC peripherals independent clock configuration register 5 */
+#define STM32H5_RCC_CCIPR5_OFFSET       0x00e8  /* RCC peripherals independent clock configuration register 5 */
+#define STM32H5_RCC_BDCR_OFFSET         0x00f0  /* RCC Backup domain control register */
+#define STM32H5_RCC_RSR_OFFSET          0x00f4  /* RCC control/status register */ /* TODO: CSR in U5 */
+#define STM32H5_RCC_SECCFGR_OFFSET      0x0110  /* RCC secure configuration register */
+#define STM32H5_RCC_PRIVCFGR_OFFSET     0x0114  /* RCC privilege configuration register */
 
 /* Register Addresses *******************************************************/
 
 #define STM32H5_RCC_CR         (STM32H5_RCC_BASE +  STM32H5_RCC_CR_OFFSET)
 #define STM32H5_RCC_HSICFGR    (STM32H5_RCC_BASE + STM32H5_RCC_HSICFGR_OFFSET)
-#define STM32_RCC_CRRCR        (STM32H5_RCC_BASE + STM32_RCC_CRRCR_OFFSET)
-#define STM32_RCC_CFGR1        (STM32H5_RCC_BASE + STM32_RCC_CFGR1_OFFSET)
-#define STM32_RCC_CFGR2        (STM32H5_RCC_BASE + STM32_RCC_CFGR2_OFFSET)
-#define STM32_RCC_PLL1CFGR     (STM32H5_RCC_BASE + STM32_RCC_PLL1CFGR_OFFSET)
-#define STM32_RCC_PLL2CFGR     (STM32H5_RCC_BASE + STM32_RCC_PLL2CFGR_OFFSET)
-#define STM32_RCC_PLL3CFGR     (STM32H5_RCC_BASE + STM32_RCC_PLL3CFGR_OFFSET)
-#define STM32_RCC_PLL1DIVR     (STM32H5_RCC_BASE + STM32_RCC_PLL1DIVR_OFFSET)
-#define STM32_RCC_PLL1FRACR    (STM32H5_RCC_BASE + STM32_RCC_PLL1FRACR_OFFSET)
-#define STM32_RCC_PLL2DIVR     (STM32H5_RCC_BASE + STM32_RCC_PLL2DIVR_OFFSET)
-#define STM32_RCC_PLL2FRACR    (STM32H5_RCC_BASE + STM32_RCC_PLL2FRACR_OFFSET)
-#define STM32_RCC_PLL3DIVR     (STM32H5_RCC_BASE + STM32_RCC_PLL3DIVR_OFFSET)
-#define STM32_RCC_PLL3FRACR    (STM32H5_RCC_BASE + STM32_RCC_PLL3FRACR_OFFSET)
-#define STM32_RCC_CIER         (STM32H5_RCC_BASE + STM32_RCC_CIER_OFFSET)
-#define STM32_RCC_CIFR         (STM32H5_RCC_BASE + STM32_RCC_CIFR_OFFSET)
-#define STM32_RCC_CICR         (STM32H5_RCC_BASE + STM32_RCC_CICR_OFFSET)
-#define STM32_RCC_AHB1RSTR     (STM32H5_RCC_BASE + STM32_RCC_AHB1RSTR_OFFSET)
-#define STM32_RCC_AHB2RSTR     (STM32H5_RCC_BASE + STM32_RCC_AHB2RSTR_OFFSET)
-#define STM32_RCC_AHB4RSTR     (STM32H5_RCC_BASE + STM32_RCC_AHB4RSTR_OFFSET)
-#define STM32_RCC_APB1LRSTR    (STM32H5_RCC_BASE + STM32_RCC_APB1LRSTR_OFFSET)
-#define STM32_RCC_APB1HRSTR    (STM32H5_RCC_BASE + STM32_RCC_APB1HRSTR_OFFSET)
-#define STM32_RCC_APB2RSTR     (STM32H5_RCC_BASE + STM32_RCC_APB2RSTR_OFFSET)
-#define STM32_RCC_APB3RSTR     (STM32H5_RCC_BASE + STM32_RCC_APB3RSTR_OFFSET)
-#define STM32_RCC_AHB1ENR      (STM32H5_RCC_BASE + STM32_RCC_AHB1ENR_OFFSET)
-#define STM32_RCC_AHB2ENR      (STM32H5_RCC_BASE + STM32_RCC_AHB2ENR_OFFSET)
-#define STM32_RCC_AHB4ENR      (STM32H5_RCC_BASE + STM32_RCC_AHB4ENR_OFFSET)
-#define STM32_RCC_APB1ENR1     (STM32H5_RCC_BASE + STM32_RCC_APB1ENR1_OFFSET)
-#define STM32_RCC_APB1ENR2     (STM32H5_RCC_BASE + STM32_RCC_APB1ENR2_OFFSET)
-#define STM32_RCC_APB2ENR      (STM32H5_RCC_BASE + STM32_RCC_APB2ENR_OFFSET)
-#define STM32_RCC_APB3ENR      (STM32H5_RCC_BASE + STM32_RCC_APB3ENR_OFFSET)
-#define STM32_RCC_AHB1LPENR    (STM32H5_RCC_BASE + STM32_RCC_AHB1LPENR_OFFSET)
-#define STM32_RCC_AHB2LPENR    (STM32H5_RCC_BASE + STM32_RCC_AHB2LPENR_OFFSET)
-#define STM32_RCC_AHB4LPENR    (STM32H5_RCC_BASE + STM32_RCC_AHB4LPENR_OFFSET)
-#define STM32_RCC_APB1LPENR    (STM32H5_RCC_BASE + STM32_RCC_APB1LPENR1_OFFSET)
-#define STM32_RCC_APB1HPENR    (STM32H5_RCC_BASE + STM32_RCC_APB1LPENR2_OFFSET)
-#define STM32_RCC_APB2LPENR    (STM32H5_RCC_BASE + STM32_RCC_APB2LPENR_OFFSET)
-#define STM32_RCC_APB3LPENR    (STM32H5_RCC_BASE + STM32_RCC_APB3LPENR_OFFSET)
-#define STM32_RCC_CCIPR1       (STM32H5_RCC_BASE + STM32_RCC_CCIPR1_OFFSET)
-#define STM32_RCC_CCIPR2       (STM32H5_RCC_BASE + STM32_RCC_CCIPR2_OFFSET)
-#define STM32_RCC_CCIPR3       (STM32H5_RCC_BASE + STM32_RCC_CCIPR3_OFFSET)
-#define STM32_RCC_CCIPR4       (STM32H5_RCC_BASE + STM32_RCC_CCIPR4_OFFSET)
-#define STM32_RCC_CCIPR5       (STM32H5_RCC_BASE + STM32_RCC_CCIPR5_OFFSET)
-#define STM32_RCC_BDCR         (STM32H5_RCC_BASE + STM32_RCC_BDCR_OFFSET)
-#define STM32_RCC_RSR          (STM32H5_RCC_BASE + STM32_RCC_RSR_OFFSET)
-#define STM32_RCC_SECCFGR      (STM32H5_RCC_BASE + STM32_RCC_SECCFGR_OFFSET)
-#define STM32_RCC_PRIVCFGR     (STM32H5_RCC_BASE + STM32_RCC_PRIVCFGR_OFFSET)
+#define STM32H5_RCC_CRRCR        (STM32H5H5_RCC_BASE + STM32H5_RCC_CRRCR_OFFSET)
+#define STM32H5_RCC_CFGR1        (STM32H5H5_RCC_BASE + STM32H5_RCC_CFGR1_OFFSET)
+#define STM32H5_RCC_CFGR2        (STM32H5H5_RCC_BASE + STM32H5_RCC_CFGR2_OFFSET)
+#define STM32H5_RCC_PLL1CFGR     (STM32H5H5_RCC_BASE + STM32H5_RCC_PLL1CFGR_OFFSET)
+#define STM32H5_RCC_PLL2CFGR     (STM32H5H5_RCC_BASE + STM32H5_RCC_PLL2CFGR_OFFSET)
+#define STM32H5_RCC_PLL3CFGR     (STM32H5H5_RCC_BASE + STM32H5_RCC_PLL3CFGR_OFFSET)
+#define STM32H5_RCC_PLL1DIVR     (STM32H5H5_RCC_BASE + STM32H5_RCC_PLL1DIVR_OFFSET)
+#define STM32H5_RCC_PLL1FRACR    (STM32H5H5_RCC_BASE + STM32H5_RCC_PLL1FRACR_OFFSET)
+#define STM32H5_RCC_PLL2DIVR     (STM32H5H5_RCC_BASE + STM32H5_RCC_PLL2DIVR_OFFSET)
+#define STM32H5_RCC_PLL2FRACR    (STM32H5H5_RCC_BASE + STM32H5_RCC_PLL2FRACR_OFFSET)
+#define STM32H5_RCC_PLL3DIVR     (STM32H5H5_RCC_BASE + STM32H5_RCC_PLL3DIVR_OFFSET)
+#define STM32H5_RCC_PLL3FRACR    (STM32H5H5_RCC_BASE + STM32H5_RCC_PLL3FRACR_OFFSET)
+#define STM32H5_RCC_CIER         (STM32H5H5_RCC_BASE + STM32H5_RCC_CIER_OFFSET)
+#define STM32H5_RCC_CIFR         (STM32H5H5_RCC_BASE + STM32H5_RCC_CIFR_OFFSET)
+#define STM32H5_RCC_CICR         (STM32H5H5_RCC_BASE + STM32H5_RCC_CICR_OFFSET)
+#define STM32H5_RCC_AHB1RSTR     (STM32H5H5_RCC_BASE + STM32H5_RCC_AHB1RSTR_OFFSET)
+#define STM32H5_RCC_AHB2RSTR     (STM32H5H5_RCC_BASE + STM32H5_RCC_AHB2RSTR_OFFSET)
+#define STM32H5_RCC_AHB4RSTR     (STM32H5H5_RCC_BASE + STM32H5_RCC_AHB4RSTR_OFFSET)
+#define STM32H5_RCC_APB1LRSTR    (STM32H5H5_RCC_BASE + STM32H5_RCC_APB1LRSTR_OFFSET)
+#define STM32H5_RCC_APB1HRSTR    (STM32H5H5_RCC_BASE + STM32H5_RCC_APB1HRSTR_OFFSET)
+#define STM32H5_RCC_APB2RSTR     (STM32H5H5_RCC_BASE + STM32H5_RCC_APB2RSTR_OFFSET)
+#define STM32H5_RCC_APB3RSTR     (STM32H5H5_RCC_BASE + STM32H5_RCC_APB3RSTR_OFFSET)
+#define STM32H5_RCC_AHB1ENR      (STM32H5H5_RCC_BASE + STM32H5_RCC_AHB1ENR_OFFSET)
+#define STM32H5_RCC_AHB2ENR      (STM32H5H5_RCC_BASE + STM32H5_RCC_AHB2ENR_OFFSET)
+#define STM32H5_RCC_AHB4ENR      (STM32H5H5_RCC_BASE + STM32H5_RCC_AHB4ENR_OFFSET)
+#define STM32H5_RCC_APB1ENR1     (STM32H5H5_RCC_BASE + STM32H5_RCC_APB1ENR1_OFFSET)
+#define STM32H5_RCC_APB1ENR2     (STM32H5H5_RCC_BASE + STM32H5_RCC_APB1ENR2_OFFSET)
+#define STM32H5_RCC_APB2ENR      (STM32H5H5_RCC_BASE + STM32H5_RCC_APB2ENR_OFFSET)
+#define STM32H5_RCC_APB3ENR      (STM32H5H5_RCC_BASE + STM32H5_RCC_APB3ENR_OFFSET)
+#define STM32H5_RCC_AHB1LPENR    (STM32H5H5_RCC_BASE + STM32H5_RCC_AHB1LPENR_OFFSET)
+#define STM32H5_RCC_AHB2LPENR    (STM32H5H5_RCC_BASE + STM32H5_RCC_AHB2LPENR_OFFSET)
+#define STM32H5_RCC_AHB4LPENR    (STM32H5H5_RCC_BASE + STM32H5_RCC_AHB4LPENR_OFFSET)
+#define STM32H5_RCC_APB1LPENR    (STM32H5H5_RCC_BASE + STM32H5_RCC_APB1LPENR1_OFFSET)
+#define STM32H5_RCC_APB1HPENR    (STM32H5H5_RCC_BASE + STM32H5_RCC_APB1LPENR2_OFFSET)
+#define STM32H5_RCC_APB2LPENR    (STM32H5H5_RCC_BASE + STM32H5_RCC_APB2LPENR_OFFSET)
+#define STM32H5_RCC_APB3LPENR    (STM32H5H5_RCC_BASE + STM32H5_RCC_APB3LPENR_OFFSET)
+#define STM32H5_RCC_CCIPR1       (STM32H5H5_RCC_BASE + STM32H5_RCC_CCIPR1_OFFSET)
+#define STM32H5_RCC_CCIPR2       (STM32H5H5_RCC_BASE + STM32H5_RCC_CCIPR2_OFFSET)
+#define STM32H5_RCC_CCIPR3       (STM32H5H5_RCC_BASE + STM32H5_RCC_CCIPR3_OFFSET)
+#define STM32H5_RCC_CCIPR4       (STM32H5H5_RCC_BASE + STM32H5_RCC_CCIPR4_OFFSET)
+#define STM32H5_RCC_CCIPR5       (STM32H5H5_RCC_BASE + STM32H5_RCC_CCIPR5_OFFSET)
+#define STM32H5_RCC_BDCR         (STM32H5H5_RCC_BASE + STM32H5_RCC_BDCR_OFFSET)
+#define STM32H5_RCC_RSR          (STM32H5H5_RCC_BASE + STM32H5_RCC_RSR_OFFSET)
+#define STM32H5_RCC_SECCFGR      (STM32H5H5_RCC_BASE + STM32H5_RCC_SECCFGR_OFFSET)
+#define STM32H5_RCC_PRIVCFGR     (STM32H5H5_RCC_BASE + STM32H5_RCC_PRIVCFGR_OFFSET)
 
 /* Register Bitfield Definitions ********************************************/
 
