@@ -83,10 +83,8 @@ void stm32h5_rcc_enablelse(void)
 
   regval = getreg32(STM32H5_RCC_BDCR);
 
-  if ((regval & (RCC_BDCR_LSEON | RCC_BDCR_LSERDY |
-                 RCC_BDCR_LSESYSEN | RCC_BDCR_LSESYSEN)) !=
-                (RCC_BDCR_LSEON | RCC_BDCR_LSERDY |
-                 RCC_BDCR_LSESYSEN | RCC_BDCR_LSESYSEN))
+  if ((regval & (RCC_BDCR_LSEON | RCC_BDCR_LSERDY)) !=
+                (RCC_BDCR_LSEON | RCC_BDCR_LSERDY))
     {
       /* The LSE is in the RTC domain and write access is denied to this
        * domain after reset, you have to enable write access using DBP bit in
@@ -149,26 +147,6 @@ void stm32h5_rcc_enablelse(void)
         }
       while (drive < sizeof(drives) / sizeof(drives[0]));
 #endif
-
-      if (timeout != 0)
-        {
-          /* Enable LSE system clock.  The LSE system clock seems to provide
-           * a means to gate the LSE clock distribution to peripherals.  It
-           * must be enabled for MSI PLL mode (syncing the MSI to the LSE).
-           */
-
-          regval |= RCC_BDCR_LSESYSEN;
-
-          putreg32(regval, STM32H5_RCC_BDCR);
-
-          /* Wait for the LSE system clock to be ready */
-
-          while (!((regval = getreg32(STM32H5_RCC_BDCR)) &
-                   RCC_BDCR_LSESYSRDY))
-            {
-              stm32h5_waste();
-            }
-        }
 
 #ifdef CONFIG_STM32H5_RTC_LSECLOCK_LOWER_RUN_DRV_CAPABILITY
 

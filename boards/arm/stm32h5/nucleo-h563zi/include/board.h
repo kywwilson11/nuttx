@@ -146,11 +146,11 @@
 
 #if defined(CONFIG_STM32H5_USBFS) || defined(CONFIG_STM32H5_RNG)
 #  define STM32H5_USE_CLK48       1
-#  define STM32H5_CLK48_SEL       RCC_CCIPR_CLK48SEL_HSI48
+#  define STM32H5_CLKUSB_SEL      RCC_CCIPR4_USBSEL_HSI48KERCK 
 #  define STM32H5_HSI48_SYNCSRC   SYNCSRC_NONE
 #endif
 
-/* Enable LSE (for the RTC and for CSI autotrimming) */
+/* Enable LSE (for the RTC) */
 
 #define STM32H5_USE_LSE           1
 
@@ -191,11 +191,11 @@
 #define STM32H5_RCC_CFGR2_PPRE3    RCC_CFGR2_PPRE3_HCLK1       /* PCLK2 = HCLK / 1 */
 #define STM32H5_PCLK3_FREQUENCY   (STM32H5_HCLK_FREQUENCY / 1)
 
-#define STM32H5_APB1_LPTIM1_CLKIN  (STM32H5_PCLK3_FREQUENCY)
-#define STM32H5_APB1_LPTIM3_CLKIN  (STM32H5_PCLK3_FREQUENCY)
-#define STM32H5_APB1_LPTIM4_CLKIN  (STM32H5_PCLK3_FREQUENCY)
-#define STM32H5_APB1_LPTIM5_CLKIN  (STM32H5_PCLK3_FREQUENCY)
-#define STM32H5_APB1_LPTIM6_CLKIN  (STM32H5_PCLK3_FREQUENCY)
+#define STM32H5_APB3_LPTIM1_CLKIN  (STM32H5_PCLK3_FREQUENCY)
+#define STM32H5_APB3_LPTIM3_CLKIN  (STM32H5_PCLK3_FREQUENCY)
+#define STM32H5_APB3_LPTIM4_CLKIN  (STM32H5_PCLK3_FREQUENCY)
+#define STM32H5_APB3_LPTIM5_CLKIN  (STM32H5_PCLK3_FREQUENCY)
+#define STM32H5_APB3_LPTIM6_CLKIN  (STM32H5_PCLK3_FREQUENCY)
 /* The timer clock frequencies are automatically defined by hardware.  If the
  * APB prescaler equals 1, the timer clock frequencies are set to the same
  * frequency as that of the APB domain. Otherwise they are set to twice.
@@ -220,6 +220,9 @@
 #define BOARD_LPTIM4_FREQUENCY  STM32H5_HCLK_FREQUENCY
 #define BOARD_LPTIM5_FREQUENCY  STM32H5_HCLK_FREQUENCY
 #define BOARD_LPTIM6_FREQUENCY  STM32H5_HCLK_FREQUENCY
+
+/* Configure the Kernel clocks */
+
 
 /* DMA Channel/Stream Selections ********************************************/
 

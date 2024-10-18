@@ -42,7 +42,7 @@
 
 #define HSERDY_TIMEOUT (100 * CONFIG_BOARD_LOOPSPERMSEC)
 
-/* Same for HSI and MSI */
+/* Same for HSI and CSI */
 
 #define HSIRDY_TIMEOUT HSERDY_TIMEOUT
 #define LSIRDY_TIMEOUT HSERDY_TIMEOUT
@@ -51,11 +51,10 @@
 
 #define HSE_DIVISOR (STM32H5_HSE_FREQUENCY + 500000) / 1000000
 
-/* TODO: Fix this CCIPR does not have this bit */
 /* Determine if board wants to use HSI48 as 48 MHz oscillator. */
 
 #if defined(CONFIG_STM32H5_HAVE_HSI48) && defined(STM32H5_USE_CLK48)
-#  if STM32H5_CLK48_SEL == RCC_CCIPR_CLK48SEL_HSI48
+#  if STM32H5_CLKUSB_SEL == RCC_CCIPR4_USBSEL_HSI48KERCK
 #    define STM32H5_USE_HSI48
 #  endif
 #endif
@@ -769,22 +768,15 @@ static inline void rcc_enableapb3(void)
 
 }
 /****************************************************************************
- * Name: rcc_enableccip1
+ * Name: rcc_enableccip
  *
  * Description:
  *   Set peripherals independent clock configuration.
  *
  ****************************************************************************/
 
-static inline void rcc_enableccip1(void)
+static inline void rcc_enableccip(void)
 {
-  uint32_t regval;
-  volatile int32_t timeout;
-
-  regval  = getreg32(STM32H5_RCC_CCIPR1);
-
-
-
 }
 
 /****************************************************************************
@@ -805,6 +797,13 @@ void stm32h5_rcc_enableperipherals(void)
   rcc_enableapb1h();
   rcc_enableapb2();
   rcc_enableapb3();
+
+#ifdef STM32H5_USE_HSI48
+  /* Enable HSI48 clocking to support USB transfers or RNG */
+
+  stm32h5_enable_hsi48(STM32L4_HSI48_SYNCSRC);
+#endif
+
 }
 
 /****************************************************************************
@@ -1122,8 +1121,6 @@ void stm32h5_stdclockconfig(void)
         {
         }
 
-
-
       /* Configure PLL3 */
 
       /* PLL3CFGR */
@@ -1156,7 +1153,6 @@ void stm32h5_stdclockconfig(void)
 #endif
       
       putreg32(regval, STM32H5_RCC_PLL3CFGR);
-
 
       /* PLL3DIVR and PLL3FRACR */
       
@@ -1223,7 +1219,7 @@ void stm32h5_stdclockconfig(void)
        *
        * TODO: There is another case where the LSE needs to
        * be enabled: if the MCO1 pin selects LSE as source.
-       * XXX and other cases, like automatic trimming of MSI for USB use
+       * XXX and other cases, like automatic trimming of CSI for USB use
        */
 
       /* ensure Power control is enabled since it is indirectly required
@@ -1238,18 +1234,11 @@ void stm32h5_stdclockconfig(void)
 
       /* Turn on the LSE oscillator
        * XXX this will almost surely get moved since we also want to use
-       * this for automatically trimming MSI, etc.
+       * this for automatically trimming CSI, etc.
        */
 
       stm32h5_rcc_enablelse();
 
-#  if defined(STM32H5_BOARD_USEMSI)
-      /* Now that LSE is up, auto trim the MSI */
-
-      regval  = getreg32(STM32H5_RCC_CR);
-      regval |= RCC_CR_MSIPLLEN;
-      putreg32(regval, STM32H5_RCC_CR);
-#  endif
 #endif /* STM32H5_USE_LSE */
     }
 }
