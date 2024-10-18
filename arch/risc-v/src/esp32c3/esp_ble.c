@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/xtensa/src/esp32/esp32_ble.c
+ * arch/risc-v/src/esp32c3/esp_ble.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -40,7 +40,11 @@
 #include <nuttx/wireless/bluetooth/bt_driver.h>
 #include <nuttx/wireless/bluetooth/bt_uart.h>
 
-#include "esp32_ble_adapter.h"
+#if defined(CONFIG_UART_BTH4)
+#  include <nuttx/serial/uart_bth4.h>
+#endif
+
+#include "esp_ble_adapter.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -54,43 +58,42 @@
  * Private Types
  ****************************************************************************/
 
-struct esp32_ble_priv_s
+struct esp_ble_priv_s
 {
-  struct bt_driver_s drv;         /* NuttX BT/BLE driver data */
+  struct bt_driver_s drv;   /* NuttX BT/BLE driver data */
 };
 
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
-static int esp32_ble_open(struct bt_driver_s *drv);
-static int esp32_ble_send(struct bt_driver_s *drv,
-                          enum bt_buf_type_e type,
-                          void *data, size_t len);
-static void esp32_ble_close(struct bt_driver_s *drv);
-
-static void esp32_ble_send_ready(void);
-static int esp32_ble_recv_cb(uint8_t *data, uint16_t len);
+static int esp_ble_open(struct bt_driver_s *drv);
+static int esp_ble_send(struct bt_driver_s *drv,
+                        enum bt_buf_type_e type,
+                        void *data, size_t len);
+static void esp_ble_close(struct bt_driver_s *drv);
+static void esp_ble_send_ready(void);
+static int esp_ble_recv_cb(uint8_t *data, uint16_t len);
 
 /****************************************************************************
  * Private Data
  ****************************************************************************/
 
-static struct esp32_ble_priv_s g_ble_priv =
+static struct esp_ble_priv_s g_ble_priv =
 {
   .drv =
     {
       .head_reserve = H4_HEADER_SIZE,
-      .open         = esp32_ble_open,
-      .send         = esp32_ble_send,
-      .close        = esp32_ble_close
+      .open         = esp_ble_open,
+      .send         = esp_ble_send,
+      .close        = esp_ble_close
     }
 };
 
 static esp_vhci_host_callback_t vhci_host_cb =
 {
-  .notify_host_send_available = esp32_ble_send_ready,
-  .notify_host_recv           = esp32_ble_recv_cb
+  .notify_host_send_available = esp_ble_send_ready,
+  .notify_host_recv           = esp_ble_recv_cb
 };
 
 /****************************************************************************
@@ -98,10 +101,10 @@ static esp_vhci_host_callback_t vhci_host_cb =
  ****************************************************************************/
 
 /****************************************************************************
- * Name: esp32_ble_send_ready
+ * Name: esp_ble_send_ready
  *
  * Description:
- *   If the controller could send an HCI command, this function is called.
+ *   If the controller could send HCI comand will callback this function.
  *
  * Input Parameters:
  *   None
@@ -111,15 +114,15 @@ static esp_vhci_host_callback_t vhci_host_cb =
  *
  ****************************************************************************/
 
-static void esp32_ble_send_ready(void)
+static void esp_ble_send_ready(void)
 {
 }
 
 /****************************************************************************
- * Name: esp32_ble_recv_cb
+ * Name: esp_ble_recv_cb
  *
  * Description:
- *   BLE receive callback function when BLE hardware receives a packet.
+ *   BLE receive callback function when BLE hardware receive packet
  *
  * Input Parameters:
  *   data - BLE packet data pointer
@@ -130,19 +133,12 @@ static void esp32_ble_send_ready(void)
  *
  ****************************************************************************/
 
-static int esp32_ble_recv_cb(uint8_t *data, uint16_t len)
+static int esp_ble_recv_cb(uint8_t *data, uint16_t len)
 {
   int ret;
   bool valid;
   enum bt_buf_type_e type;
-  struct esp32_ble_priv_s *priv = &g_ble_priv;
-
-  wlinfo("len = %d\n", len);
-  wlinfo("host recv pkt: ");
-  for (uint16_t i = 0; i < len; i++)
-    {
-      wlinfo("%02x\n", data[i]);
-    }
+  struct esp_ble_priv_s *priv = &g_ble_priv;
 
   switch (data[0])
     {
@@ -165,12 +161,11 @@ static int esp32_ble_recv_cb(uint8_t *data, uint16_t len)
 
   if (!valid)
     {
-      wlerr("Invalid H4 header\n");
       ret = ERROR;
     }
   else
     {
-      /* Send packet to host */
+      /* send packet to host */
 
       ret = bt_netdev_receive(&priv->drv, type,
                               &data[H4_HEADER_SIZE],
@@ -185,10 +180,10 @@ static int esp32_ble_recv_cb(uint8_t *data, uint16_t len)
 }
 
 /****************************************************************************
- * Name: esp32_ble_send
+ * Name: esp_ble_send
  *
  * Description:
- *   ESP32 BLE send callback function for BT driver.
+ *   ESP32-C3 BLE send callback function for BT driver.
  *
  * Input Parameters:
  *   drv  - BT driver pointer
@@ -201,15 +196,15 @@ static int esp32_ble_recv_cb(uint8_t *data, uint16_t len)
  *
  ****************************************************************************/
 
-static int esp32_ble_send(struct bt_driver_s *drv,
-                          enum bt_buf_type_e type,
-                          void *data, size_t len)
+static int esp_ble_send(struct bt_driver_s *drv,
+                        enum bt_buf_type_e type,
+                        void *data, size_t len)
 {
   uint8_t *hdr = (uint8_t *)data - drv->head_reserve;
 
   if ((len + H4_HEADER_SIZE) > BLE_BUF_SIZE)
     {
-      return -EOVERFLOW;
+      return -EINVAL;
     }
 
   if (type == BT_CMD)
@@ -226,38 +221,37 @@ static int esp32_ble_send(struct bt_driver_s *drv,
     }
   else
     {
-      wlerr("Unknown BT packet type 0x%x\n", type);
       return -EINVAL;
     }
 
-  if (esp32_vhci_host_check_send_available())
+  if (esp_vhci_host_check_send_available())
     {
-      esp32_vhci_host_send_packet(hdr, len + drv->head_reserve);
+      esp_vhci_host_send_packet(hdr, len + drv->head_reserve);
     }
 
   return len;
 }
 
 /****************************************************************************
- * Name: esp32_ble_close
+ * Name: esp_ble_close
  *
  * Description:
  *   ESP32-C3 BLE close callback function for BT driver.
  *
  * Input Parameters:
- *   drv  - BT driver pointer
+ *   drv - BT driver pointer
  *
  * Returned Value:
  *   None
  *
  ****************************************************************************/
 
-static void esp32_ble_close(struct bt_driver_s *drv)
+static void esp_ble_close(struct bt_driver_s *drv)
 {
 }
 
 /****************************************************************************
- * Name: esp32_ble_open
+ * Name: esp_ble_open
  *
  * Description:
  *   ESP32-C3 BLE open callback function for BT driver.
@@ -266,11 +260,11 @@ static void esp32_ble_close(struct bt_driver_s *drv)
  *   drv - BT driver pointer
  *
  * Returned Value:
- *   OK
+ *   OK on success or a negated value on failure.
  *
  ****************************************************************************/
 
-static int esp32_ble_open(struct bt_driver_s *drv)
+static int esp_ble_open(struct bt_driver_s *drv)
 {
   return OK;
 }
@@ -280,7 +274,7 @@ static int esp32_ble_open(struct bt_driver_s *drv)
  ****************************************************************************/
 
 /****************************************************************************
- * Name: esp32_ble_initialize
+ * Name: esp_ble_initialize
  *
  * Description:
  *   Init BT controller
@@ -289,39 +283,44 @@ static int esp32_ble_open(struct bt_driver_s *drv)
  *   None
  *
  * Returned Value:
- *   OK on success or a negated value on failure.
+ *   success or fail
  *
  ****************************************************************************/
 
-int esp32_ble_initialize(void)
+int esp_ble_initialize(void)
 {
   int ret;
 
-  ret = esp32_bt_controller_init();
+  ret = esp_bt_controller_init();
   if (ret)
     {
       wlerr("Failed to initialize BLE ret=%d\n", ret);
       return ERROR;
     }
 
-  ret = esp32_bt_controller_enable(ESP_BT_MODE_BLE);
+  ret = esp_bt_controller_enable(ESP_BT_MODE_BLE);
   if (ret)
     {
       wlerr("Failed to Enable BLE ret=%d\n", ret);
       return ERROR;
     }
 
-  ret = esp32_vhci_register_callback(&vhci_host_cb);
+  ret = esp_vhci_register_callback(&vhci_host_cb);
   if (ret)
     {
+      esp_bt_controller_disable();
       wlerr("Failed to register BLE callback ret=%d\n", ret);
       return ERROR;
     }
 
-  ret = bt_driver_register(&g_ble_priv.drv);
+#if defined(CONFIG_UART_BTH4)
+  ret = uart_bth4_register(CONFIG_ESPRESSIF_BLE_TTY_NAME, &g_ble_priv.drv);
+#else
+  ret = bt_netdev_register(&g_ble_priv.drv);
+#endif
   if (ret < 0)
     {
-      wlerr("bt_driver_register error: %d\n", ret);
+      wlerr("bt_netdev_register error: %d\n", ret);
       return ret;
     }
 

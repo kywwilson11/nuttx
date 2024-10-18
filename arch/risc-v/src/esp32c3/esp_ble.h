@@ -1,7 +1,5 @@
 /****************************************************************************
- * include/nuttx/memoryregion.h
- *
- * SPDX-License-Identifier: Apache-2.0
+ * arch/risc-v/src/esp32c3/esp_ble.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,26 +18,33 @@
  *
  ****************************************************************************/
 
-#ifndef __INCLUDE_MEMORYREGION_H
-#define __INCLUDE_MEMORYREGION_H
+#ifndef __ARCH_RISCV_SRC_ESP32C3_ESP_BLE_H
+#define __ARCH_RISCV_SRC_ESP32C3_ESP_BLE_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <stddef.h>
+#include <nuttx/config.h>
 
 /****************************************************************************
- * Public Types
+ * Public Function Prototypes
  ****************************************************************************/
 
-/* This describes binfmt coredump filed */
+/****************************************************************************
+ * Name: esp_ble_initialize
+ *
+ * Description:
+ *   Init BT controller
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned Value:
+ *   success or fail
+ *
+ ****************************************************************************/
 
-struct memory_region_s
-{
-  uintptr_t start;   /* Start address of this region */
-  uintptr_t end;     /* End address of this region */
-  uint32_t  flags;   /* Figure 5-3: Segment Flag Bits: PF_[X|W|R] */
-};
+int esp_ble_initialize(void);
 
-#endif /* __INCLUDE_MEMORYREGION_H */
+#endif /* __ARCH_RISCV_SRC_ESP32C3_ESP_BLE_H */
