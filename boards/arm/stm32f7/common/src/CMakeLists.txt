@@ -32,4 +32,25 @@ if(CONFIG_AUDIO_CS4344)
   list(APPEND SRCS stm32_cs4344.c)
 endif()
 
+if(CONFIG_STM32F7_CAN)
+  if(CONFIG_STM32F7_CAN_CHARDRIVER)
+    list(APPEND SRCS stm32_can.c)
+  endif()
+  if(CONFIG_STM32F7_CAN_SOCKET)
+    list(APPEND SRCS stm32_cansock.c)
+  endif()
+endif()
+
+if(CONFIG_STM32F7_ROMFS)
+  list(APPEND SRCS stm32_romfs_initialize.c)
+endif()
+
+if(CONFIG_BOARDCTL_RESET)
+  list(APPEND SRCS stm32_reset.c)
+endif()
+
+if(CONFIG_STM32F7_SPI_TEST)
+  list(APPEND SRCS stm32_spitest.c)
+endif()
+
 target_sources(board PRIVATE ${SRCS})

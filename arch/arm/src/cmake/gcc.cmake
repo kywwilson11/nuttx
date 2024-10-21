@@ -53,25 +53,22 @@ endif()
 
 set(NO_LTO "-fno-lto")
 
-if(CMAKE_C_COMPILER_VERSION VERSION_GREATER 4.9)
-  # force color for gcc > 4.9
-  add_compile_options(-fdiagnostics-color=always)
-endif()
-
 # Workaround to skip -Warray-bounds check due to bug of GCC-12: Wrong warning
 # array subscript [0] is outside array bounds:
 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
 
-execute_process(COMMAND ${CMAKE_C_COMPILER} --version
-                OUTPUT_VARIABLE GCC_VERSION_OUTPUT)
-string(REGEX MATCH "\\+\\+.* ([0-9]+)\\.[0-9]+" GCC_VERSION_REGEX
-             "${GCC_VERSION_OUTPUT}")
-set(GCCVER ${CMAKE_MATCH_1})
+if(CONFIG_ARCH_TOOLCHAIN_GNU)
+  execute_process(COMMAND ${CMAKE_C_COMPILER} --version
+                  OUTPUT_VARIABLE GCC_VERSION_OUTPUT)
+  string(REGEX MATCH "\\+\\+.* ([0-9]+)\\.[0-9]+" GCC_VERSION_REGEX
+               "${GCC_VERSION_OUTPUT}")
+  set(GCCVER ${CMAKE_MATCH_1})
 
-if(GCCVER GREATER_EQUAL 12)
-  add_compile_options(--param=min-pagesize=0)
-  if(CONFIG_ARCH_RAMFUNCS)
-    add_link_options(-Wl,--no-warn-rwx-segments)
+  if(GCCVER GREATER_EQUAL 12)
+    add_compile_options(--param=min-pagesize=0)
+    if(CONFIG_ARCH_RAMFUNCS)
+      add_link_options(-Wl,--no-warn-rwx-segments)
+    endif()
   endif()
 endif()
 
