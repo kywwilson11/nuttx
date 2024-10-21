@@ -142,6 +142,7 @@
 #define RCC_CR_HSIKERON                  (1 << 2)  /* Bit    2: HSI clock enable in Stop mode */
 #define RCC_CR_HSIDIV_SHIFT              (3)       /* Bit [4:3] HSI Divider */
 #define RCC_CR_HSIDIV_MASK               (0x3 << RCC_CR_HSIDIV_SHIFT) 
+#  define RCC_CR_HSIDIV(n)               (((n) << RCC_CR_HSIDIV_SHIFT & RCC_CR_HSIDIV_MASK)) /* m = 0 to 3 */
 #define RCC_CR_HSIDIVF                   (1 << 5)  /* Bit    5: HSI divider flag */
 
 #define RCC_CR_CSION                     (1 << 8)  /* Bit    8:  CSI clock enable */

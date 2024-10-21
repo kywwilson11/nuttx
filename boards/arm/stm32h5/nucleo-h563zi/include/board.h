@@ -66,7 +66,7 @@
  *   Flash Latency(WS)   : 5
  */
 
-/* HSI - 64 MHz RC factory-trimmed
+/* HSI - 32 MHz RC factory-trimmed
  * LSI - 32 KHz RC
  * CSI - 4 MHz, autotrimmed via LSE
  * HSE - not installed
@@ -75,25 +75,26 @@
  */
 
 #define STM32H5_SYSCLK_FREQUENCY  250000000ul
-#define STM32H5_HSI_FREQUENCY      64000000ul
+#define STM32H5_HSI_FREQUENCY      32000000ul
 #define STM32H5_LSI_FREQUENCY         32000
 #define STM32H5_LSE_FREQUENCY         32768
 
-#define STM32H5_BOARD_USEHSI      1
+#define STM32H5_BOARD_USEHSI       1
+#define STM32H5_CR_HSIDIV          RCC_CR_HSIDIV(1)
 
 /* prescaler common to all PLL inputs */
 
 /* 'main' PLL1 config; we use this to generate our system clock */
 
-/* Use 64 MHz HSI, set M to 4, N to 15, FRAC to 0x1400 (5120)
- * SYSCLK = (64000000 / 4) * (15 + (5120/8192)) = 250000000 
+/* Use 32 MHz HSI, set M to 2, N to 15, FRAC to 0x1400 (5120)
+ * SYSCLK = (32000000 / 2) * (15 + (5120/8192)) = 250000000 
  */
 
 #define STM32H5_PLL1CFGR_PLL1FRACEN        RCC_PLL1CFGR_PLL1FRACEN 
 #define STM32H5_PLL1CFGR_PLL1VCOSEL        RCC_PLL1CFGR_PLL1VCOSEL
 #define STM32H5_PLL1CFGR_PLLRGE            RCC_PLL1CFGR_PLL1RGE_8_16M 
 
-#define STM32H5_PLL1CFGR_PLL1M             RCC_PLL1CFGR_PLL1M(4)
+#define STM32H5_PLL1CFGR_PLL1M             RCC_PLL1CFGR_PLL1M(2)
 #define STM32H5_PLL1DIVR_PLL1N             RCC_PLL1DIVR_PLL1N(15)
 
 #define STM32H5_PLL1DIVR_PLL1P             RCC_PLL1DIVR_PLL1P(1)

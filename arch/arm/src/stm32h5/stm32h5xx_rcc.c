@@ -827,6 +827,11 @@ void stm32h5_stdclockconfig(void)
 
   regval  = getreg32(STM32H5_RCC_CR);
   regval |= RCC_CR_HSION;           /* Enable HSI */
+ 
+  /*  HSIDIV kept at default (32 MHz)
+  regval |= STM32H5_CR_HSIDIV;
+   */  
+
   putreg32(regval, STM32H5_RCC_CR);
 
   /* Wait until the HSI is ready (or until a timeout elapsed) */
@@ -842,6 +847,9 @@ void stm32h5_stdclockconfig(void)
           break;
         }
     }
+
+    /* TODO: Possibly add logic for checking HSIDIVF */
+
 #endif
 
 #if defined(STM32H5_BOARD_USEHSI)
@@ -914,7 +922,6 @@ void stm32h5_stdclockconfig(void)
 
   if (timeout > 0)
     {
-      /* TODO Look at power stuff next */
       /* Select main regulator voltage range according to system clock
        * frequency.
        */
@@ -925,31 +932,34 @@ void stm32h5_stdclockconfig(void)
 
       /* Select correct main regulator range */
 
-      regval = getreg32(STM32H5_PWR_CR1);
-      regval &= ~PWR_CR1_VOS_MASK;
+      regval = getreg32(STM32H5_PWR_VOSCR);
+      regval &= ~PWR_VOSCR_VOS_MASK;
 
-      if (STM32H5_SYSCLK_FREQUENCY > 80000000)
+      if (STM32H5_SYSCLK_FREQUENCY > 200000000)
         {
-          regval |= PWR_CR1_VOS_RANGE0;
+          regval |= PWR_VOSCR_VOS_RANGE0;
         }
-      else if (STM32H5_SYSCLK_FREQUENCY > 26000000)
+      else if (STM32H5_SYSCLK_FREQUENCY > 150000000)
         {
-          regval |= PWR_CR1_VOS_RANGE1;
+          regval |= PWR_VOSCR_VOS_RANGE1;
+        }
+      else if (STM32H5_SYSCLK_FREQUENCY > 100000000)
+        {
+          regval |= PWR_VOSCR_VOS_RANGE2;
         }
       else
         {
-          regval |= PWR_CR1_VOS_RANGE0;
+          regval |= PWR_VOSCR_VOS_RANGE3;
         }
 
-      putreg32(regval, STM32H5_PWR_CR1);
+      putreg32(regval, STM32H5_PWR_VOSCR);
 
       /* Wait for voltage regulator to stabilize */
 
-      while (getreg32(STM32H5_PWR_SR2) & PWR_SR2_VOSF)
+      while (!(getreg32(STM32H5_PWR_VOSSR) & PWR_VOSSR_ACTVOSRDY))
         {
         }
 
-      
       regval  = getreg32(STM32H5_RCC_CFGR2);
       /* Set the HCLK source/divider */
 
@@ -1189,7 +1199,10 @@ void stm32h5_stdclockconfig(void)
         {
         }
 
-      /* Enable FLASH 5 wait states */
+      /* 250 MHz SYSCLK. VOS0 = 1.30V to 1.40V
+       * Enable FLASH 5 wait states 
+       * See Table 44. in Reference Manual
+       */
 
       regval = FLASH_ACR_LATENCY_5;
       putreg32(regval, STM32H5_FLASH_ACR);
