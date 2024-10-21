@@ -61,54 +61,10 @@ static inline void stm32_pwr_modifyreg(uint8_t offset, uint16_t clearbits,
               (uint32_t)setbits);
 }
 
+static inline void stm32h5_set_vos_range
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-
-/****************************************************************************
- * Name: enableclk
- *
- * Description:
- *   Enable/disable the clock to the power control peripheral.  Enabling must
- *   be done after the APB1 clock is validly configured, and prior to using
- *   any functionality controlled by the PWR block (i.e. much of anything
- *   else provided by this module).
- *
- * Input Parameters:
- *   enable - True: enable the clock to the Power control (PWR) block.
- *
- * Returned Value:
- *   True:  the PWR block was previously enabled.
- *
- ****************************************************************************/
-
-bool stm32_pwr_enableclk(bool enable)
-{
-  uint32_t regval;
-  bool wasenabled;
-
-  regval = getreg32(STM32_RCC_AHB3ENR);
-  wasenabled = ((regval & RCC_AHB3ENR_PWREN) != 0);
-
-  /* Power interface clock enable. */
-
-  if (wasenabled && !enable)
-    {
-      /* Disable power interface clock */
-
-      regval &= ~RCC_AHB3ENR_PWREN;
-      putreg32(regval, STM32_RCC_AHB3ENR);
-    }
-  else if (!wasenabled && enable)
-    {
-      /* Enable power interface clock */
-
-      regval |= RCC_AHB3ENR_PWREN;
-      putreg32(regval, STM32_RCC_AHB3ENR);
-    }
-
-  return wasenabled;
-}
 
 /****************************************************************************
  * Name: stm32_pwr_enablebkp
@@ -132,8 +88,8 @@ bool stm32_pwr_enablebkp(bool writable)
 
   /* Get the current state of the PWR disable Backup domain register */
 
-  regval      = stm32_pwr_getreg(STM32_PWR_DBPR_OFFSET);
-  waswritable = ((regval & PWR_DBPR_DBP) != 0);
+  regval      = stm32_pwr_getreg(STM32_PWR_DBPCR_OFFSET);
+  waswritable = ((regval & PWR_DBPCR_DBP) != 0);
 
   /* Enable or disable the ability to write */
 
@@ -141,15 +97,15 @@ bool stm32_pwr_enablebkp(bool writable)
     {
       /* Disable backup domain access */
 
-      regval &= ~PWR_DBPR_DBP;
-      stm32_pwr_putreg(STM32_PWR_DBPR_OFFSET, regval);
+      regval &= ~PWR_DBPCR_DBP;
+      stm32_pwr_putreg(STM32_PWR_DBPCR_OFFSET, regval);
     }
   else if (!waswritable && writable)
     {
       /* Enable backup domain access */
 
-      regval |= PWR_DBPR_DBP;
-      stm32_pwr_putreg(STM32_PWR_DBPR_OFFSET, regval);
+      regval |= PWR_DBPCR_DBP;
+      stm32_pwr_putreg(STM32_PWR_DBPCR_OFFSET, regval);
 
       /* Enable does not happen right away */
 
@@ -177,120 +133,132 @@ void stm32_pwr_adjustvcore(unsigned sysclock)
 {
   volatile int timeout;
   uint32_t vos_range;
+  uint32_t vos_range_val;
+  uint32_t vos_range_set;
+  uint32_t actvos_val;
 
   /* Select the applicable V_CORE voltage range depending on the new system
    * clock frequency.
    */
 
-  DEBUGASSERT(sysclock <= 160000000);
+  DEBUGASSERT(sysclock <= 250000000);
 
-  if (sysclock > 110000000)
+  if (sysclock > 200000000)
     {
-      vos_range = PWR_VOSR_VOS_RANGE1 | PWR_VOSR_BOOSTEN;
+      vos_range = PWR_VOSCR_VOS_RANGE0;
     }
-  else if (sysclock > 55000000)
+  else if (sysclock > 150000000)
     {
-      vos_range = PWR_VOSR_VOS_RANGE2 | PWR_VOSR_BOOSTEN;
+      vos_range = PWR_VOSCR_VOS_RANGE1;
     }
-  else if (sysclock > 25000000)
+  else if (sysclock > 100000000)
     {
-      vos_range = PWR_VOSR_VOS_RANGE3;
+      vos_range = PWR_VOSCR_VOS_RANGE2;
     }
   else
     {
-      vos_range = PWR_VOSR_VOS_RANGE4;
+      vos_range = PWR_VOSCR_VOS_RANGE3;
     }
 
-  modreg32(vos_range, PWR_VOSR_VOS_MASK | PWR_VOSR_BOOSTEN, STM32_PWR_VOSR);
+  vos_range_val = vos_range >> PWR_VOSCR_VOS_SHIFT;
 
-  /* Wait until the new V_CORE voltage range has been applied. */
+  actvos_val = ((getreg32(STM32H5_PWR_VOSSR) & PWR_VOSSR_ACTVOS_MASK) >> 
+	     PWR_VOSSR_ACTVOS_SHIFT);
 
-  for (timeout = PWR_TIMEOUT; timeout; timeout--)
+
+  if (vos_range_val > actvos_val)
     {
-      if (getreg32(STM32_PWR_VOSR) & PWR_VOSR_VOSRDY)
+      for (i = actvos_val; i < vos_range_val; ++i)
         {
-          break;
-        }
-    }
-
-  DEBUGASSERT(timeout > 0);
-
-  /* Wait until the voltage level for the currently used VOS is ready. */
-
-  for (timeout = PWR_TIMEOUT; timeout; timeout--)
-    {
-      if (getreg32(STM32_PWR_SVMSR) & PWR_SVMSR_ACTVOSRDY)
-        {
-          break;
-        }
-    }
-
-  DEBUGASSERT(timeout > 0);
-#if 0
-  /* Wait until the embedded power distribution (EPOD) booster has been
-   * enabled, if applicable.
-   */
-
-  DEBUGASSERT(timeout > 0);
-
-  if (vos_range & PWR_VOSR_BOOSTEN)
-    {
-      for (timeout = PWR_TIMEOUT; timeout; timeout--)
-        {
-          if (getreg32(STM32_PWR_VOSR) & PWR_VOSR_BOOSTRDY)
+	  if (i == 0)
             {
-              break;
+              vos_range_set = PWR_VOSCR_VOS_RANGE2;
             }
-        }
+          else if (i == 1)
+            {
+              vos_range_set = PWR_VOSCR_VOS_RANGE1;
+            }
+          else if (i == 2)
+            {
+              vos_range_set = PWR_VOSCR_VOS_RANGE0;
+            }
+  
+          modreg32(vos_range, PWR_VOSCR_VOS_MASK, STM32_PWR_VOSCR);
+
+          /* Wait until the new V_CORE voltage range has been applied. */
+
+         for (timeout = PWR_TIMEOUT; timeout; timeout--)
+            {
+              if (getreg32(STM32_PWR_VOSSR) & PWR_VOSSR_VOSRDY)
+                {
+                  break;
+                }
+            }
+
+         DEBUGASSERT(timeout > 0);
+
+          /* Wait until the voltage level for the currently used VOS is ready. */
+        
+          for (timeout = PWR_TIMEOUT; timeout; timeout--)
+            {
+              if (getreg32(STM32_PWR_VOSSR) & PWR_VOSSR_ACTVOSRDY)
+                {
+                  break;
+                }
+            }
+        
+          DEBUGASSERT(timeout > 0);
+	}
     }
-#endif
+  else if (vos_range_val < actvos_val)
+    {
+      for (i = actvos_val; i > vos_range_val; --i)
+        {
+	  if (i == 1)
+            {
+              vos_range_set = PWR_VOSCR_VOS_RANGE3;
+            }
+          else if (i == 2)
+            {
+              vos_range_set = PWR_VOSCR_VOS_RANGE2;
+            }
+          else if (i == 3)
+            {
+              vos_range_set = PWR_VOSCR_VOS_RANGE1;
+            }
+  
+          modreg32(vos_range, PWR_VOSCR_VOS_MASK, STM32_PWR_VOSCR);
+
+          /* Wait until the new V_CORE voltage range has been applied. */
+
+         for (timeout = PWR_TIMEOUT; timeout; timeout--)
+            {
+              if (getreg32(STM32_PWR_VOSSR) & PWR_VOSSR_VOSRDY)
+                {
+                  break;
+                }
+            }
+
+         DEBUGASSERT(timeout > 0);
+
+          /* Wait until the voltage level for the currently used VOS is ready. */
+        
+          for (timeout = PWR_TIMEOUT; timeout; timeout--)
+            {
+              if (getreg32(STM32_PWR_VOSSR) & PWR_VOSSR_ACTVOSRDY)
+                {
+                  break;
+                }
+            }
+        
+          DEBUGASSERT(timeout > 0);
+	}
+    }
+  else
+    {
+      return;
+    }
 
   DEBUGASSERT(timeout > 0);
 }
 
-/****************************************************************************
- * Name stm32_pwr_enable_smps
- *
- * Description:
- *   Select between the Low-Drop Out (LDO) or Switched Mode Power Suppy
- *   (SMPS) regulator.  Compare [RM0456], section 10.5.1 SMPS and LDO
- *   embedded regulators.
- *
- * Input Parameters:
- *   enable - If true, the SMPS regulator will be enabled, otherwise the LDO,
- *
- ****************************************************************************/
-
-void stm32_pwr_enablesmps(bool enable)
-{
-  volatile int timeout;
-  uint32_t regsel = enable ? PWR_CR3_REGSEL_SMPS : PWR_CR3_REGSEL_LDO;
-
-  /* Select the respective regulator. */
-
-  modreg32(regsel, PWR_CR3_REGSEL, STM32_PWR_CR3);
-
-  /* Wait until the respective regulator has been activated. */
-
-  for (timeout = PWR_TIMEOUT; timeout; timeout--)
-    {
-      if (enable)
-        {
-          if ((getreg32(STM32_PWR_SVMSR) & PWR_SVMSR_REGS) ==
-              PWR_SVMSR_REGS_SMPS)
-            {
-              break;
-            }
-        }
-      else
-        {
-          if ((getreg32(STM32_PWR_SVMSR) & PWR_SVMSR_REGS) ==
-              PWR_SVMSR_REGS_LDO)
-            {
-              break;
-            }
-        }
-    }
-
-  DEBUGASSERT(timeout > 0);
-}
