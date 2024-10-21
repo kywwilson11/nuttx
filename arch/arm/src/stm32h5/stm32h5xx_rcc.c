@@ -777,6 +777,11 @@ static inline void rcc_enableapb3(void)
 
 static inline void rcc_enableccip(void)
 {
+
+  /* TODO - Potential peripherals with disabled clocks
+   *     PLL1_Q - Used in SPISEL[3:0]
+   */
+
 }
 
 /****************************************************************************
@@ -928,7 +933,9 @@ void stm32h5_stdclockconfig(void)
 
       /* Ensure Power control is enabled before modifying it. */
 
-      stm32h5_pwr_enableclk(true);
+      /* TODO - NO PWREN bit to set, maybe delete?
+       * stm32h5_pwr_enableclk(true);
+       */
 
       /* Select correct main regulator range */
 
@@ -1095,7 +1102,6 @@ void stm32h5_stdclockconfig(void)
       
       putreg32(regval, STM32H5_RCC_PLL2CFGR);
 
-
       /* PLL2DIVR and PLL2FRACR */
       
       /* Get settings from board.h */
@@ -1209,15 +1215,15 @@ void stm32h5_stdclockconfig(void)
 
       /* Select the main PLL as system clock source */
 
-      regval  = getreg32(STM32H5_RCC_CFGR);
-      regval &= ~RCC_CFGR_SW_MASK;
-      regval |= RCC_CFGR_SW_PLL;
-      putreg32(regval, STM32H5_RCC_CFGR);
+      regval  = getreg32(STM32H5_RCC_CFGR1);
+      regval &= ~RCC_CFGR1_SW_MASK;
+      regval |= RCC_CFGR1_SW_PLL;
+      putreg32(regval, STM32H5_RCC_CFGR1);
 
       /* Wait until the PLL source is used as the system clock source */
 
-      while ((getreg32(STM32H5_RCC_CFGR) & RCC_CFGR_SWS_MASK) !=
-             RCC_CFGR_SWS_PLL)
+      while ((getreg32(STM32H5_RCC_CFGR1) & RCC_CFGR1_SWS_MASK) !=
+             RCC_CFGR1_SWS_PLL)
         {
         }
 
@@ -1239,7 +1245,9 @@ void stm32h5_stdclockconfig(void)
        * to alter the LSE parameters.
        */
 
-      stm32h5_pwr_enableclk(true);
+      /* TODO - NO PWREN bit to set, maybe delete?
+       * stm32h5_pwr_enableclk(true);
+       */
 
       /* XXX other LSE settings must be made before turning on the oscillator
        * and we need to ensure it is first off before doing so.

@@ -193,7 +193,7 @@
 #  define RCC_CFGR1_SW_HSE                (2 << RCC_CFGR1_SW_SHIFT) /* 01: HSE selected as system clock */
 #  define RCC_CFGR1_SW_PLL                (3 << RCC_CFGR1_SW_SHIFT) /* 10: PLL selected as system clock */
 
-#define RCC_CFGR1_SWS_SHIFT               (2)       /* Bits 2-3: System Clock Switch Status */
+#define RCC_CFGR1_SWS_SHIFT               (3)       /* Bits 3-4: System Clock Switch Status */
 #define RCC_CFGR1_SWS_MASK                (3 << RCC_CFGR1_SWS_SHIFT)
 #  define RCC_CFGR1_SWS_MSI               (0 << RCC_CFGR1_SWS_SHIFT) /* 00: MSI oscillator used as system clock */
 #  define RCC_CFGR1_SWS_HSI16             (1 << RCC_CFGR1_SWS_SHIFT) /* 00: HSI16 oscillator used as system clock */
