@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/stm32u5/stm32_pwr.c
+ * arch/arm/src/stm32h5/stm32h5_pwr.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -31,7 +31,7 @@
 #include <stdint.h>
 
 #include "arm_internal.h"
-#include "stm32_pwr.h"
+#include "stm32h5_pwr.h"
 #include "stm32_rcc.h"
 
 /****************************************************************************
@@ -44,30 +44,29 @@
  * Private Functions
  ****************************************************************************/
 
-static inline uint16_t stm32_pwr_getreg(uint8_t offset)
+static inline uint16_t stm32h5_pwr_getreg(uint8_t offset)
 {
   return (uint16_t)getreg32(STM32_PWR_BASE + (uint32_t)offset);
 }
 
-static inline void stm32_pwr_putreg(uint8_t offset, uint16_t value)
+static inline void stm32h5_pwr_putreg(uint8_t offset, uint16_t value)
 {
   putreg32((uint32_t)value, STM32_PWR_BASE + (uint32_t)offset);
 }
 
-static inline void stm32_pwr_modifyreg(uint8_t offset, uint16_t clearbits,
+static inline void stm32h5_pwr_modifyreg(uint8_t offset, uint16_t clearbits,
                                          uint16_t setbits)
 {
   modifyreg32(STM32_PWR_BASE + (uint32_t)offset, (uint32_t)clearbits,
               (uint32_t)setbits);
 }
 
-static inline void stm32h5_set_vos_range
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: stm32_pwr_enablebkp
+ * Name: stm32h5_pwr_enablebkp
  *
  * Description:
  *   Enables access to the backup domain (RTC registers, RTC backup data
@@ -81,14 +80,14 @@ static inline void stm32h5_set_vos_range
  *
  ****************************************************************************/
 
-bool stm32_pwr_enablebkp(bool writable)
+bool stm32h5_pwr_enablebkp(bool writable)
 {
   uint16_t regval;
   bool waswritable;
 
   /* Get the current state of the PWR disable Backup domain register */
 
-  regval      = stm32_pwr_getreg(STM32_PWR_DBPCR_OFFSET);
+  regval      = stm32h5_pwr_getreg(STM32_PWR_DBPCR_OFFSET);
   waswritable = ((regval & PWR_DBPCR_DBP) != 0);
 
   /* Enable or disable the ability to write */
@@ -98,14 +97,14 @@ bool stm32_pwr_enablebkp(bool writable)
       /* Disable backup domain access */
 
       regval &= ~PWR_DBPCR_DBP;
-      stm32_pwr_putreg(STM32_PWR_DBPCR_OFFSET, regval);
+      stm32h5_pwr_putreg(STM32_PWR_DBPCR_OFFSET, regval);
     }
   else if (!waswritable && writable)
     {
       /* Enable backup domain access */
 
       regval |= PWR_DBPCR_DBP;
-      stm32_pwr_putreg(STM32_PWR_DBPCR_OFFSET, regval);
+      stm32h5_pwr_putreg(STM32_PWR_DBPCR_OFFSET, regval);
 
       /* Enable does not happen right away */
 
@@ -116,7 +115,7 @@ bool stm32_pwr_enablebkp(bool writable)
 }
 
 /****************************************************************************
- * Name stm32_pwr_adjustvcore
+ * Name stm32h5_pwr_adjustvcore
  *
  * Description:
  *   Adjusts the voltage used for digital peripherals (V_CORE) before
@@ -129,7 +128,7 @@ bool stm32_pwr_enablebkp(bool writable)
  *
  ****************************************************************************/
 
-void stm32_pwr_adjustvcore(unsigned sysclock)
+void stm32h5_pwr_adjustvcore(unsigned sysclock)
 {
   volatile int timeout;
   uint32_t vos_range;
@@ -183,7 +182,7 @@ void stm32_pwr_adjustvcore(unsigned sysclock)
               vos_range_set = PWR_VOSCR_VOS_RANGE0;
             }
   
-          modreg32(vos_range, PWR_VOSCR_VOS_MASK, STM32_PWR_VOSCR);
+          modreg32(vos_range_set, PWR_VOSCR_VOS_MASK, STM32_PWR_VOSCR);
 
           /* Wait until the new V_CORE voltage range has been applied. */
 
@@ -199,7 +198,7 @@ void stm32_pwr_adjustvcore(unsigned sysclock)
 
           /* Wait until the voltage level for the currently used VOS is ready. */
         
-          for (timeout = PWR_TIMEOUT; timeout; timeout--)
+         for (timeout = PWR_TIMEOUT; timeout; timeout--)
             {
               if (getreg32(STM32_PWR_VOSSR) & PWR_VOSSR_ACTVOSRDY)
                 {
@@ -227,19 +226,9 @@ void stm32_pwr_adjustvcore(unsigned sysclock)
               vos_range_set = PWR_VOSCR_VOS_RANGE1;
             }
   
-          modreg32(vos_range, PWR_VOSCR_VOS_MASK, STM32_PWR_VOSCR);
+          modreg32(vos_range_set, PWR_VOSCR_VOS_MASK, STM32_PWR_VOSCR);
 
-          /* Wait until the new V_CORE voltage range has been applied. */
-
-         for (timeout = PWR_TIMEOUT; timeout; timeout--)
-            {
-              if (getreg32(STM32_PWR_VOSSR) & PWR_VOSSR_VOSRDY)
-                {
-                  break;
-                }
-            }
-
-         DEBUGASSERT(timeout > 0);
+          /* Don't poll on VOSRDY when switching from high to low voltage */
 
           /* Wait until the voltage level for the currently used VOS is ready. */
         
@@ -256,9 +245,10 @@ void stm32_pwr_adjustvcore(unsigned sysclock)
     }
   else
     {
+      /* actvos == new vos. Do nothing. */
+
       return;
     }
 
   DEBUGASSERT(timeout > 0);
 }
-

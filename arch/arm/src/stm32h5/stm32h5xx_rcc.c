@@ -778,10 +778,6 @@ static inline void rcc_enableapb3(void)
 static inline void rcc_enableccip(void)
 {
 
-  /* TODO - Potential peripherals with disabled clocks
-   *     PLL1_Q - Used in SPISEL[3:0]
-   */
-
 }
 
 /****************************************************************************
@@ -833,9 +829,12 @@ void stm32h5_stdclockconfig(void)
   regval  = getreg32(STM32H5_RCC_CR);
   regval |= RCC_CR_HSION;           /* Enable HSI */
  
-  /*  HSIDIV kept at default (32 MHz)
+#if defined(STMT32H5_CR_HSIDIV) 
   regval |= STM32H5_CR_HSIDIV;
-   */  
+#else
+  /* Use default (32 MHz) */
+
+#endif
 
   putreg32(regval, STM32H5_RCC_CR);
 
@@ -853,8 +852,19 @@ void stm32h5_stdclockconfig(void)
         }
     }
 
-    /* TODO: Possibly add logic for checking HSIDIVF */
+  /* Make sure HSIDIVF is also not 0 */
 
+  for (timeout = HSIRDY_TIMEOUT; timeout > 0; timeout--)
+    {
+      /* Check if the HSIRDY flag is the set in the CR */
+
+      if ((getreg32(STM32H5_RCC_CR) & RCC_CR_HSIDIVF) != 0)
+        {
+          /* If so, then break-out with timeout > 0 */
+
+          break;
+        }
+    }
 #endif
 
 #if defined(STM32H5_BOARD_USEHSI)
@@ -931,41 +941,7 @@ void stm32h5_stdclockconfig(void)
        * frequency.
        */
 
-      /* Ensure Power control is enabled before modifying it. */
-
-      /* TODO - NO PWREN bit to set, maybe delete?
-       * stm32h5_pwr_enableclk(true);
-       */
-
-      /* Select correct main regulator range */
-
-      regval = getreg32(STM32H5_PWR_VOSCR);
-      regval &= ~PWR_VOSCR_VOS_MASK;
-
-      if (STM32H5_SYSCLK_FREQUENCY > 200000000)
-        {
-          regval |= PWR_VOSCR_VOS_RANGE0;
-        }
-      else if (STM32H5_SYSCLK_FREQUENCY > 150000000)
-        {
-          regval |= PWR_VOSCR_VOS_RANGE1;
-        }
-      else if (STM32H5_SYSCLK_FREQUENCY > 100000000)
-        {
-          regval |= PWR_VOSCR_VOS_RANGE2;
-        }
-      else
-        {
-          regval |= PWR_VOSCR_VOS_RANGE3;
-        }
-
-      putreg32(regval, STM32H5_PWR_VOSCR);
-
-      /* Wait for voltage regulator to stabilize */
-
-      while (!(getreg32(STM32H5_PWR_VOSSR) & PWR_VOSSR_ACTVOSRDY))
-        {
-        }
+      stm32h5_pwr_adjustvcore(STM32H5_SYSCLK_FREQUENCY);
 
       regval  = getreg32(STM32H5_RCC_CFGR2);
       /* Set the HCLK source/divider */
@@ -1008,7 +984,16 @@ void stm32h5_stdclockconfig(void)
       
       /* Set the PLL1 source and main divider */
 
-#ifdef STM32H5_BOARD_USEHSI
+/* TODO - Define this in board.h. Leave comment here saying where it is defined */
+/* Can  keep below ifdefs and add ifdefs on top for board.h definitions */
+
+#ifdef STM32H5_PLL1SRC_HSI
+      regval |= RCC_PLL1CFGR_PLL1SRC_HSI;
+#elif STM32H5_PLL1SRC_CSI
+      regval |= RCC_PLL1CFGR_PLL1SRC_CSI;
+#elif STM32H5_PLL1SRC_HSE
+      regval |= RCC_PLL1CFGR_PLL1SRC_HSE;
+#elif STM32H5_BOARD_USEHSI
       regval |= RCC_PLL1CFGR_PLL1SRC_HSI;
 #elif defined(STM32H5_BOARD_USECSI)
       regval |= RCC_PLL1CFGR_PLL1SRC_CSI;
@@ -1077,7 +1062,13 @@ void stm32h5_stdclockconfig(void)
       
       /* Set the PLL2 source and main divider */
 
-#ifdef STM32H5_BOARD_USEHSI
+#ifdef STM32H5_PLL2SRC_HSI
+      regval |= RCC_PLL2CFGR_PLL2SRC_HSI;
+#elif STM32H5_PLL2SRC_CSI
+      regval |= RCC_PLL2CFGR_PLL2SRC_CSI;
+#elif STM32H5_PLL2SRC_HSE
+      regval |= RCC_PLL2CFGR_PLL2SRC_HSE;
+#elif STM32H5_BOARD_USEHSI
       regval |= RCC_PLL2CFGR_PLL2SRC_HSI;
 #elif defined(STM32H5_BOARD_USECSI)
       regval |= RCC_PLL2CFGR_PLL2SRC_CSI;
@@ -1119,12 +1110,6 @@ void stm32h5_stdclockconfig(void)
       regval |= STM32H5_PLL2FRACR_PLL2FRACN;
       putreg32(regval, STM32H5_RCC_PLL2FRACR);
 
-      /* XXX The choice of clock source to PLL2 (all three) is independent
-       * of the sys clock source choice, review the STM32H5_BOARD_USEHSI
-       * name; probably split it into two, one for PLL source and one
-       * for sys clock source.
-       */
-
       /* Enable PLL2 */
 
       regval  = getreg32(STM32H5_RCC_CR);
@@ -1145,7 +1130,13 @@ void stm32h5_stdclockconfig(void)
       
       /* Set the PLL3 source and main divider */
 
-#ifdef STM32H5_BOARD_USEHSI
+#ifdef STM32H5_PLL3SRC_HSI
+      regval |= RCC_PLL3CFGR_PLL3SRC_HSI;
+#elif STM32H5_PLL3SRC_CSI
+      regval |= RCC_PLL3CFGR_PLL3SRC_CSI;
+#elif STM32H5_PLL3SRC_HSE
+      regval |= RCC_PLL3CFGR_PLL3SRC_HSE;
+#elif STM32H5_BOARD_USEHSI
       regval |= RCC_PLL3CFGR_PLL3SRC_HSI;
 #elif defined(STM32H5_BOARD_USECSI)
       regval |= RCC_PLL3CFGR_PLL3SRC_CSI;
@@ -1227,39 +1218,31 @@ void stm32h5_stdclockconfig(void)
         {
         }
 
-#if defined(CONFIG_STM32H5_IWDG) || defined(CONFIG_STM32H5_RTC_LSICLOCK)
+#if defined(CONFIG_STM32H5_IWDG) || defined(CONFIG_STM32H5_RTC_LSICLOCK) || \
+    defined(STM32H5_USE_LSCO_LSI)
+
       /* Low speed internal clock source LSI */
 
       stm32h5_rcc_enablelsi();
 #endif
 
-#if defined(STM32H5_USE_LSE)
-      /* Low speed external clock source LSE
-       *
-       * TODO: There is another case where the LSE needs to
-       * be enabled: if the MCO1 pin selects LSE as source.
-       * XXX and other cases, like automatic trimming of CSI for USB use
-       */
-
-      /* ensure Power control is enabled since it is indirectly required
-       * to alter the LSE parameters.
-       */
-
-      /* TODO - NO PWREN bit to set, maybe delete?
-       * stm32h5_pwr_enableclk(true);
-       */
-
-      /* XXX other LSE settings must be made before turning on the oscillator
-       * and we need to ensure it is first off before doing so.
-       */
-
-      /* Turn on the LSE oscillator
-       * XXX this will almost surely get moved since we also want to use
-       * this for automatically trimming CSI, etc.
-       */
+#if defined(STM32H5_USE_LSE) || defined(STM32H5_USE_LSCO_LSE)
+      /* Low speed external clock source LSE */
 
       stm32h5_rcc_enablelse();
+#else
+      /*
+       * There is another case where the LSE needs to
+       * be enabled: if the MCO1 pin selects LSE as source.
+       * Other cases can be handled by peripheral drivers.
+       */
 
+       if ((getreg32(STM32_RCC_CFGR1) & RCC_CFGR1_MCO1SEL_MASK) == 
+            RCC_CFGR1_MCO1SEL_LSE)
+         {
+           stm32h5_rcc_enablelse();
+         }
+ 
 #endif /* STM32H5_USE_LSE */
     }
 }
