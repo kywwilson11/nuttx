@@ -8,31 +8,23 @@ if ARCH_CHIP_STM32H5
 comment "STM32H5 Configuration Options"
 
 choice
-	prompt "STM32 L5 Chip Selection"
-	default ARCH_CHIP_STM32H552ZE
+	prompt "STM32 H5 Chip Selection"
+	default ARCH_CHIP_STM32H563ZI
 	depends on ARCH_CHIP_STM32H5
 
-config ARCH_CHIP_STM32H552ZE
-	bool "STM32H552ZE"
-	select STM32H5_STM32H562XX
-	select STM32H5_FLASH_CONFIG_E
+config ARCH_CHIP_STM32H563ZI
+	bool "STM32H563ZI"
+	select STM32H5_STM32H563XX
+	select STM32H5_FLASH_CONFIG_I
 	select STM32H5_IO_CONFIG_Z
 	---help---
-		STM32 L5 Cortex M33, 512 Kb FLASH, 256 Kb SRAM
+		STM32 H5 Cortex M33, 512 Kb FLASH, 256 Kb SRAM
 
-config ARCH_CHIP_STM32H562QE
-	bool "STM32H562QE"
-	select STM32H5_STM32H562XX
-	select STM32H5_FLASH_CONFIG_E
-	select STM32H5_IO_CONFIG_Q
-	---help---
-		STM32 L5 Cortex M33, 512 Kb FLASH, 256 Kb SRAM
-
-endchoice # STM32 L5 Chip Selection
+endchoice # STM32 H5 Chip Selection
 
 # Chip families:
 
-config STM32H5_STM32H562XX
+config STM32H5_STM32H563XX
 	# STM32H552 and STM32H562 devices documented in RM0439
 	bool
 	default n
@@ -43,6 +35,13 @@ config STM32H5_STM32H562XX
 	select STM32H5_HAVE_USART3
 	select STM32H5_HAVE_UART4
 	select STM32H5_HAVE_UART5
+	select STM32H5_HAVE_USART6
+	select STM32H5_HAVE_UART7
+	select STM32H5_HAVE_UART8
+	select STM32H5_HAVE_UART9
+	select STM32H5_HAVE_USART10
+	select STM32H5_HAVE_USART11
+	select STM32H5_HAVE_UART12
 
 choice
 	prompt "Override Flash Size Designator"

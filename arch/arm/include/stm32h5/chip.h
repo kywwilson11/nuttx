@@ -40,7 +40,7 @@
 #  error "Unsupported STM32H5 chip"
 #endif
 
-/* TODO: Defined for STM32H562/563/573xx, need to make new ifdef strings.
+/* TODO: Defined for STM32H562/563/573xx, need to make new ifdef strings. */
 #if defined(CONFIG_STM32H5_STM32H562XX)
 #  define STM32H5_NFSMC                    1   /* Have FSMC memory controller */
 #  define STM32H5_NATIM                    2   /* Two advanced timers TIM1 and TIM8 */
