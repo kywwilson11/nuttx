@@ -44,21 +44,14 @@
  * Private Functions
  ****************************************************************************/
 
-static inline uint16_t stm32h5_pwr_getreg(uint8_t offset)
+static inline uint32_t stm32h5_pwr_getreg(uint16_t offset)
 {
-  return (uint16_t)getreg32(STM32_PWR_BASE + (uint32_t)offset);
+  return getreg32(STM32H5_PWR_BASE + (uint32_t)offset);
 }
 
-static inline void stm32h5_pwr_putreg(uint8_t offset, uint16_t value)
+static inline void stm32h5_pwr_putreg(uint16_t offset, uint16_t value)
 {
-  putreg32((uint32_t)value, STM32_PWR_BASE + (uint32_t)offset);
-}
-
-static inline void stm32h5_pwr_modifyreg(uint8_t offset, uint16_t clearbits,
-                                         uint16_t setbits)
-{
-  modifyreg32(STM32_PWR_BASE + (uint32_t)offset, (uint32_t)clearbits,
-              (uint32_t)setbits);
+  putreg32(value, STM32H5_PWR_BASE + (uint32_t)offset);
 }
 
 /****************************************************************************
@@ -87,7 +80,7 @@ bool stm32h5_pwr_enablebkp(bool writable)
 
   /* Get the current state of the PWR disable Backup domain register */
 
-  regval      = stm32h5_pwr_getreg(STM32_PWR_DBPCR_OFFSET);
+  regval      = stm32h5_pwr_getreg(STM32H5_PWR_DBPCR_OFFSET);
   waswritable = ((regval & PWR_DBPCR_DBP) != 0);
 
   /* Enable or disable the ability to write */
@@ -97,14 +90,14 @@ bool stm32h5_pwr_enablebkp(bool writable)
       /* Disable backup domain access */
 
       regval &= ~PWR_DBPCR_DBP;
-      stm32h5_pwr_putreg(STM32_PWR_DBPCR_OFFSET, regval);
+      stm32h5_pwr_putreg(STM32H5_PWR_DBPCR_OFFSET, regval);
     }
   else if (!waswritable && writable)
     {
       /* Enable backup domain access */
 
       regval |= PWR_DBPCR_DBP;
-      stm32h5_pwr_putreg(STM32_PWR_DBPCR_OFFSET, regval);
+      stm32h5_pwr_putreg(STM32H5_PWR_DBPCR_OFFSET, regval);
 
       /* Enable does not happen right away */
 
@@ -120,7 +113,10 @@ bool stm32h5_pwr_enablebkp(bool writable)
  * Description:
  *   Adjusts the voltage used for digital peripherals (V_CORE) before
  *   raising or after decreasing the system clock frequency.  Compare
- *   [RM0456], section 10.5.4 Dynamic voltage scaling management.
+ *   [RM0481], section 10.7 Dynamic voltage scaling management.
+ *
+ *  Note: Use only for VCore supplied with internal LDO or SMPS.
+ *        For supplying VCore externally, use stm32h5_pwr_adjustvos_ext.
  *
  * Input Parameters:
  *   sysclock - The frequency in Hertz the system clock will or has been set
@@ -129,6 +125,101 @@ bool stm32h5_pwr_enablebkp(bool writable)
  ****************************************************************************/
 
 void stm32h5_pwr_adjustvcore(unsigned sysclock)
+{
+  volatile int timeout;
+  uint32_t vos_range;
+  uint32_t actvos;
+
+  /* Select the applicable V_CORE voltage range depending on the new system
+   * clock frequency.
+   */
+
+  DEBUGASSERT(sysclock <= 250000000);
+
+  if (sysclock > 200000000)
+    {
+      vos_range = PWR_VOSCR_VOS_RANGE0;
+    }
+  else if (sysclock > 150000000)
+    {
+      vos_range = PWR_VOSCR_VOS_RANGE1;
+    }
+  else if (sysclock > 100000000)
+    {
+      vos_range = PWR_VOSCR_VOS_RANGE2;
+    }
+  else
+    {
+      vos_range = PWR_VOSCR_VOS_RANGE3;
+    }
+
+  actvos = (getreg32(STM32H5_PWR_VOSSR) & PWR_VOSSR_ACTVOS_MASK);
+  modreg32(vos_range, PWR_VOSCR_VOS_MASK, STM32H5_PWR_VOSCR);
+
+  if (vos_range > actvos)
+    {
+      /* Wait until the new V_CORE voltage range has been applied. */
+
+      for (timeout = PWR_TIMEOUT; timeout; timeout--)
+        {
+          if (getreg32(STM32H5_PWR_VOSSR) & PWR_VOSSR_VOSRDY)
+            {
+              break;
+            }
+        }
+
+      DEBUGASSERT(timeout > 0);
+    }
+  else if (vos_range < actvos)
+    {
+      /* Wait until the voltage level for the currently used VOS is ready. */
+
+      for (timeout = PWR_TIMEOUT; timeout; timeout--)
+        {
+          if (getreg32(STM32H5_PWR_VOSSR) & PWR_VOSSR_ACTVOSRDY)
+            {
+              break;
+            }
+        }
+
+      DEBUGASSERT(timeout > 0);
+    }
+  else
+    {
+      /* actvos == vos_range. Do nothing. */
+
+      return;
+    }
+}
+
+/****************************************************************************
+ * Name stm32h5_pwr_adjustvos_ext
+ *
+ * Description:
+ *   When changing VCore with an external supply, VOS must
+ *   incrementally select intermediate levels.
+ *
+ *   When increasing the performance:
+ *     1. First, voltage scaling must be incremented (for example when
+ *        changing from VOS3 to VOS0, lower levels must be selected in the
+ *        VOS[1:0] bits: VOS2, VOS1, and then VOS0).
+ *     2. The external voltage can be increased.
+ *     3. The system frequency can be increased.
+ *
+ *   When decreasing the performance:
+ *     1. The system frequency MUST be decreased.
+ *     2. The external voltage MUST be decreased.
+ *     3. The voltage scaling can be decremented (for example when changing
+ *        from VOS1 to VOS3, lower levels must be selected in the VOS[1:0]
+ *        bits: VOS2, and then VOS3)
+ *
+ * Input Parameters:
+ *   sysclock - The frequency in Hertz the system clock will or has been set
+ *              to.
+ *
+ ****************************************************************************/
+
+void stm32h5_pwr_adjustvos_ext(unsigned sysclock)
 {
   volatile int timeout;
   uint32_t vos_range;
@@ -159,17 +250,18 @@ void stm32h5_pwr_adjustvcore(unsigned sysclock)
       vos_range = PWR_VOSCR_VOS_RANGE3;
     }
 
-  vos_range_val = vos_range >> PWR_VOSCR_VOS_SHIFT;
+  vos_range_val = (vos_range & PWR_VOSCR_VOS_MASK) >> PWR_VOSCR_VOS_SHIFT;
 
-  actvos_val = ((getreg32(STM32H5_PWR_VOSSR) & PWR_VOSSR_ACTVOS_MASK) >> 
-	     PWR_VOSSR_ACTVOS_SHIFT);
-
+  actvos_val = ((getreg32(STM32H5_PWR_VOSSR) & PWR_VOSSR_ACTVOS_MASK) >>
+                 PWR_VOSSR_ACTVOS_SHIFT);
 
   if (vos_range_val > actvos_val)
     {
+      /* Gradually Increase VOS Scale */
+
       for (i = actvos_val; i < vos_range_val; ++i)
         {
-	  if (i == 0)
+          if (i == 0)
             {
               vos_range_set = PWR_VOSCR_VOS_RANGE2;
             }
@@ -177,43 +269,22 @@ void stm32h5_pwr_adjustvcore(unsigned sysclock)
             {
               vos_range_set = PWR_VOSCR_VOS_RANGE1;
             }
-          else if (i == 2)
+          else /* (i == 2) */
             {
               vos_range_set = PWR_VOSCR_VOS_RANGE0;
             }
-  
-          modreg32(vos_range_set, PWR_VOSCR_VOS_MASK, STM32_PWR_VOSCR);
 
-          /* Wait until the new V_CORE voltage range has been applied. */
-
-         for (timeout = PWR_TIMEOUT; timeout; timeout--)
-            {
-              if (getreg32(STM32_PWR_VOSSR) & PWR_VOSSR_VOSRDY)
-                {
-                  break;
-                }
-            }
-
-         DEBUGASSERT(timeout > 0);
-
-          /* Wait until the voltage level for the currently used VOS is ready. */
-        
-         for (timeout = PWR_TIMEOUT; timeout; timeout--)
-            {
-              if (getreg32(STM32_PWR_VOSSR) & PWR_VOSSR_ACTVOSRDY)
-                {
-                  break;
-                }
-            }
-        
-          DEBUGASSERT(timeout > 0);
-	}
+          modreg32(vos_range_set, PWR_VOSCR_VOS_MASK, STM32H5_PWR_VOSCR);
+          up_udelay(1);
+        }
     }
   else if (vos_range_val < actvos_val)
     {
+      /* Gradually Decrease VOS Scale */
+
       for (i = actvos_val; i > vos_range_val; --i)
         {
-	  if (i == 1)
+          if (i == 1)
             {
               vos_range_set = PWR_VOSCR_VOS_RANGE3;
             }
@@ -221,27 +292,14 @@ void stm32h5_pwr_adjustvcore(unsigned sysclock)
             {
               vos_range_set = PWR_VOSCR_VOS_RANGE2;
             }
-          else if (i == 3)
+          else /* (i == 3) */
             {
               vos_range_set = PWR_VOSCR_VOS_RANGE1;
             }
-  
-          modreg32(vos_range_set, PWR_VOSCR_VOS_MASK, STM32_PWR_VOSCR);
 
-          /* Don't poll on VOSRDY when switching from high to low voltage */
-
-          /* Wait until the voltage level for the currently used VOS is ready. */
-        
-          for (timeout = PWR_TIMEOUT; timeout; timeout--)
-            {
-              if (getreg32(STM32_PWR_VOSSR) & PWR_VOSSR_ACTVOSRDY)
-                {
-                  break;
-                }
-            }
-        
-          DEBUGASSERT(timeout > 0);
-	}
+          modreg32(vos_range_set, PWR_VOSCR_VOS_MASK, STM32H5_PWR_VOSCR);
+          up_udelay(1);
+        }
     }
   else
     {
@@ -249,6 +307,4 @@ void stm32h5_pwr_adjustvcore(unsigned sysclock)
 
       return;
     }
-
-  DEBUGASSERT(timeout > 0);
 }

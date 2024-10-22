@@ -984,8 +984,7 @@ void stm32h5_stdclockconfig(void)
       
       /* Set the PLL1 source and main divider */
 
-/* TODO - Define this in board.h. Leave comment here saying where it is defined */
-/* Can  keep below ifdefs and add ifdefs on top for board.h definitions */
+/* Can keep below ifdefs and add ifdefs on top for board.h definitions */
 
 #ifdef STM32H5_PLL1SRC_HSI
       regval |= RCC_PLL1CFGR_PLL1SRC_HSI;
@@ -1018,7 +1017,6 @@ void stm32h5_stdclockconfig(void)
       
       putreg32(regval, STM32H5_RCC_PLL1CFGR);
 
-
       /* PLL1DIVR and PLL1FRACR */
       
       /* Get settings from board.h */
@@ -1035,12 +1033,6 @@ void stm32h5_stdclockconfig(void)
       regval  = getreg32(STM32H5_RCC_PLL1FRACR);
       regval |= STM32H5_PLL1FRACR_PLL1FRACN;
       putreg32(regval, STM32H5_RCC_PLL1FRACR);
-
-      /* XXX The choice of clock source to PLL1 (all three) is independent
-       * of the sys clock source choice, review the STM32H5_BOARD_USEHSI
-       * name; probably split it into two, one for PLL source and one
-       * for sys clock source.
-       */
 
       /* Enable PLL1 */
 
@@ -1177,12 +1169,6 @@ void stm32h5_stdclockconfig(void)
       regval  = getreg32(STM32H5_RCC_PLL3FRACR);
       regval |= STM32H5_PLL3FRACR_PLL3FRACN;
       putreg32(regval, STM32H5_RCC_PLL3FRACR);
-
-      /* XXX The choice of clock source to PLL3 (all three) is independent
-       * of the sys clock source choice, review the STM32H5_BOARD_USEHSI
-       * name; probably split it into two, one for PLL source and one
-       * for sys clock source.
-       */
 
       /* Enable PLL3 */
 
