@@ -33,13 +33,13 @@ CHIP_ASRCS  =
 #CHIP_CSRCS  = stm32h5_allocateheap.c stm32h5_exti_gpio.c stm32h5_gpio.c
 #CHIP_CSRCS += stm32h5_irq.c stm32h5_lowputc.c stm32h5_rcc.c
 #CHIP_CSRCS += stm32h5_serial.c stm32h5_start.c stm32h5_waste.c stm32h5_uid.c
-#CHIP_CSRCS += stm32h5_spi.c stm32h5_lse.c stm32h5_lsi.c
+#CHIP_CSRCS += stm32h5_spi.c stm32h5_lse.c stm32h5_lsi.c stm32h5_hsi48.c
 #CHIP_CSRCS += stm32h5_pwr.c stm32h5_tim.c stm32h5_flash.c stm32h5_timerisr.c
 CHIP_CSRCS  = stm32h5_allocateheap.c stm32h5_gpio.c
 CHIP_CSRCS += stm32h5_irq.c stm32h5_lowputc.c stm32h5_rcc.c
 CHIP_CSRCS += stm32h5_serial.c stm32h5_start.c stm32h5_waste.c
 CHIP_CSRCS += stm32h5_pwr.c stm32h5_timerisr.c
-
+CHIP_CSRCS += stm32h5_lse.c stm32h5_lsi.c 
 ifneq ($(CONFIG_ARCH_IDLE_CUSTOM),y)
 CHIP_CSRCS += stm32h5_idle.c
 endif

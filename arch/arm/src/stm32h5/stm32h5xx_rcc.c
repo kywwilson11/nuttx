@@ -988,11 +988,11 @@ void stm32h5_stdclockconfig(void)
 
 #ifdef STM32H5_PLL1SRC_HSI
       regval |= RCC_PLL1CFGR_PLL1SRC_HSI;
-#elif STM32H5_PLL1SRC_CSI
+#elif defined(STM32H5_PLL1SRC_CSI)
       regval |= RCC_PLL1CFGR_PLL1SRC_CSI;
-#elif STM32H5_PLL1SRC_HSE
+#elif defined(STM32H5_PLL1SRC_HSE)
       regval |= RCC_PLL1CFGR_PLL1SRC_HSE;
-#elif STM32H5_BOARD_USEHSI
+#elif defined(STM32H5_BOARD_USEHSI)
       regval |= RCC_PLL1CFGR_PLL1SRC_HSI;
 #elif defined(STM32H5_BOARD_USECSI)
       regval |= RCC_PLL1CFGR_PLL1SRC_CSI;
@@ -1024,8 +1024,8 @@ void stm32h5_stdclockconfig(void)
       /* PLL1DIVR */
 
       regval  = getreg32(STM32H5_RCC_PLL1DIVR);
-      regval = (STM32H5_PLL1DIVR_PLLN | STM32H5_PLL1DIVR_PLLP | 
-		STM32H5_PLL1DIVR_PLLQ | STM32H5_PLL1DIVR_PLLR);
+      regval = (STM32H5_PLL1DIVR_PLL1N | STM32H5_PLL1DIVR_PLL1P | 
+		STM32H5_PLL1DIVR_PLL1Q | STM32H5_PLL1DIVR_PLL1R);
       putreg32(regval, STM32H5_RCC_PLL1DIVR);
       
       /* PLL1FRACR */
@@ -1056,11 +1056,11 @@ void stm32h5_stdclockconfig(void)
 
 #ifdef STM32H5_PLL2SRC_HSI
       regval |= RCC_PLL2CFGR_PLL2SRC_HSI;
-#elif STM32H5_PLL2SRC_CSI
+#elif defined(STM32H5_PLL2SRC_CSI)
       regval |= RCC_PLL2CFGR_PLL2SRC_CSI;
-#elif STM32H5_PLL2SRC_HSE
+#elif defined(STM32H5_PLL2SRC_HSE)
       regval |= RCC_PLL2CFGR_PLL2SRC_HSE;
-#elif STM32H5_BOARD_USEHSI
+#elif defined(STM32H5_BOARD_USEHSI)
       regval |= RCC_PLL2CFGR_PLL2SRC_HSI;
 #elif defined(STM32H5_BOARD_USECSI)
       regval |= RCC_PLL2CFGR_PLL2SRC_CSI;
@@ -1092,8 +1092,8 @@ void stm32h5_stdclockconfig(void)
       /* PLL2DIVR */
 
       regval  = getreg32(STM32H5_RCC_PLL2DIVR);
-      regval = (STM32H5_PLL2DIVR_PLLN | STM32H5_PLL2DIVR_PLLP | 
-		STM32H5_PLL2DIVR_PLLQ | STM32H5_PLL2DIVR_PLLR);
+      regval = (STM32H5_PLL2DIVR_PLL2N | STM32H5_PLL2DIVR_PLL2P | 
+		STM32H5_PLL2DIVR_PLL2Q | STM32H5_PLL2DIVR_PLL2R);
       putreg32(regval, STM32H5_RCC_PLL2DIVR);
       
       /* PLL2FRACR */
@@ -1124,11 +1124,11 @@ void stm32h5_stdclockconfig(void)
 
 #ifdef STM32H5_PLL3SRC_HSI
       regval |= RCC_PLL3CFGR_PLL3SRC_HSI;
-#elif STM32H5_PLL3SRC_CSI
+#elif defined(STM32H5_PLL3SRC_CSI)
       regval |= RCC_PLL3CFGR_PLL3SRC_CSI;
-#elif STM32H5_PLL3SRC_HSE
+#elif defined(STM32H5_PLL3SRC_HSE)
       regval |= RCC_PLL3CFGR_PLL3SRC_HSE;
-#elif STM32H5_BOARD_USEHSI
+#elif defined(STM32H5_BOARD_USEHSI)
       regval |= RCC_PLL3CFGR_PLL3SRC_HSI;
 #elif defined(STM32H5_BOARD_USECSI)
       regval |= RCC_PLL3CFGR_PLL3SRC_CSI;
@@ -1160,8 +1160,8 @@ void stm32h5_stdclockconfig(void)
       /* PLL3DIVR */
 
       regval  = getreg32(STM32H5_RCC_PLL3DIVR);
-      regval = (STM32H5_PLL3DIVR_PLLN | STM32H5_PLL3DIVR_PLLP | 
-		STM32H5_PLL3DIVR_PLLQ | STM32H5_PLL3DIVR_PLLR);
+      regval = (STM32H5_PLL3DIVR_PLL3N | STM32H5_PLL3DIVR_PLL3P | 
+		STM32H5_PLL3DIVR_PLL3Q | STM32H5_PLL3DIVR_PLL3R);
       putreg32(regval, STM32H5_RCC_PLL3DIVR);
       
       /* PLL3FRACR */

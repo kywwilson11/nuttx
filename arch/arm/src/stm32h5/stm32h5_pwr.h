@@ -67,7 +67,7 @@ extern "C"
  *
  ****************************************************************************/
 
-bool stm32_pwr_enablebkp(bool writable);
+bool stm32h5_pwr_enablebkp(bool writable);
 
 /****************************************************************************
  * Name stm32_pwr_adjustvcore
@@ -82,22 +82,9 @@ bool stm32_pwr_enablebkp(bool writable);
  *
  ****************************************************************************/
 
-void stm32_pwr_adjustvcore(unsigned sysclock);
+void stm32h5_pwr_adjustvcore(unsigned sysclock);
 
-/****************************************************************************
- * Name stm32_pwr_enable_smps
- *
- * Description:
- *   Select between the Low-Drop Out (LDO) or Switched Mode Power Suppy
- *   (SMPS) regulator.  Compare [RM0456], section 10.5.1 SMPS and LDO
- *   embedded regulators.
- *
- * Input Parameters:
- *   enable - If true, the SMPS regulator will be enabled, otherwise the LDO,
- *
- ****************************************************************************/
-
-void stm32_pwr_enablesmps(bool enable);
+void stm32h5_pwr_adjustvos_ext(unsigned sysclock);
 
 #undef EXTERN
 #if defined(__cplusplus)

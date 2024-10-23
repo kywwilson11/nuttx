@@ -304,7 +304,7 @@
 #  define RCC_PLL1CFGR_PLL1SRC_CSI          (2 << RCC_PLL1CFGR_PLL1SRC_SHIFT) /* 010: CSI selected as PLL source */
 #  define RCC_PLL1CFGR_PLL1SRC_HSE          (3 << RCC_PLL1CFGR_PLL1SRC_SHIFT) /* 011: HSE selected as PLL source */
 
-#define RCC_PLL1CFGR_PLL1GRE_SHIFT          (2) /* Bit 3-2:  */
+#define RCC_PLL1CFGR_PLL1RGE_SHIFT          (2) /* Bit 3-2:  */
 #define RCC_PLL1CFGR_PLL1RGE_MASK           (3 << RCC_PLL1CFGR_PLL1RGE_SHIFT)
 #  define RCC_PLL1CFGR_PLL1RGE_1_2M         (0 << RCC_PLL1CFGR_PLL1RGE_SHIFT) /* 000: Input Clock Range Frequency 1-2 MHz */
 #  define RCC_PLL1CFGR_PLL1RGE_2_4M         (1 << RCC_PLL1CFGR_PLL1RGE_SHIFT) /* 001: Input Clock Range Frequency 2-4 MHz */
@@ -316,7 +316,7 @@
 
 #define RCC_PLL1CFGR_PLL1M_SHIFT            (8) /* Bit 13-8:  */
 #define RCC_PLL1CFGR_PLL1M_MASK             (0x3f << RCC_PLL1CFGR_PLL1M_SHIFT)
-#  define RCC_PLL1CFGR_PLLM(n)              ((n) << RCC_PLL1CFGR_PLLM_SHIFT) /* m = 1..63 */
+#  define RCC_PLL1CFGR_PLL1M(n)              ((n) << RCC_PLL1CFGR_PLL1M_SHIFT) /* m = 1..63 */
 
 #define RCC_PLL1CFGR_PLL1PEN                (1 << 16) /* PLL1 DIVP divder output enable */
 #define RCC_PLL1CFGR_PLL1QEN                (1 << 17) /* PLL1 DIVQ divder output enable */
@@ -332,7 +332,7 @@
 #  define RCC_PLL2CFGR_PLL2SRC_CSI          (2 << RCC_PLL2CFGR_PLL2SRC_SHIFT) /* 010: CSI selected as PLL source */
 #  define RCC_PLL2CFGR_PLL2SRC_HSE          (3 << RCC_PLL2CFGR_PLL2SRC_SHIFT) /* 011: HSE selected as PLL source */
 
-#define RCC_PLL2CFGR_PLL2GRE_SHIFT          (2) /* Bit 3-2:  */
+#define RCC_PLL2CFGR_PLL2RGE_SHIFT          (2) /* Bit 3-2:  */
 #define RCC_PLL2CFGR_PLL2RGE_MASK           (3 << RCC_PLL2CFGR_PLL2RGE_SHIFT)
 #  define RCC_PLL2CFGR_PLL2RGE_1_2M         (0 << RCC_PLL2CFGR_PLL2RGE_SHIFT) /* 000: Input Clock Range Frequency 1-2 MHz */
 #  define RCC_PLL2CFGR_PLL2RGE_2_4M          (1 << RCC_PLL2CFGR_PLL2RGE_SHIFT) /* 001: Input Clock Range Frequency 2-4 MHz */
@@ -344,7 +344,7 @@
 
 #define RCC_PLL2CFGR_PLL2M_SHIFT            (8) /* Bit 13-8:  */
 #define RCC_PLL2CFGR_PLL2M_MASK             (0x3f << RCC_PLL2CFGR_PLL2M_SHIFT)
-#  define RCC_PLL2CFGR_PLLM(n)              ((n) << RCC_PLL2CFGR_PLLM_SHIFT) /* m = 1..63 */
+#  define RCC_PLL2CFGR_PLL2M(n)              ((n) << RCC_PLL2CFGR_PLL2M_SHIFT) /* m = 1..63 */
 
 #define RCC_PLL2CFGR_PLL2PEN                (1 << 16) /* PLL2 DIVP divder output enable */
 #define RCC_PLL2CFGR_PLL2QEN                (1 << 17) /* PLL2 DIVQ divder output enable */
@@ -360,7 +360,7 @@
 #  define RCC_PLL3CFGR_PLL3SRC_CSI          (2 << RCC_PLL3CFGR_PLL3SRC_SHIFT) /* 010: CSI selected as PLL source */
 #  define RCC_PLL3CFGR_PLL3SRC_HSE          (3 << RCC_PLL3CFGR_PLL3SRC_SHIFT) /* 011: HSE selected as PLL source */
 
-#define RCC_PLL3CFGR_PLL3GRE_SHIFT          (2) /* Bit 3-2:  */
+#define RCC_PLL3CFGR_PLL3RGE_SHIFT          (2) /* Bit 3-2:  */
 #define RCC_PLL3CFGR_PLL3RGE_MASK           (3 << RCC_PLL3CFGR_PLL3RGE_SHIFT)
 #  define RCC_PLL3CFGR_PLL3RGE_1_2M         (0 << RCC_PLL3CFGR_PLL3RGE_SHIFT) /* 000: Input Clock Range Frequency 1-2 MHz */
 #  define RCC_PLL3CFGR_PLL3RGE_2_4M          (1 << RCC_PLL3CFGR_PLL3RGE_SHIFT) /* 001: Input Clock Range Frequency 2-4 MHz */
@@ -372,14 +372,7 @@
 
 #define RCC_PLL3CFGR_PLL3M_SHIFT            (8) /* Bit 13-8:  */
 #define RCC_PLL3CFGR_PLL3M_MASK             (0x3f << RCC_PLL3CFGR_PLL3M_SHIFT)
-#  define RCC_PLL3CFGR_PLL3M_DIS            (0 << RCC_PLL3CFGR_PLL3M_SHIFT)  /* 000000: Prescaler disabled */
-#  define RCC_PLL3CFGR_PLL3M_d1             (1 << RCC_PLL3CFGR_PLL3M_SHIFT)  /* 000001: DIV1 */
-#  define RCC_PLL3CFGR_PLL3M_d2             (2 << RCC_PLL3CFGR_PLL3M_SHIFT)  /* 000010: DIV2 */
-#  define RCC_PLL3CFGR_PLL3M_d4             (4 << RCC_PLL3CFGR_PLL3M_SHIFT)  /* 000100: DIV4 */
-#  define RCC_PLL3CFGR_PLL3M_d8             (8 << RCC_PLL3CFGR_PLL3M_SHIFT)  /* 001000: DIV8 */
-#  define RCC_PLL3CFGR_PLL3M_d16            (16 << RCC_PLL3CFGR_PLL3M_SHIFT) /* 010000: DIV16 */
-#  define RCC_PLL3CFGR_PLL3M_d32            (32 << RCC_PLL3CFGR_PLL3M_SHIFT) /* 100000: DIV32 */
-#  define RCC_PLL3CFGR_PLL3M_d63            (63 << RCC_PLL3CFGR_PLL3M_SHIFT) /* 111111: DIV63 */
+#  define RCC_PLL3CFGR_PLL3M(n)              ((n) << RCC_PLL3CFGR_PLL3M_SHIFT) /* m = 1..63 */
 
 #define RCC_PLL3CFGR_PLL3PEN                (1 << 16) /* PLL3 DIVP divder output enable */
 #define RCC_PLL3CFGR_PLL3QEN                (1 << 17) /* PLL3 DIVQ divder output enable */
