@@ -29,11 +29,7 @@
 #include "chip.h"
 
 #if defined(CONFIG_STM32H5_STM32H56XXX)
-#  if defined(CONFIG_STM32H5_USE_LEGACY_PINMAP)
-#    include "hardware/stm32h56xxx_pinmap_legacy.h"
-#  else
-#    include "hardware/stm32h56xxx_pinmap.h"
-#  endif
+#  include "hardware/stm32h56xxx_pinmap.h"
 #else
 #  error "Unsupported STM32 H5 pin map"
 #endif
