@@ -221,7 +221,6 @@ void stm32h5_pwr_adjustvcore(unsigned sysclock)
 
 void stm32h5_pwr_adjustvos_ext(unsigned sysclock)
 {
-  volatile int timeout;
   uint32_t vos_range;
   uint32_t vos_range_val;
   uint32_t vos_range_set;

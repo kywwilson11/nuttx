@@ -207,7 +207,7 @@ config STM32H5_SRAM2_INIT
 
 config STM32H5_USE_LEGACY_PINMAP
 	bool "Use the legacy pinmap with GPIO_SPEED_xxx included."
-	default y
+	default n
 	---help---
 		In the past, pinmap files included GPIO_SPEED_xxxMhz. These speed
 		settings should have come from the board.h as it describes the wiring
