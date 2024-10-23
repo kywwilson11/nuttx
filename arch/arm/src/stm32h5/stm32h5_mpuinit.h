@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/stm32h5/hardware/stm32h5_pinmap.h
+ * arch/arm/src/stm32l5/stm32l5_mpuinit.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,24 +18,46 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_STM32H5_HARDWARE_STM32H5_PINMAP_H
-#define __ARCH_ARM_SRC_STM32H5_HARDWARE_STM32H5_PINMAP_H
+#ifndef __ARCH_ARM_SRC_STM32L5_STM32L5_MPUINIT_H
+#define __ARCH_ARM_SRC_STM32L5_STM32L5_MPUINIT_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include "chip.h"
 
-#if defined(CONFIG_STM32H5_STM32H56XXX)
-#  if defined(CONFIG_STM32H5_USE_LEGACY_PINMAP)
-#    include "hardware/stm32h56xxx_pinmap_legacy.h"
-#  else
-#    include "hardware/stm32h56xxx_pinmap.h"
-#  endif
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: stm32l5_mpuinitialize
+ *
+ * Description:
+ *   Configure the MPU to permit user-space access to only unrestricted MCU
+ *   resources.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_BUILD_PROTECTED
+void stm32l5_mpuinitialize(void);
 #else
-#  error "Unsupported STM32 H5 pin map"
+#  define stm32l5_mpuinitialize()
 #endif
 
-#endif /* __ARCH_ARM_SRC_STM32H5_HARDWARE_STM32H5_PINMAP_H */
+/****************************************************************************
+ * Name: stm32l5_mpu_uheap
+ *
+ * Description:
+ *  Map the user heap region.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_BUILD_PROTECTED
+void stm32l5_mpu_uheap(uintptr_t start, size_t size);
+#else
+#  define stm32l5_mpu_uheap(start,size)
+#endif
+
+#endif /* __ARCH_ARM_SRC_STM32L5_STM32L5_MPUINIT_H */

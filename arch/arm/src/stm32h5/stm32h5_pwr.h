@@ -30,7 +30,7 @@
 #include <stdbool.h>
 
 #include "chip.h"
-#include "hardware/stm32_pwr.h"
+#include "hardware/stm32h5_pwr.h"
 
 /****************************************************************************
  * Pre-processor Definitions

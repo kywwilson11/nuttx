@@ -30,8 +30,8 @@
 #include "arm_internal.h"
 #include "chip.h"
 
-#if defined(CONFIG_STM32H5_STM32H562XX)
-#  include "hardware/stm32h562xx_rcc.h"
+#if defined(CONFIG_STM32H5_STM32H5XXXX)
+#  include "hardware/stm32h5_rcc.h"
 #else
 #  error "Unsupported STM32H5 chip"
 #endif
@@ -56,15 +56,13 @@ extern "C"
  ****************************************************************************/
 
 /****************************************************************************
- * Name: stm32h5_mcoconfig
+ * Name: stm32h5_mco1config
  *
  * Description:
- *   Selects the clock source to output on MC pin (PA8) for stm32h562xx
- *   PA8 should be configured in alternate function mode.
  *
  * Input Parameters:
  *   source - One of the definitions for the RCC_CFGR_MCO definitions from
- *     chip/stm32h562xx_rcc.h {RCC_CFGR_SYSCLK, RCC_CFGR_INTCLK,
+ *     chip/stm32h5_rcc.h {RCC_CFGR_SYSCLK, RCC_CFGR_INTCLK,
  *     RCC_CFGR_EXTCLK, RCC_CFGR_PLLCLKd2, RCC_CFGR_PLL2CLK,
  *     RCC_CFGR_PLL3CLKd2, RCC_CFGR_XT1, RCC_CFGR_PLL3CLK}
  *
@@ -73,16 +71,44 @@ extern "C"
  *
  ****************************************************************************/
 
-static inline void stm32h5_mcoconfig(uint32_t source)
+static inline void stm32h5_mco1config(uint32_t source)
 {
   uint32_t regval;
 
   /* Set MCO source */
 
-  regval = getreg32(STM32H5_RCC_CFGR);
-  regval &= ~(RCC_CFGR_MCOSEL_MASK);
-  regval |= (source & RCC_CFGR_MCOSEL_MASK);
-  putreg32(regval, STM32H5_RCC_CFGR);
+  regval = getreg32(STM32H5_RCC_CFGR1);
+  regval &= ~(RCC_CFGR1_MCO1SEL_MASK);
+  regval |= (source & RCC_CFGR1_MCO1SEL_MASK);
+  putreg32(regval, STM32H5_RCC_CFGR1);
+}
+
+/****************************************************************************
+ * Name: stm32h5_mco2config
+ *
+ * Description:
+ *
+ * Input Parameters:
+ *   source - One of the definitions for the RCC_CFGR_MCO definitions from
+ *     chip/stm32h5_rcc.h {RCC_CFGR_SYSCLK, RCC_CFGR_INTCLK,
+ *     RCC_CFGR_EXTCLK, RCC_CFGR_PLLCLKd2, RCC_CFGR_PLL2CLK,
+ *     RCC_CFGR_PLL3CLKd2, RCC_CFGR_XT1, RCC_CFGR_PLL3CLK}
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+static inline void stm32h5_mco2config(uint32_t source)
+{
+  uint32_t regval;
+
+  /* Set MCO source */
+
+  regval = getreg32(STM32H5_RCC_CFGR1);
+  regval &= ~(RCC_CFGR1_MCO2SEL_MASK);
+  regval |= (source & RCC_CFGR1_MCO2SEL_MASK);
+  putreg32(regval, STM32H5_RCC_CFGR1);
 }
 
 /****************************************************************************

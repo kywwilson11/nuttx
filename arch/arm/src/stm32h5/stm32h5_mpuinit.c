@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/arm/stm32h5/nucleo-h563zi/src/stm32_boot.c
+ * arch/arm/src/stm32l5/stm32l5_mpuinit.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,67 +24,66 @@
 
 #include <nuttx/config.h>
 
-#include <debug.h>
+#include <assert.h>
+#include <sys/param.h>
 
-#include <nuttx/board.h>
+#include <nuttx/userspace.h>
 
-#include "arm_internal.h"
-#include "nucleo-h563zi.h"
-#include "stm32h5_pwr.h"
+#include "mpu.h"
+#include "stm32l5_mpuinit.h"
 
-#include <arch/board/board.h>
+#if defined(CONFIG_BUILD_PROTECTED) && defined(CONFIG_ARM_MPU)
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: stm32h5_board_initialize
+ * Name: stm32l5_mpuinitialize
  *
  * Description:
- *   All STM32 architectures must provide the following entry point.  This
- *   entry point is called early in the initialization -- after all memory
- *   has been configured and mapped but before any devices have been
- *   initialized.
+ *   Configure the MPU to permit user-space access to only restricted SAM3U
+ *   resources.
  *
  ****************************************************************************/
 
-void stm32h5_board_initialize(void)
+void stm32l5_mpuinitialize(void)
 {
-  /* On the NUCLEO-H563ZI Vddio2 is supplied by Vdd_mcu.  Thus, when the MCU
-   * is running Vddio2 is guaranteed to be valid.  LED LD10 is driven by
-   * PG12, whose power is supplied by Vddio2.  Thus, its important to report
-   * Vddio2 to be valid here.
-   */
+  uintptr_t datastart = MIN(USERSPACE->us_datastart, USERSPACE->us_bssstart);
+  uintptr_t dataend   = MAX(USERSPACE->us_dataend,   USERSPACE->us_bssend);
 
-/*  stm32h5_pwr_vddio2_valid(true); */
+  DEBUGASSERT(USERSPACE->us_textend >= USERSPACE->us_textstart &&
+              dataend >= datastart);
 
-#ifdef CONFIG_ARCH_LEDS
-  /* Configure on-board LEDs if LED support has been selected. */
+  /* Show MPU information */
 
-  board_autoled_initialize();
-#endif
+  mpu_showtype();
+
+  /* Configure user flash and SRAM space */
+
+  mpu_user_flash(USERSPACE->us_textstart,
+                 USERSPACE->us_textend - USERSPACE->us_textstart);
+
+  mpu_user_intsram(datastart, dataend - datastart);
+
+  /* Then enable the MPU */
+
+  mpu_control(true, false, true);
 }
 
 /****************************************************************************
- * Name: board_late_initialize
+ * Name: stm32l5_mpu_uheap
  *
  * Description:
- *   If CONFIG_BOARD_LATE_INITIALIZE is selected, then an additional
- *   initialization call will be performed in the boot-up sequence to a
- *   function called board_late_initialize().  board_late_initialize() will
- *   be called immediately after up_initialize() is called and just before
- *   the initial application is started.  This additional initialization
- *   phase may be used, for example, to initialize board-specific device
- *   drivers.
+ *  Map the user-heap region.
+ *
+ *  This logic may need an extension to handle external SDRAM).
  *
  ****************************************************************************/
 
-#ifdef CONFIG_BOARD_LATE_INITIALIZE
-void board_late_initialize(void)
+void stm32l5_mpu_uheap(uintptr_t start, size_t size)
 {
-  /* Perform board-specific initialization here if so configured */
-
-  stm32_bringup();
+  mpu_user_intsram(start, size);
 }
-#endif
+
+#endif /* CONFIG_BUILD_PROTECTED && CONFIG_ARM_MPU */

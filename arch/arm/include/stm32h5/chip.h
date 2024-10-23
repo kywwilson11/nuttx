@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /* TODO: Defined for STM32H562/563/573xx, need to make new ifdef strings. */
-#if defined(CONFIG_STM32H5_STM32H562XX)
+#if defined(CONFIG_STM32H5_STM32H56XXX) || defined(CONFIG_STM32H5_STM32H57XXX)
 #  define STM32H5_SRAM1_SIZE       (256*1024)  /* 192Kb SRAM1 on AHB bus Matrix */
 #  define STM32H5_SRAM2_SIZE       (64*1024)   /* 64Kb  SRAM2 on AHB bus Matrix */
 #  define STM32H5_SRAM3_SIZE       (320*1024)   /* 64Kb  SRAM2 on AHB bus Matrix */
@@ -41,7 +41,7 @@
 #endif
 
 /* TODO: Defined for STM32H562/563/573xx, need to make new ifdef strings. */
-#if defined(CONFIG_STM32H5_STM32H562XX)
+#if defined(CONFIG_STM32H5_STM32H5XXXX)
 #  define STM32H5_NFSMC                    1   /* Have FSMC memory controller */
 #  define STM32H5_NATIM                    2   /* Two advanced timers TIM1 and TIM8 */
 #  define STM32H5_NGTIM32                  2   /* 32-bit general timers TIM2 and 5 with DMA */

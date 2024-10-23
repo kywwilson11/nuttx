@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/stm32h5/hardware/stm32h5_syscfg.h
+ * arch/arm/src/stm32l5/stm32l5_flash.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,20 +18,40 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_STM32H5_HARDWARE_STM32H5_SYSCFG_H
-#define __ARCH_ARM_SRC_STM32H5_HARDWARE_STM32H5_SYSCFG_H
+#ifndef __ARCH_ARM_SRC_STM32L5_STM32L5_FLASH_H
+#define __ARCH_ARM_SRC_STM32L5_STM32L5_FLASH_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include "chip.h"
+#include "hardware/stm32h5_flash.h"
 
-#if defined(CONFIG_STM32H5_STM32H562XX)
-#  include "hardware/stm32h562xx_syscfg.h"
-#else
-#  error "Unsupported STM32 H5 chip"
-#endif
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
 
-#endif /* __ARCH_ARM_SRC_STM32H5_HARDWARE_STM32H5_SYSCFG_H */
+void stm32l5_flash_lock(void);
+void stm32l5_flash_unlock(void);
+
+/****************************************************************************
+ * Name: stm32l5_flash_user_optbytes
+ *
+ * Description:
+ *   Modify the contents of the user option bytes (USR OPT) on the flash.
+ *   This does not set OBL_LAUNCH so new options take effect only after
+ *   next power reset.
+ *
+ * Input Parameters:
+ *   clrbits - Bits in the option bytes to be cleared
+ *   setbits - Bits in the option bytes to be set
+ *
+ * Returned Value:
+ *   Option bytes after operation is completed
+ *
+ ****************************************************************************/
+
+uint32_t stm32l5_flash_user_optbytes(uint32_t clrbits, uint32_t setbits);
+
+#endif /* __ARCH_ARM_SRC_STM32L5_STM32L5_FLASH_H */

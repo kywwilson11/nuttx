@@ -37,7 +37,7 @@
 
 #include "chip.h"
 
-#if defined(CONFIG_STM32H5_STM32H562XX)
+#if defined(CONFIG_STM32H5_STM32H5XXXX)
 #  include "hardware/stm32h5_gpio.h"
 #else
 #  error "Unsupported STM32H5 chip"

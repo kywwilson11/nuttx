@@ -37,7 +37,6 @@
 #include "chip.h"
 #include "stm32h5_gpio.h"
 
-#include "hardware/stm32h5_syscfg.h"
 
 /****************************************************************************
  * Public Data

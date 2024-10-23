@@ -45,10 +45,16 @@
  */
 
 #if !defined(CONFIG_STM32H5_FLASH_OVERRIDE_DEFAULT) && \
+    !defined(CONFIG_STM32H5_FLASH_OVERRIDE_B) && \
     !defined(CONFIG_STM32H5_FLASH_OVERRIDE_C) && \
     !defined(CONFIG_STM32H5_FLASH_OVERRIDE_E) && \
+    !defined(CONFIG_STM32H5_FLASH_OVERRIDE_G) && \
+    !defined(CONFIG_STM32H5_FLASH_OVERRIDE_I) && \
+    !defined(CONFIG_STM32H5_FLASH_CONFIG_B) && \
     !defined(CONFIG_STM32H5_FLASH_CONFIG_C) && \
-    !defined(CONFIG_STM32H5_FLASH_CONFIG_E)
+    !defined(CONFIG_STM32H5_FLASH_CONFIG_E) && \
+    !defined(CONFIG_STM32H5_FLASH_CONFIG_G) && \
+    !defined(CONFIG_STM32H5_FLASH_CONFIG_I)
 #  define CONFIG_STM32H5_FLASH_OVERRIDE_E
 #  warning "Flash size not defined defaulting to 512KiB (E)"
 #endif
@@ -67,11 +73,20 @@
 
 /* Define the valid configuration  */
 
-#if defined(CONFIG_STM32H5_FLASH_CONFIG_C) /* 256 kB */
+#if defined(CONFIG_STM32H5_FLASH_CONFIG_B) /* 128 kB */
+#  define STM32H5_FLASH_NPAGES      32
+#  define STM32H5_FLASH_PAGESIZE    4096
+#elif defined(CONFIG_STM32H5_FLASH_CONFIG_C) /* 256 kB */
 #  define STM32H5_FLASH_NPAGES      64
 #  define STM32H5_FLASH_PAGESIZE    4096
 #elif defined(CONFIG_STM32H5_FLASH_CONFIG_E) /* 512 kB */
 #  define STM32H5_FLASH_NPAGES      128
+#  define STM32H5_FLASH_PAGESIZE    4096
+#elif defined(CONFIG_STM32H5_FLASH_CONFIG_G) /* 1 MB */
+#  define STM32H5_FLASH_NPAGES      256
+#  define STM32H5_FLASH_PAGESIZE    4096
+#elif defined(CONFIG_STM32H5_FLASH_CONFIG_I) /* 2 MB */
+#  define STM32H5_FLASH_NPAGES      512
 #  define STM32H5_FLASH_PAGESIZE    4096
 #else
 #  error "unknown flash configuration!"

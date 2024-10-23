@@ -14,6 +14,8 @@ choice
 
 config ARCH_CHIP_STM32H563ZI
 	bool "STM32H563ZI"
+	select STM32H5_STM32H5XXXX
+	select STM32H5_STM32H56XXX
 	select STM32H5_STM32H563XX
 	select STM32H5_FLASH_CONFIG_I
 	select STM32H5_IO_CONFIG_Z
@@ -24,11 +26,14 @@ endchoice # STM32 H5 Chip Selection
 
 # Chip families:
 
-config STM32H5_STM32H563XX
-	# STM32H552 and STM32H562 devices documented in RM0439
+config STM32H5_STM32H5XXXX
 	bool
 	default n
-	select ARCH_HAVE_FPU
+        select ARCH_HAVE_FPU
+
+config STM32H5_STM32H56XXX
+	bool
+	default n
 	select STM32H5_HAVE_LPUART1
 	select STM32H5_HAVE_USART1
 	select STM32H5_HAVE_USART2
@@ -43,6 +48,11 @@ config STM32H5_STM32H563XX
 	select STM32H5_HAVE_USART11
 	select STM32H5_HAVE_UART12
 
+config STM32H5_STM32H563XX
+	# STM32H552 and STM32H562 devices documented in RM0439
+	bool
+	default n
+	
 choice
 	prompt "Override Flash Size Designator"
 	depends on ARCH_CHIP_STM32H5

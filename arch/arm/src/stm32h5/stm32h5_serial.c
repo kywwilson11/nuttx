@@ -1465,11 +1465,13 @@ static void stm32h5serial_setformat(struct uart_dev_s *dev)
   struct stm32h5_serial_s *priv =
     (struct stm32h5_serial_s *)dev->priv;
   uint32_t regval;
+  uint32_t brr;
+  uint32_t cr1;
 
   /* This first implementation is for U[S]ARTs that support oversampling
    * by 8 in additional to the standard oversampling by 16.
    */
-#ifdef CONFIG_STM32_LPUART1
+#ifdef CONFIG_STM32H5_LPUART1
   if (priv->islpuart == true)
     {
       /* LPUART BRR (19:00) = (256*apbclock_hz/baud_rate) */
@@ -1493,7 +1495,7 @@ static void stm32h5serial_setformat(struct uart_dev_s *dev)
           apbclock_whole >>= 1;
         }
       else if (clock_baud_ratio > 8192 && clock_baud_ratio <= 16384)
-        {
+        {arch/arm/src/stm32h5/.stm32h5_serial.c.swo
           presc_reg = 0x2;
           apbclock_whole >>= 2;
         }
@@ -1555,12 +1557,10 @@ static void stm32h5serial_setformat(struct uart_dev_s *dev)
                priv->baud;
     }
   else
-#endif /* CONFIG_STM32_LPUART1 */
+#endif /* CONFIG_STM32H5_LPUART1 */
     {
 
       uint32_t usartdiv8;
-      uint32_t cr1;
-      uint32_t brr;
     
       /* In case of oversampling by 8, the equation is:
        *

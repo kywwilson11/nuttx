@@ -115,10 +115,10 @@
 
 #define PWR_VOSCR_VOS_SHIFT     (4)
 #define PWR_VOSCR_VOS_MASK      (3 << PWR_VOSCR_VOS_SHIFT)
-#  define PWR_PMCR_VOS_RANGE3   (0 << PWR_PMCR_SVOS_SHIFT)
-#  define PWR_PMCR_VOS_RANGE2   (1 << PWR_PMCR_SVOS_SHIFT)
-#  define PWR_PMCR_VOS_RANGE1   (2 << PWR_PMCR_SVOS_SHIFT)
-#  define PWR_PMCR_VOS_RANGE0   (3 << PWR_PMCR_SVOS_SHIFT)
+#  define PWR_VOSCR_VOS_RANGE3   (0 << PWR_VOSCR_VOS_SHIFT)
+#  define PWR_VOSCR_VOS_RANGE2   (1 << PWR_VOSCR_VOS_SHIFT)
+#  define PWR_VOSCR_VOS_RANGE1   (2 << PWR_VOSCR_VOS_SHIFT)
+#  define PWR_VOSCR_VOS_RANGE0   (3 << PWR_VOSCR_VOS_SHIFT)
 
 /* Voltage Scaling Status Register */
 
@@ -223,10 +223,10 @@
 
 #define PWR_WUCR_WUPEN(n)        (1 << (n-1)) /* Enable wake-up pin WUPn. n = 1..8 */
 #define PWR_WUCR_WUPP(n)         (1 << (n+7)) /* Wake-up Pin Polarity bit for WUPn */
-#define PWR_WUCR_WUPPUPD(n)_MASK (3 << (((n-1) * 2) + 16)) /* Wake-up pin pull configuration */
-#define PWR_WUCR_WUPPUPD(n)_NOPU (0 << (((n-1) * 2) + 16))
-#define PWR_WUCR_WUPPUPD(n)_PU   (1 << (((n-1) * 2) + 16))
-#define PWR_WUCR_WUPPUPD(n)_PD   (2 << (((n-1) * 2) + 16))
+#define PWR_WUCR_MASK_WUPPUPD(n) (3 << (((n-1) * 2) + 16)) /* Wake-up pin pull configuration */
+#define PWR_WUCR_NOPU_WUPPUPD(n) (0 << (((n-1) * 2) + 16))
+#define PWR_WUCR_PU_WUPPUPD(n)   (1 << (((n-1) * 2) + 16))
+#define PWR_WUCR_PD_WUPPUPD(n)   (2 << (((n-1) * 2) + 16))
 
 /* IO Retention Register */
 

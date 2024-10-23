@@ -182,7 +182,7 @@
 #define STM32H5_IRQ_I3C2_EV       (STM32H5_IRQ_FIRST + 131) /* 131: DFSDM1 filter 1 global interrupt */
 #define STM32H5_IRQ_I3C2_ER       (STM32H5_IRQ_FIRST + 132) /* 132: DFSDM1 filter 1 global interrupt */
 
-#if defined(CONFIG_STM32H5_STM32H562XX)
+#if defined(CONFIG_STM32H5_STM32H563XX)
 #  define STM32H5_IRQ_NEXTINTS  133
 #else
 #  error "Unsupported STM32H5 chip"

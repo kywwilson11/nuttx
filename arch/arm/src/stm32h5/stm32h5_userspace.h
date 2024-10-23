@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/stm32h5/stm32h5.h
+ * arch/arm/src/stm32l5/stm32l5_userspace.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,31 +18,32 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_STM32H5_STM32H5_H
-#define __ARCH_ARM_SRC_STM32H5_STM32H5_H
+#ifndef __ARCH_ARM_SRC_STM32L5_STM32L5_USERSPACE_H
+#define __ARCH_ARM_SRC_STM32L5_STM32L5_USERSPACE_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include <sys/types.h>
-#include <stdint.h>
-#include <stdbool.h>
 
-#include "arm_internal.h"
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
 
-/* Peripherals **************************************************************/
+/****************************************************************************
+ * Name: stm32l5_userspace
+ *
+ * Description:
+ *   For the case of the separate user-/kernel-space build, perform whatever
+ *   platform specific initialization of the user memory is required.
+ *   Normally this just means initializing the user space .data and .bss
+ *   segments.
+ *
+ ****************************************************************************/
 
-#include "chip.h"
-#include "stm32h5_dbgmcu.h"
-/* #include "stm32h5_flash.h" */
-#include "stm32h5_gpio.h"
-#include "stm32h5_pwr.h"
-#include "stm32h5_rcc.h"
-/* #include "stm32h5_spi.h" */
-/* #include "stm32h5_tim.h" */
-#include "stm32h5_uart.h"
-#include "stm32h5_lowputc.h"
+#ifdef CONFIG_BUILD_PROTECTED
+void stm32l5_userspace(void);
+#endif
 
-#endif /* __ARCH_ARM_SRC_STM32H5_STM32H5_H */
+#endif /* __ARCH_ARM_SRC_STM32L5_STM32L5_USERSPACE_H */

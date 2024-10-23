@@ -32,7 +32,7 @@
 
 #include "arm_internal.h"
 #include "stm32h5_pwr.h"
-#include "stm32_rcc.h"
+#include "stm32h5_rcc.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -259,7 +259,7 @@ void stm32h5_pwr_adjustvos_ext(unsigned sysclock)
     {
       /* Gradually Increase VOS Scale */
 
-      for (i = actvos_val; i < vos_range_val; ++i)
+      for (int i = actvos_val; i < vos_range_val; ++i)
         {
           if (i == 0)
             {
@@ -282,7 +282,7 @@ void stm32h5_pwr_adjustvos_ext(unsigned sysclock)
     {
       /* Gradually Decrease VOS Scale */
 
-      for (i = actvos_val; i > vos_range_val; --i)
+      for (int i = actvos_val; i > vos_range_val; --i)
         {
           if (i == 1)
             {

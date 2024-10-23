@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/stm32h5/stm32h5.h
+ * arch/arm/src/stm32l5/stm32l5_dbgmcu.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,31 +18,21 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_STM32H5_STM32H5_H
-#define __ARCH_ARM_SRC_STM32H5_STM32H5_H
+#ifndef __ARCH_ARM_SRC_STM32H5_STM32H5_DBGMCU_H
+#define __ARCH_ARM_SRC_STM32H5_STM32H5_DBGMCU_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include <sys/types.h>
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "arm_internal.h"
-
-/* Peripherals **************************************************************/
 
 #include "chip.h"
-#include "stm32h5_dbgmcu.h"
-/* #include "stm32h5_flash.h" */
-#include "stm32h5_gpio.h"
-#include "stm32h5_pwr.h"
-#include "stm32h5_rcc.h"
-/* #include "stm32h5_spi.h" */
-/* #include "stm32h5_tim.h" */
-#include "stm32h5_uart.h"
-#include "stm32h5_lowputc.h"
 
-#endif /* __ARCH_ARM_SRC_STM32H5_STM32H5_H */
+#if defined(CONFIG_STM32H5_STM32H5XXXX)
+#  include "hardware/stm32h562xx_dbgmcu.h"
+#else
+#  error "Unsupported STM32H5 chip"
+#endif
+
+#endif /* __ARCH_ARM_SRC_STM32H5_STM32H5_DBGMCU_H */
