@@ -106,34 +106,30 @@ endchoice # "Override Flash Size Designator"
 
 # Flash configurations
 
-config STM32H5_FLASH_CONFIG_8
-	bool
-	default n
-	depends on STM32H5_STM32H512XX
-
 config STM32H5_FLASH_CONFIG_B
 	bool
 	default n
-	depends on STM32H5_STM32H5X1 || STM32H5_STM32H5X3
+	depends on STM32H5_STM32H50XXX
 
 config STM32H5_FLASH_CONFIG_C
 	bool
 	default n
-	depends on !STM32H5_STM32H596XX
+	depends on STM32H5_STM32H52XXX
 
 config STM32H5_FLASH_CONFIG_E
 	bool
 	default n
+	depends on STM32H5_STM32H52XXX || STM32H5_STM32H53XXX
 
 config STM32H5_FLASH_CONFIG_G
 	bool
 	default n
-	depends on STM32H5_STM32H5X5 || STM32H5_STM32H5X6
+	depends on STM32H5_STM32H6XXX
 
 config STM32H5_FLASH_CONFIG_I
 	bool
 	default n
-	depends on STM32H5_STM32H5XR
+	depends on STM32H5_STM32H56XXX || STM32H5_STM32H57XXX
 
 # Pin/package configurations
 
