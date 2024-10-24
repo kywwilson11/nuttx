@@ -31,8 +31,11 @@
  * Pre-processor Prototypes
  ****************************************************************************/
 
-/* TODO: Defined for STM32H562/563/573xx, need to make new ifdef strings. */
-#if defined(CONFIG_STM32H5_STM32H56XXX) || defined(CONFIG_STM32H5_STM32H57XXX)
+#if defined(CONFIG_STM32H5_STM32H52XXX) || defined(CONFIG_STM32H5_STM32H53XXX)
+#  define STM32H5_SRAM1_SIZE       (128*1024)  /* 192Kb SRAM1 on AHB bus Matrix */
+#  define STM32H5_SRAM2_SIZE       (80*1024)   /* 64Kb  SRAM2 on AHB bus Matrix */
+#  define STM32H5_SRAM3_SIZE       (64*1024)   /* 64Kb  SRAM2 on AHB bus Matrix */
+#elif defined(CONFIG_STM32H5_STM32H56XXX) || defined(CONFIG_STM32H5_STM32H57XXX)
 #  define STM32H5_SRAM1_SIZE       (256*1024)  /* 192Kb SRAM1 on AHB bus Matrix */
 #  define STM32H5_SRAM2_SIZE       (64*1024)   /* 64Kb  SRAM2 on AHB bus Matrix */
 #  define STM32H5_SRAM3_SIZE       (320*1024)   /* 64Kb  SRAM2 on AHB bus Matrix */
@@ -40,18 +43,17 @@
 #  error "Unsupported STM32H5 chip"
 #endif
 
-/* TODO: Defined for STM32H562/563/573xx, need to make new ifdef strings. */
-#if defined(CONFIG_STM32H5_STM32H5XXXX)
+#if defined(CONFIG_STM32H5_STM32H56XXX) || defined(CONFIG_STM32H5_STM32H57XXX)
 #  define STM32H5_NFSMC                    1   /* Have FSMC memory controller */
 #  define STM32H5_NATIM                    2   /* Two advanced timers TIM1 and TIM8 */
 #  define STM32H5_NGTIM32                  2   /* 32-bit general timers TIM2 and 5 with DMA */
 #  define STM32H5_NGTIM16                  2   /* 16-bit general timers TIM3 and 4 with DMA */
 #  define STM32H5_NGTIMNDMA                3   /* 16-bit general timers TIM15-17 without DMA */
 #  define STM32H5_NBTIM                    2   /* Two basic timers, TIM6-7 */
-#  define STM32H5_NLPTIM                   6   /* Two low-power timers, LPTIM1-LPTIM6. TBD: L5 says 2 but RM says 3 */
+#  define STM32H5_NLPTIM                   6   /* Six low-power timers, LPTIM1-LPTIM6. */
 #  define STM32H5_NRNG                     1   /* Random number generator (RNG) */
-#  define STM32H5_NUART                    5   /* UART 4-5, 7-8, 12 */
-#  define STM32H5_NUSART                   3   /* USART 1-3, 6 */
+#  define STM32H5_NUART                    6   /* UART 4-5, 7-8, 9, 12 */
+#  define STM32H5_NUSART                   5   /* USART 1-3, 6, 10-11 */
 #  define STM32H5_NLPUART                  1   /* LPUART 1 */
 #  define STM32H5_QSPI                     0   /* No QuadSPI1 */
 #  define STM32H5_OCTOSPI                  1   /* OCTOSPI1*/
@@ -70,13 +72,43 @@
 #  define STM32H5_NCRC                     1   /* CRC */
 #  define STM32H5_NCOMP                    0   /* Comparators */
 #  define STM32H5_NOPAMP                   0   /* Operational Amplifiers */
-#endif /* CONFIG_STM32H5_STM32H562XX */
+/* TODO - Add new features for H5 later */
+#elif defined(CONFIG_STM32H5_STM32H52XXX) || defined(CONFIG_STM32H5_STM32H53XXX)
+#  define STM32H5_NFSMC                    1   /* Have FSMC memory controller */
+#  define STM32H5_NATIM                    2   /* Two advanced timers TIM1 and TIM8 */
+#  define STM32H5_NGTIM32                  2   /* 32-bit general timers TIM2 and 5 with DMA */
+#  define STM32H5_NGTIM16                  2   /* 16-bit general timers TIM3 and 4 with DMA */
+#  define STM32H5_NGTIMNDMA                3   /* 16-bit general timers TIM15-17 without DMA */
+#  define STM32H5_NBTIM                    2   /* Two basic timers, TIM6-7 */
+#  define STM32H5_NLPTIM                   6   /* Six low-power timers, LPTIM1-LPTIM6. */
+#  define STM32H5_NRNG                     1   /* Random number generator (RNG) */
+#  define STM32H5_NUART                    2   /* UART 4-5 */
+#  define STM32H5_NUSART                   4   /* USART 1-3, 6*/
+#  define STM32H5_NLPUART                  1   /* LPUART 1 */
+#  define STM32H5_QSPI                     0   /* No QuadSPI1 */
+#  define STM32H5_OCTOSPI                  1   /* OCTOSPI1*/
+#  define STM32H5_NSPI                     6   /* SPI1-SPI6 */
+#  define STM32H5_NI2C                     4   /* I2C1-4 */
+#  define STM32H5_NSWPMI                   0   /* No SWPMI1 */
+#  define STM32H5_NUSBOTGFS                0   /* USB OTG FS */
+#  define STM32H5_NUSBFS                   1   /* No USB FS */
+#  define STM32H5_NCAN                     2   /* CAN1 */
+#  define STM32H5_NSAI                     2   /* SAI1-2 */
+#  define STM32H5_NSDMMC                   1   /* SDMMC interface */
+#  define STM32H5_NDMA                     2   /* DMA1-2 */
+#  define STM32H5_NPORTS                   8   /* 8 GPIO ports, GPIOA-GPIOI */
+#  define STM32H5_NADC                     2   /* 12-bit ADC1, up to 20 channels */
+#  define STM32H5_NDAC                     1   /* 12-bit DAC1 */
+#  define STM32H5_NCRC                     1   /* CRC */
+#  define STM32H5_NCOMP                    0   /* Comparators */
+#  define STM32H5_NOPAMP                   0   /* Operational Amplifiers */
+/* TODO - Add new features for H5 later */
+#endif
 
 /* NVIC priority levels *****************************************************/
 
 /* 16 Programmable interrupt levels */
 
-/* TODO: Check this */
 #define NVIC_SYSH_PRIORITY_MIN     0xf0 /* All bits set in minimum priority */
 #define NVIC_SYSH_PRIORITY_DEFAULT 0x80 /* Midpoint is the default */
 #define NVIC_SYSH_PRIORITY_MAX     0x00 /* Zero is maximum priority */
