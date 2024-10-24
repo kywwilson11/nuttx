@@ -82,6 +82,14 @@ ifeq ($(CONFIG_MM_KASAN_GLOBAL),y)
   ARCHOPTIMIZATION += --param asan-globals=1
 endif
 
+ifeq ($(CONFIG_MM_KASAN_DISABLE_READS_CHECK),y)
+  ARCHOPTIMIZATION += --param asan-instrument-reads=0
+endif
+
+ifeq ($(CONFIG_MM_KASAN_DISABLE_WRITES_CHECK),y)
+  ARCHOPTIMIZATION += --param asan-instrument-writes=0
+endif
+
 # Instrumentation options
 
 ifeq ($(CONFIG_ARCH_INSTRUMENT_ALL),y)
@@ -187,6 +195,8 @@ ifeq ($(CONFIG_ARCH_TOOLCHAIN_GNU),y)
   ifeq ($(shell expr "$(GCCVER)" \>= 12), 1)
     LDFLAGS += --no-warn-rwx-segments
   endif
+
+  LDFLAGS += --print-memory-usage
 endif
 
 # Add the builtin library
@@ -197,7 +207,7 @@ ifeq ($(CONFIG_LIBM_TOOLCHAIN),y)
   EXTRA_LIBS += $(wildcard $(shell $(CC) $(ARCHCPUFLAGS) --print-file-name=libm.a))
 endif
 
-ifeq ($(CONFIG_LIBSUPCXX),y)
+ifeq ($(CONFIG_LIBSUPCXX_TOOLCHAIN),y)
   EXTRA_LIBS += $(wildcard $(shell $(CC) $(ARCHCPUFLAGS) --print-file-name=libsupc++.a))
 endif
 

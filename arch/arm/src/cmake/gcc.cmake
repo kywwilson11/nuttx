@@ -66,7 +66,7 @@ if(CONFIG_ARCH_TOOLCHAIN_GNU)
 
   if(GCCVER GREATER_EQUAL 12)
     add_compile_options(--param=min-pagesize=0)
-    if(CONFIG_ARCH_RAMFUNCS)
+    if(CONFIG_ARCH_RAMFUNCS OR NOT CONFIG_BOOT_RUNFROMFLASH)
       add_link_options(-Wl,--no-warn-rwx-segments)
     endif()
   endif()
@@ -228,6 +228,8 @@ endif()
 if(CONFIG_DEBUG_LINK_MAP)
   add_link_options(-Wl,--cref -Wl,-Map=nuttx.map)
 endif()
+
+add_link_options(-Wl,--print-memory-usage)
 
 if(CONFIG_DEBUG_SYMBOLS)
   add_compile_options(${CONFIG_DEBUG_SYMBOLS_LEVEL})

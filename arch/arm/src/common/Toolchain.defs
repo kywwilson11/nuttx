@@ -317,11 +317,14 @@ else
       ARCHOPTIMIZATION += --param=min-pagesize=0
       ifeq ($(CONFIG_ARCH_RAMFUNCS),y)
         LDFLAGS += --no-warn-rwx-segments
+      else ifeq ($(CONFIG_BOOT_RUNFROMFLASH),)
+        LDFLAGS += --no-warn-rwx-segments
       endif
     endif
   endif
 
   LDFLAGS += --entry=__start
+  LDFLAGS += --print-memory-usage
 
 endif
 
@@ -488,7 +491,7 @@ ifeq ($(CONFIG_LIBM_TOOLCHAIN),y)
   endif
 endif
 
-ifeq ($(CONFIG_LIBSUPCXX),y)
+ifeq ($(CONFIG_LIBSUPCXX_TOOLCHAIN),y)
   EXTRA_LIBS += $(wildcard $(shell $(CC) $(ARCHCPUFLAGS) --print-file-name=libsupc++.a))
 endif
 
