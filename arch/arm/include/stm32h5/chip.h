@@ -87,8 +87,8 @@
 #  define STM32H5_NLPUART                  1   /* LPUART 1 */
 #  define STM32H5_QSPI                     0   /* No QuadSPI1 */
 #  define STM32H5_OCTOSPI                  1   /* OCTOSPI1*/
-#  define STM32H5_NSPI                     6   /* SPI1-SPI6 */
-#  define STM32H5_NI2C                     4   /* I2C1-4 */
+#  define STM32H5_NSPI                     3   /* SPI1-SPI3 */
+#  define STM32H5_NI2C                     3   /* I2C1-3 */
 #  define STM32H5_NSWPMI                   0   /* No SWPMI1 */
 #  define STM32H5_NUSBOTGFS                0   /* USB OTG FS */
 #  define STM32H5_NUSBFS                   1   /* No USB FS */

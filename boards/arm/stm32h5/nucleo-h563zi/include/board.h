@@ -91,14 +91,14 @@
  */
 
 #define STM32H5_PLL1CFGR_PLL1FRACEN        RCC_PLL1CFGR_PLL1FRACEN 
-#define STM32H5_PLL1CFGR_PLL1VCOSEL        RCC_PLL1CFGR_PLL1VCOSEL
+#define STM32H5_PLL1CFGR_PLL1VCOSEL        0
 #define STM32H5_PLL1CFGR_PLL1RGE           RCC_PLL1CFGR_PLL1RGE_8_16M 
 
 #define STM32H5_PLL1CFGR_PLL1M             RCC_PLL1CFGR_PLL1M(2)
 #define STM32H5_PLL1DIVR_PLL1N             RCC_PLL1DIVR_PLL1N(15)
 
 #define STM32H5_PLL1DIVR_PLL1P             RCC_PLL1DIVR_PLL1P(1)
-#define STM32H5_PLL1CFGR_PLL1P_ENABLED
+#define STM32H5_PLL1CFGR_PLL1P_ENABLED     1
 #define STM32H5_PLL1DIVR_PLL1Q             0
 #undef STM32H5_PLL1CFGR_PLL1Q_ENABLED
 #define STM32H5_PLL1DIVR_PLL1R             0 
@@ -238,8 +238,8 @@
 
 /* LED definitions **********************************************************/
 
-/* The Nucleo-144 board has numerous LEDs but only three, LD1 a Green LED,
- * LD2 a Blue LED and LD3 a Red LED, that can be controlled by software.
+/* The Nucleo board has numerous LEDs but only three, LD1 a Green LED,
+ * LD2 a Yellow LED, and LD3 a Red LED, that can be controlled by software.
  * The following definitions assume the default Solder Bridges are installed.
  *
  * If CONFIG_ARCH_LEDS is not defined, then the user can control the LEDs
@@ -255,7 +255,7 @@
 #define BOARD_NLEDS       3
 
 #define BOARD_LED_GREEN   BOARD_LED1
-#define BOARD_LED_BLUE    BOARD_LED2
+#define BOARD_LED_YELLOW  BOARD_LED2
 #define BOARD_LED_RED     BOARD_LED3
 
 /* LED bits for use with board_userled_all() */

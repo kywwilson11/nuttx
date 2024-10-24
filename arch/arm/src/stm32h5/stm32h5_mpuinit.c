@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/stm32l5/stm32l5_mpuinit.c
+ * arch/arm/src/stm32h5/stm32h5_mpuinit.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,7 +30,7 @@
 #include <nuttx/userspace.h>
 
 #include "mpu.h"
-#include "stm32l5_mpuinit.h"
+#include "stm32h5_mpuinit.h"
 
 #if defined(CONFIG_BUILD_PROTECTED) && defined(CONFIG_ARM_MPU)
 
@@ -39,7 +39,7 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: stm32l5_mpuinitialize
+ * Name: stm32h5_mpuinitialize
  *
  * Description:
  *   Configure the MPU to permit user-space access to only restricted SAM3U
@@ -47,7 +47,7 @@
  *
  ****************************************************************************/
 
-void stm32l5_mpuinitialize(void)
+void stm32h5_mpuinitialize(void)
 {
   uintptr_t datastart = MIN(USERSPACE->us_datastart, USERSPACE->us_bssstart);
   uintptr_t dataend   = MAX(USERSPACE->us_dataend,   USERSPACE->us_bssend);
@@ -72,7 +72,7 @@ void stm32l5_mpuinitialize(void)
 }
 
 /****************************************************************************
- * Name: stm32l5_mpu_uheap
+ * Name: stm32h5_mpu_uheap
  *
  * Description:
  *  Map the user-heap region.
@@ -81,7 +81,7 @@ void stm32l5_mpuinitialize(void)
  *
  ****************************************************************************/
 
-void stm32l5_mpu_uheap(uintptr_t start, size_t size)
+void stm32h5_mpu_uheap(uintptr_t start, size_t size)
 {
   mpu_user_intsram(start, size);
 }

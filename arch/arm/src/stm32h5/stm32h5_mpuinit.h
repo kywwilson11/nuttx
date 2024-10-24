@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/stm32l5/stm32l5_mpuinit.h
+ * arch/arm/src/stm32h5/stm32h5_mpuinit.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_STM32L5_STM32L5_MPUINIT_H
-#define __ARCH_ARM_SRC_STM32L5_STM32L5_MPUINIT_H
+#ifndef __ARCH_ARM_SRC_STM32H5_STM32H5_MPUINIT_H
+#define __ARCH_ARM_SRC_STM32H5_STM32H5_MPUINIT_H
 
 /****************************************************************************
  * Included Files
@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: stm32l5_mpuinitialize
+ * Name: stm32h5_mpuinitialize
  *
  * Description:
  *   Configure the MPU to permit user-space access to only unrestricted MCU
@@ -41,13 +41,13 @@
  ****************************************************************************/
 
 #ifdef CONFIG_BUILD_PROTECTED
-void stm32l5_mpuinitialize(void);
+void stm32h5_mpuinitialize(void);
 #else
-#  define stm32l5_mpuinitialize()
+#  define stm32h5_mpuinitialize()
 #endif
 
 /****************************************************************************
- * Name: stm32l5_mpu_uheap
+ * Name: stm32h5_mpu_uheap
  *
  * Description:
  *  Map the user heap region.
@@ -55,9 +55,9 @@ void stm32l5_mpuinitialize(void);
  ****************************************************************************/
 
 #ifdef CONFIG_BUILD_PROTECTED
-void stm32l5_mpu_uheap(uintptr_t start, size_t size);
+void stm32h5_mpu_uheap(uintptr_t start, size_t size);
 #else
-#  define stm32l5_mpu_uheap(start,size)
+#  define stm32h5_mpu_uheap(start,size)
 #endif
 
-#endif /* __ARCH_ARM_SRC_STM32L5_STM32L5_MPUINIT_H */
+#endif /* __ARCH_ARM_SRC_STM32H5_STM32H5_MPUINIT_H */
