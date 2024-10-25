@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/stm32l5/stm32l5_userspace.c
+ * arch/arm/src/stm32h5/stm32h5_userspace.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -29,8 +29,8 @@
 
 #include <nuttx/userspace.h>
 
-#include "stm32l5_mpuinit.h"
-#include "stm32l5_userspace.h"
+#include "stm32h5_mpuinit.h"
+#include "stm32h5_userspace.h"
 
 #ifdef CONFIG_BUILD_PROTECTED
 
@@ -39,7 +39,7 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: stm32l5_userspace
+ * Name: stm32h5_userspace
  *
  * Description:
  *   For the case of the separate user-/kernel-space build, perform whatever
@@ -49,7 +49,7 @@
  *
  ****************************************************************************/
 
-void stm32l5_userspace(void)
+void stm32h5_userspace(void)
 {
   uint8_t *src;
   uint8_t *dest;
@@ -85,7 +85,7 @@ void stm32l5_userspace(void)
 
   /* Configure the MPU to permit user-space access to its FLASH and RAM */
 
-  stm32l5_mpuinitialize();
+  stm32h5_mpuinitialize();
 }
 
 #endif /* CONFIG_BUILD_PROTECTED */

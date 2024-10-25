@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/stm32l5/stm32l5_userspace.h
+ * arch/arm/src/stm32h5/stm32h5_userspace.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_STM32L5_STM32L5_USERSPACE_H
-#define __ARCH_ARM_SRC_STM32L5_STM32L5_USERSPACE_H
+#ifndef __ARCH_ARM_SRC_STM32H5_STM32H5_USERSPACE_H
+#define __ARCH_ARM_SRC_STM32H5_STM32H5_USERSPACE_H
 
 /****************************************************************************
  * Included Files
@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: stm32l5_userspace
+ * Name: stm32h5_userspace
  *
  * Description:
  *   For the case of the separate user-/kernel-space build, perform whatever
@@ -43,7 +43,7 @@
  ****************************************************************************/
 
 #ifdef CONFIG_BUILD_PROTECTED
-void stm32l5_userspace(void);
+void stm32h5_userspace(void);
 #endif
 
-#endif /* __ARCH_ARM_SRC_STM32L5_STM32L5_USERSPACE_H */
+#endif /* __ARCH_ARM_SRC_STM32H5_STM32H5_USERSPACE_H */
