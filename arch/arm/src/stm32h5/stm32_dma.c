@@ -52,24 +52,24 @@
  */
 
 #define CH_BASE_OFFSET(ch)  (0x80*(ch)) 
-#define CH_CxLBAR_OFFSET     0x50
-#define CH_CxFCR_OFFSET      0x5C
-#define CH_CxSR_OFFSET       0x60
-#define CH_CxCR_OFFSET       0x64
-#define CH_CxTR1_OFFSET      0x90
-#define CH_CxTR2_OFFSET      0x94
-#define CH_CxBR1_OFFSET      0x98
-#define CH_CxSAR_OFFSET      0x9C
-#define CH_CxDAR_OFFSET      0xA0
-#define CH_CxTR3_OFFSET      0xA4
-#define CH_CxBR2_OFFSET      0xA8
-#define CH_CxLLR_OFFSET      0xCC
+#define CH_CXLBAR_OFFSET     0x50
+#define CH_CXFCR_OFFSET      0x5C
+#define CH_CXSR_OFFSET       0x60
+#define CH_CXCR_OFFSET       0x64
+#define CH_CXTR1_OFFSET      0x90
+#define CH_CXTR2_OFFSET      0x94
+#define CH_CXBR1_OFFSET      0x98
+#define CH_CXSAR_OFFSET      0x9C
+#define CH_CXDAR_OFFSET      0xA0
+#define CH_CXTR3_OFFSET      0xA4
+#define CH_CXBR2_OFFSET      0xA8
+#define CH_CXLLR_OFFSET      0xCC
 
 /****************************************************************************
  * Private Types
  ****************************************************************************/
 
- struct stm32_gpdma_lli_s
+struct stm32_gpdma_lli_s
 {
   uint32_t tr1;   /* GPDMA_CxTR1 value */
   uint32_t tr2;   /* GPDMA_CxTR2 value */
@@ -77,7 +77,8 @@
   uint32_t sar;   /* GPDMA_CxSAR (source address) */
   uint32_t dar;   /* GPDMA_CxDAR (dest address) */
   uint32_t llr;   /* GPDMA_CxLLR (pointer+update bits) */
-} __attribute__((aligned(32)));  /* LLI pointers must be 4-byte aligned; 32-byte keeps cache lines happy */
+}
+__attribute__ ((aligned(32)));
 
 struct gpdma_ch_s
 {
@@ -118,7 +119,7 @@ static int gpdma_dmainterrupt(int irq, void *context, void *arg);
  ****************************************************************************/
 
 #ifdef CONFIG_STM32H5_DMA1
-static struct gpdma_ch_s g_chan[] = 
+static struct gpdma_ch_s g_chan[] =
 {
   {
     .dma_instance = 1,
@@ -209,7 +210,7 @@ static inline void gpdmach_modifyreg32(struct gpdma_ch_s *chan,
 }
 
 /****************************************************************************
- * Name: gpdma_ch_abort
+ * Name: gpdma_dmainterrupt
  *
  * Description:
  *   DMA interrupt handler.
@@ -238,13 +239,13 @@ static int gpdma_dmainterrupt(int irq, void *context, void *arg)
 
   /* Get the interrupt status for this channel */
 
-  status = (gpdmach_getreg(chan, CH_CxSR_OFFSET) >> 8) & 0x7f;
+  status = (gpdmach_getreg(chan, CH_CXSR_OFFSET) >> 8) & 0x7f;
 
-  /* Clear the fetched channel interrupts by setting bits in the flag 
+  /* Clear the fetched channel interrupts by setting bits in the flag
    * clear register
    */
 
-  gpdmach_putreg(chan, CH_CxFCR_OFFSET, ~0);
+  gpdmach_putreg(chan, CH_CXFCR_OFFSET, ~0);
 
   /* Invoke the callback */
 
@@ -267,28 +268,31 @@ static int gpdma_dmainterrupt(int irq, void *context, void *arg)
 
 static void gpdma_ch_abort(struct gpdma_ch_s *chan)
 {
-  if ((gpdmach_getreg(chan, CH_CxCR_OFFSET) & GPDMA_CXCR_EN) == 0)
-  {
-    return;
-  }
-  
-  // 1. Software writes 1 to the GPDMA_CxCR.SUSP bit
-  gpdmach_putreg(chan, CH_CxCR_OFFSET, GPDMA_CXCR_SUSP);
+  if ((gpdmach_getreg(chan, CH_CXCR_OFFSET) & GPDMA_CXCR_EN) == 0)
+    {
+      return;
+    }
 
-  // 2. Polls suspend flag GPDMA_CxSR.SUSPF until SUSPF = 1, or waits for an
-  //    interrupt previously enabled by writing 1 to GPDMA_CxCR.SUSPIE.
+  /* 1. Software writes 1 to the GPDMA_CxCR.SUSP bit */
 
-  while ((gpdmach_getreg(chan, CH_CxSR_OFFSET) & GPDMA_CXSR_SUSPF) == 0)
+  gpdmach_putreg(chan, CH_CXCR_OFFSET, GPDMA_CXCR_SUSP);
+
+  /* 2. Polls suspend flag GPDMA_CxSR.SUSPF until SUSPF = 1, or waits for an
+   *    interrupt previously enabled by writing 1 to GPDMA_CxCR.SUSPIE.
+   */
+
+  while ((gpdmach_getreg(chan, CH_CXSR_OFFSET) & GPDMA_CXSR_SUSPF) == 0)
     {
     }
 
-  // 3. Reset chan by writing 1 to GPDMA_CxCR.RESET
+  /* 3. Reset chan by writing 1 to GPDMA_CxCR.RESET */
 
-  gpdmach_putreg(chan, CH_CxCR_OFFSET, GPDMA_CXCR_RESET);
+  gpdmach_putreg(chan, CH_CXCR_OFFSET, GPDMA_CXCR_RESET);
 
-  // 4. Wait for GPDMA_CxCR.EN and GPDMA_CxCR.SUSP bits to be reset
+  /* 4. Wait for GPDMA_CxCR.EN and GPDMA_CxCR.SUSP bits to be reset */
 
-  while ((gpdmach_getreg(chan, CH_CxCR_OFFSET) & (GPDMA_CXCR_EN|GPDMA_CXCR_SUSP)) != 0)
+  while ((gpdmach_getreg(chan, CH_CXCR_OFFSET) &
+         (GPDMA_CXCR_EN | GPDMA_CXCR_SUSP)) != 0)
     {
     }
 }
@@ -309,8 +313,8 @@ static void gpdma_ch_disable(struct gpdma_ch_s *chan)
 
   /* Disable and clear all interrupts. */
 
-  gpdmach_modifyreg32(chan, CH_CxCR_OFFSET, GPDMA_CXCR_ALLINTS, 0);
-  gpdmach_modifyreg32(chan, CH_CxFCR_OFFSET, 0, ~0);
+  gpdmach_modifyreg32(chan, CH_CXCR_OFFSET, GPDMA_CXCR_ALLINTS, 0);
+  gpdmach_modifyreg32(chan, CH_CXFCR_OFFSET, 0, ~0);
 }
 
 /****************************************************************************
@@ -321,51 +325,53 @@ static void gpdma_ch_disable(struct gpdma_ch_s *chan)
  *
  ****************************************************************************/
 
-static int gpdma_setup(struct gpdma_ch_s *chan, struct stm32_gpdma_cfg_s *cfg)
+static int gpdma_setup(struct gpdma_ch_s *chan,
+                       struct stm32_gpdma_cfg_s *cfg)
 {
   uint32_t reg;
 
   /* Make sure not to use linked list mode. */
-  // Do I also need to clear CxLBAR?
-  gpdmach_modifyreg32(chan, CH_CxLLR_OFFSET, ~0, 0);
-  gpdmach_putreg(chan, CH_CxLBAR_OFFSET, 0);
 
+  gpdmach_modifyreg32(chan, CH_CXLLR_OFFSET, ~0, 0);
+  gpdmach_putreg(chan, CH_CXLBAR_OFFSET, 0);
 
   /* Set source and destination addresses. */
 
-  gpdmach_putreg(chan, CH_CxSAR_OFFSET, cfg->src_addr);
-  gpdmach_putreg(chan, CH_CxDAR_OFFSET, cfg->dest_addr);
+  gpdmach_putreg(chan, CH_CXSAR_OFFSET, cfg->src_addr);
+  gpdmach_putreg(chan, CH_CXDAR_OFFSET, cfg->dest_addr);
 
   /* Set the channel priority according to configuration. */
 
-  gpdmach_modifyreg32(chan, CH_CxCR_OFFSET, GPDMA_CXCR_PRIO_MASK,
+  gpdmach_modifyreg32(chan, CH_CXCR_OFFSET, GPDMA_CXCR_PRIO_MASK,
                       cfg->priority << GPDMA_CXCR_PRIO_SHIFT);
 
   /* Set channels TR1 register based on configuration provided. */
 
-  gpdmach_putreg(chan, CH_CxTR1_OFFSET, cfg->tr1);
+  gpdmach_putreg(chan, CH_CXTR1_OFFSET, cfg->tr1);
 
   /* Assemble the required config for TR2 */
 
   reg = (uint32_t)cfg->request &
-        (GPDMA_CXTR2_REQSEL_MASK|GPDMA_CXTR2_DREQ|GPDMA_CXTR2_SWREQ);
-  gpdmach_putreg(chan, CH_CxTR2_OFFSET, reg);
+        (GPDMA_CXTR2_REQSEL_MASK | GPDMA_CXTR2_DREQ | GPDMA_CXTR2_SWREQ);
+  gpdmach_putreg(chan, CH_CXTR2_OFFSET, reg);
 
   /* Calculate block number of data bytes to transfer, update BR1 */
+
   reg = cfg->ntransfers;
 
   if (cfg->mode & GPDMACFG_MODE_CIRC)
     {
       /* This only targets peripheral to memory, with memory increment */
+
       circ_addr_1 = cfg->dest_addr;
-      gpdmach_putreg(chan, CH_CxLBAR_OFFSET,
+      gpdmach_putreg(chan, CH_CXLBAR_OFFSET,
                     (uint32_t)&circ_addr_1 & (0xffff << 16));
 
       reg = GPDMA_CXLLR_UDA | ((uint32_t)&circ_addr_1 & GPDMA_CXLLR_LA_MASK);
-      gpdmach_putreg(chan, CH_CxLLR_OFFSET, reg);
+      gpdmach_putreg(chan, CH_CXLLR_OFFSET, reg);
     }
 
-  gpdmach_putreg(chan, CH_CxBR1_OFFSET, reg);
+  gpdmach_putreg(chan, CH_CXBR1_OFFSET, reg);
 
   return 0;
 }
@@ -379,6 +385,7 @@ static int gpdma_setup(struct gpdma_ch_s *chan, struct stm32_gpdma_cfg_s *cfg)
  *   circular DMA.
  *
  ****************************************************************************/
+
 static int gpdma_setup_circular(struct gpdma_ch_s *chan,
                                 struct stm32_gpdma_cfg_s *cfg)
 {
@@ -391,11 +398,11 @@ static int gpdma_setup_circular(struct gpdma_ch_s *chan,
   lli[0].sar = cfg->src_addr;
   lli[0].dar = cfg->dest_addr;
   lli[0].llr = (GPDMA_CXLLR_UT1  /* reload TR1 */
-             | GPDMA_CXLLR_UT2  /* reload TR2 */
-             | GPDMA_CXLLR_UB1  /* reload BR1 */
-             | GPDMA_CXLLR_USA  /* reload SAR */
-             | GPDMA_CXLLR_UDA  /* reload DAR */
-             | GPDMA_CXLLR_ULL) /* reload LLR */
+             | GPDMA_CXLLR_UT2   /* reload TR2 */
+             | GPDMA_CXLLR_UB1   /* reload BR1 */
+             | GPDMA_CXLLR_USA   /* reload SAR */
+             | GPDMA_CXLLR_UDA   /* reload DAR */
+             | GPDMA_CXLLR_ULL)  /* reload LLR */
              | (((uint32_t)&lli[1]) & GPDMA_CXLLR_LA_MASK);
 
   lli[1].tr1 = lli[0].tr1;
@@ -406,13 +413,13 @@ static int gpdma_setup_circular(struct gpdma_ch_s *chan,
   lli[1].llr = (lli[0].llr & ~GPDMA_CXLLR_LA_MASK)
              | (((uint32_t)&lli[0]) & GPDMA_CXLLR_LA_MASK);
 
-  gpdmach_putreg(chan, CH_CxSAR_OFFSET,   lli[0].sar);
-  gpdmach_putreg(chan, CH_CxDAR_OFFSET,   lli[0].dar);
-  gpdmach_putreg(chan, CH_CxTR1_OFFSET,   lli[0].tr1);
-  gpdmach_putreg(chan, CH_CxTR2_OFFSET,   lli[0].tr2);
-  gpdmach_putreg(chan, CH_CxBR1_OFFSET,   lli[0].br1);
-  gpdmach_putreg(chan, CH_CxLBAR_OFFSET,  (uint32_t)&lli[0]);
-  gpdmach_putreg(chan, CH_CxLLR_OFFSET,   lli[0].llr);
+  gpdmach_putreg(chan, CH_CXSAR_OFFSET,   lli[0].sar);
+  gpdmach_putreg(chan, CH_CXDAR_OFFSET,   lli[0].dar);
+  gpdmach_putreg(chan, CH_CXTR1_OFFSET,   lli[0].tr1);
+  gpdmach_putreg(chan, CH_CXTR2_OFFSET,   lli[0].tr2);
+  gpdmach_putreg(chan, CH_CXBR1_OFFSET,   lli[0].br1);
+  gpdmach_putreg(chan, CH_CXLBAR_OFFSET,  (uint32_t)&lli[0]);
+  gpdmach_putreg(chan, CH_CXLLR_OFFSET,   lli[0].llr);
 
   return OK;
 }
@@ -458,7 +465,7 @@ void weak_function arm_dma_initialize(void)
     }
 }
 
- /****************************************************************************
+/****************************************************************************
  * Name: stm32_dmachannel
  *
  ****************************************************************************/
@@ -491,7 +498,6 @@ DMA_HANDLE stm32_dmachannel(enum gpdma_ttype_e type)
 
   flags = enter_critical_section();
 
-
   if (type == GPDMA_TTYPE_M2P || type == GPDMA_TTYPE_P2M)
     {
       for (i = 0; i < (sizeof(g_chan) / sizeof(struct gpdma_ch_s)); i++)
@@ -508,7 +514,6 @@ DMA_HANDLE stm32_dmachannel(enum gpdma_ttype_e type)
         }
     }
 
-
   leave_critical_section(flags);
 
   if (handle == NULL)
@@ -518,6 +523,7 @@ DMA_HANDLE stm32_dmachannel(enum gpdma_ttype_e type)
       dmainfo("No available DMA chan for transfer type=%" PRIu8 "\n",
               type);
     }
+
   return handle;
 }
 
@@ -571,10 +577,6 @@ void stm32_dmasetup(DMA_HANDLE handle, struct stm32_gpdma_cfg_s *cfg)
 
   chan->cfg = *cfg;
 
-  /* No special modes are currently supported. */
-
-  /* DEBUGASSERT(cfg->mode == 0);
-
   /* Drivers using DMA should manage channel usage. If a DMA request is not
    * made on an error or an abort occurs, the driver should stop the DMA. If
    * it fails to do so, we can not just hang waiting on the HW that will not
@@ -585,14 +587,16 @@ void stm32_dmasetup(DMA_HANDLE handle, struct stm32_gpdma_cfg_s *cfg)
    */
 
   gpdma_ch_disable(chan);
-  // if ((gpdmach_getreg(chan, CH_CxCR_OFFSET) & GPDMA_CXCR_EN) != 0)
-  //   {
-  //     gpdma_ch_abort(chan);
-  //   }
+
+  /*  if ((gpdmach_getreg(chan, CH_CXCR_OFFSET) & GPDMA_CXCR_EN) != 0)
+   *    {
+   *      gpdma_ch_abort(chan);
+   *    }
+   */
 
   /* Clear any unhandled flags from previous transactions */
 
-  // gpdmach_putreg(chan, CH_CxFCR_OFFSET, 0x7f << 8);
+  /* gpdmach_putreg(chan, CH_CXFCR_OFFSET, 0x7f << 8); */
 
   if (cfg->mode & GPDMACFG_MODE_CIRC)
     {
@@ -634,7 +638,7 @@ void stm32_dmastart(DMA_HANDLE handle, dma_callback_t callback, void *arg,
    * peripheral connected to the stream.
    */
 
-  cr = gpdmach_getreg(chan, CH_CxCR_OFFSET);
+  cr = gpdmach_getreg(chan, CH_CXCR_OFFSET);
   cr |= GPDMA_CXCR_EN;
 
   /* In normal mode, interrupt at either half or full completion. In circular
@@ -649,7 +653,9 @@ void stm32_dmastart(DMA_HANDLE handle, dma_callback_t callback, void *arg,
        * is half-full.
        */
 
-      cr |= (half ? GPDMA_CXCR_HTIE : 0) | GPDMA_CXCR_TCIE | GPDMA_CXCR_DTEIE;
+      cr |= ((half ? GPDMA_CXCR_HTIE : 0) |
+                          GPDMA_CXCR_TCIE |
+                          GPDMA_CXCR_DTEIE);
     }
   else
     {
@@ -665,7 +671,7 @@ void stm32_dmastart(DMA_HANDLE handle, dma_callback_t callback, void *arg,
                     (GPDMA_CXCR_TCIE | GPDMA_CXCR_DTEIE));
     }
 
-  gpdmach_putreg(chan, CH_CxCR_OFFSET, cr);
+  gpdmach_putreg(chan, CH_CXCR_OFFSET, cr);
 }
 
 /****************************************************************************
@@ -685,9 +691,11 @@ void stm32_dmastop(DMA_HANDLE handle)
 {
   struct gpdma_ch_s *chan = (struct gpdma_ch_s *)handle;
   gpdma_ch_disable(chan);
-  // gpdma_ch_abort(chan);
+
+  /* gpdma_ch_abort(chan); */
 }
 
+#ifdef CONFIG_STM32H5_DMACAPABLE
 /****************************************************************************
  * Name: stm32_dmacapable
  *
@@ -707,7 +715,6 @@ void stm32_dmastop(DMA_HANDLE handle)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_STM32H5_DMACAPABLE
 bool stm32_dmacapable(DMA_HANDLE handle, stm32_gpdma_cfg_s *cfg)
 {
 # warning "stm32_dma_capable not implemented yet"
@@ -715,6 +722,7 @@ bool stm32_dmacapable(DMA_HANDLE handle, stm32_gpdma_cfg_s *cfg)
 }
 #endif
 
+#ifdef CONFIG_DEBUG_DMA_INFO
 /****************************************************************************
  * Name: stm32_dmadump
  *
@@ -728,13 +736,13 @@ bool stm32_dmacapable(DMA_HANDLE handle, stm32_gpdma_cfg_s *cfg)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_DEBUG_DMA_INFO
 static void stm32_dmadump(DMA_HANDLE handle, const char *msg)
 {
 #  warning "stm32_dma_dump not implemented yet!"
 }
 #endif
 
+#ifdef CONFIG_DEBUG_DMA_INFO
 /****************************************************************************
  * Name: stm32_dmasample
  *
@@ -749,9 +757,8 @@ static void stm32_dmadump(DMA_HANDLE handle, const char *msg)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_DEBUG_DMA_INFO
 void stm32_dmasample(DMA_HANDLE handle, struct stm32_dmaregs_s *regs)
 {
-#  warning "stm32_dmasample() not implemented yet!"
+  #warning "stm32_dmasample() not implemented yet!"
 }
 #endif
