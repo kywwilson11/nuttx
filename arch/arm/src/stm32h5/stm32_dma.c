@@ -378,60 +378,41 @@ static int gpdma_setup(struct gpdma_ch_s *chan, struct stm32_gpdma_cfg_s *cfg)
  *   function handles LLI allocation and handling necessary to implement
  *   circular DMA.
  *
- * NOTE:
- *   No implementation yet!! This will be added in the future.
- *
  ****************************************************************************/
 static int gpdma_setup_circular(struct gpdma_ch_s *chan,
                                 struct stm32_gpdma_cfg_s *cfg)
 {
-  struct stm32_gpdma_lli_s *lli = chan->lli;   /* assume chan->lli was allocated as 2 entries */
-  /* Figure out the transfer width from TR1: */
-  uint32_t ddw_log2 = (cfg->tr1 & GPDMA_CXTR1_DDW_LOG2_MASK)
-                    >> GPDMA_CXTR1_DDW_LOG2_SHIFT;
-  /* Bytes per beat (sample) */
-  uint32_t beat_bytes = 1u << ddw_log2;
-  /* Number of beats in one scan is cfg->ntransfers */
-  uint32_t row_bytes  = cfg->ntransfers * beat_bytes;
+  struct stm32_gpdma_lli_s *lli = chan->lli;
 
-  uintptr_t sar   = cfg->src_addr;
-
-  /* Build LLI[0] → buffer[0] */
   lli[0].tr1 = cfg->tr1;
-  /* TCEM=11 → only one TCF per full chain */
   lli[0].tr2 = (2U << GPDMA_CXTR2_TCEM_SHIFT)
-            | (cfg->request & GPDMA_CXTR2_REQSEL_MASK);
-  lli[0].br1 = cfg->ntransfers;                          /* full scan */
-  lli[0].sar = sar;
-  lli[0].dar = cfg->dest_addr;                 /* &dmabuffer[0][0] */
-  /* reload everything & link to LLI[1] */
+             | (cfg->request & GPDMA_CXTR2_REQSEL_MASK);
+  lli[0].br1 = cfg->ntransfers;
+  lli[0].sar = cfg->src_addr;
+  lli[0].dar = cfg->dest_addr;
   lli[0].llr = (GPDMA_CXLLR_UT1  /* reload TR1 */
-              | GPDMA_CXLLR_UT2  /* reload TR2 */
-              | GPDMA_CXLLR_UB1  /* reload BR1 */
-              | GPDMA_CXLLR_USA  /* reload SAR */
-              | GPDMA_CXLLR_UDA  /* reload DAR */
-              | GPDMA_CXLLR_ULL) /* reload LLR */
-            | (((uint32_t)&lli[1]) & GPDMA_CXLLR_LA_MASK);
+             | GPDMA_CXLLR_UT2  /* reload TR2 */
+             | GPDMA_CXLLR_UB1  /* reload BR1 */
+             | GPDMA_CXLLR_USA  /* reload SAR */
+             | GPDMA_CXLLR_UDA  /* reload DAR */
+             | GPDMA_CXLLR_ULL) /* reload LLR */
+             | (((uint32_t)&lli[1]) & GPDMA_CXLLR_LA_MASK);
 
-  /* Build LLI[1] → buffer[1] */
   lli[1].tr1 = lli[0].tr1;
   lli[1].tr2 = lli[0].tr2;
-  lli[1].br1 = cfg->ntransfers;                          /* full scan */
-  lli[1].sar = sar;
-  lli[1].dar = cfg->dest_addr;         /* &dmabuffer[1][0] */
-  /* reload everything & link back to LLI[0] */
+  lli[1].br1 = lli[0].br1;
+  lli[1].sar = lli[0].sar;
+  lli[1].dar = lli[0].dar;
   lli[1].llr = (lli[0].llr & ~GPDMA_CXLLR_LA_MASK)
-            | (((uint32_t)&lli[0]) & GPDMA_CXLLR_LA_MASK);
+             | (((uint32_t)&lli[0]) & GPDMA_CXLLR_LA_MASK);
 
-  gpdmach_putreg(chan, CH_CxSAR_OFFSET,      lli[0].sar);
-  gpdmach_putreg(chan, CH_CxDAR_OFFSET,      lli[0].dar);
-  gpdmach_putreg(chan, CH_CxTR1_OFFSET,      lli[0].tr1);
-  gpdmach_putreg(chan, CH_CxTR2_OFFSET,      lli[0].tr2);
-  gpdmach_putreg(chan, CH_CxBR1_OFFSET,      lli[0].br1);
-
-  /* Point the DMA at the first descriptor */
-  gpdmach_putreg(chan, CH_CxLBAR_OFFSET, (uint32_t)&lli[0]);
-  gpdmach_putreg(chan, CH_CxLLR_OFFSET, lli[0].llr);
+  gpdmach_putreg(chan, CH_CxSAR_OFFSET,   lli[0].sar);
+  gpdmach_putreg(chan, CH_CxDAR_OFFSET,   lli[0].dar);
+  gpdmach_putreg(chan, CH_CxTR1_OFFSET,   lli[0].tr1);
+  gpdmach_putreg(chan, CH_CxTR2_OFFSET,   lli[0].tr2);
+  gpdmach_putreg(chan, CH_CxBR1_OFFSET,   lli[0].br1);
+  gpdmach_putreg(chan, CH_CxLBAR_OFFSET,  (uint32_t)&lli[0]);
+  gpdmach_putreg(chan, CH_CxLLR_OFFSET,   lli[0].llr);
 
   return OK;
 }
