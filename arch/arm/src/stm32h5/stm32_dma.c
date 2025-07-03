@@ -691,7 +691,6 @@ void stm32_dmastop(DMA_HANDLE handle)
 {
   struct gpdma_ch_s *chan = (struct gpdma_ch_s *)handle;
   gpdma_ch_disable(chan);
-
   /* gpdma_ch_abort(chan); */
 }
 

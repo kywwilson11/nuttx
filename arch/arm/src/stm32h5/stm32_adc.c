@@ -117,6 +117,7 @@ struct stm32_dev_s
   uint8_t dmachan;      /* DMA channel needed by this ADC */
 
   bool    hasdma;       /* True: This ADC supports DMA */
+  bool    circular;     /* 0 = one-shot, 1 = circular */
 #endif
 #ifdef ADC_HAVE_TIMER
   uint8_t trigger;      /* Timer trigger channel: 0=CC1, 1=CC2, 2=CC3,
@@ -147,7 +148,7 @@ struct stm32_dev_s
   /* DMA transfer buffer */
 
   /*uint16_t dmabuffer[2][ADC_MAX_SAMPLES];*/
-  uint16_t dmabuffer[2*ADC_MAX_SAMPLES];
+  uint16_t dmabuffer[ADC_MAX_SAMPLES];
 #endif
 
   /* List of selected ADC channels to sample */
@@ -197,8 +198,7 @@ static int  adc_timinit(struct stm32_dev_s *priv);
 static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status,
                                 void *arg);
 static void adc_dmacfg(struct stm32_dev_s *priv,
-                               struct stm32_gpdma_cfg_s *cfg,
-                               bool circular);
+                               struct stm32_gpdma_cfg_s *cfg);
 #endif
 
 /* ADC Interrupt Handler */
@@ -252,8 +252,13 @@ static struct stm32_dev_s g_adcpriv1 =
   .pclck       = ADC1_TIMER_PCLK_FREQUENCY,
   .freq        = CONFIG_STM32H5_ADC1_SAMPLE_FREQUENCY,
 #endif
-#ifdef CONFIG_STM32H5_ADC1_DMA
+#ifdef ADC_HAVE_DMA
   .hasdma      = true,
+#  ifdef CONFIG_STM32H5_ADC1_DMA_CFG
+  .circular    = true,
+#  else
+  .circular    = false,
+#  endif
 #endif
 };
 
@@ -284,8 +289,13 @@ static struct stm32_dev_s g_adcpriv2 =
   .pclck       = ADC2_TIMER_PCLK_FREQUENCY,
   .freq        = CONFIG_STM32H5_ADC2_SAMPLE_FREQUENCY,
 #endif
-#ifdef ADC2_HAVE_DMA
+#ifdef ADC_HAVE_DMA
   .hasdma      = true,
+#  if CONFIG_STM32H5_ADC2_DMA_CFG
+  .circular    = true,
+#  else
+  .circular    = false,
+#  endif
 #endif
 };
 
@@ -831,12 +841,13 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
         }
     }
 
-  /*
-  adc_dmacfg(priv, &dmacfg, 1);
-  stm32_dmasetup(priv->dma, &dmacfg);
-  stm32_dmastart(priv->dma, adc_dmaconvcallback, dev, false);
-  adc_startconv(priv, true);
-  */
+  if (priv->circular == 0)
+    {
+      adc_dmacfg(priv, &dmacfg);
+      stm32_dmasetup(priv->dma, &dmacfg);
+      stm32_dmastart(priv->dma, adc_dmaconvcallback, dev, false);
+      adc_startconv(priv, true);
+    }
 }
 #endif
 
@@ -856,8 +867,7 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
  *   None
  ****************************************************************************/
 static void adc_dmacfg(struct stm32_dev_s *priv,
-                       struct stm32_gpdma_cfg_s *cfg,
-                       bool circular)
+                       struct stm32_gpdma_cfg_s *cfg)
 {
   const uint32_t sdw_log2 = 1;  /* Always 16-bit half-word for ADC_DR */
 
@@ -870,7 +880,7 @@ static void adc_dmacfg(struct stm32_dev_s *priv,
 
   cfg->priority   = GPMDACFG_PRIO_LH;
 
-  cfg->mode       = circular ? GPDMACFG_MODE_CIRC : 0;
+  cfg->mode       = priv->circular ? GPDMACFG_MODE_CIRC : 0;
 
   cfg->ntransfers = priv->cchannels * (1u << sdw_log2);
 
@@ -955,13 +965,21 @@ static int adc_setup(struct adc_dev_s *dev)
        */
 
       setbits |= ADC_CFGR_DMAEN;
-      clrbits |= ADC_CFGR_DMACFG;
+
+      if (priv->circular)
+        {
+          setbits |= ADC_CFGR_DMACFG;
+          setbits |= ADC_CFGR_CONT;
+        }
+      else
+        {
+          clrbits |= ADC_CFGR_DMACFG;
+          clrbits |= ADC_CFGR_CONT;
+        }
     }
-#endif
-
-  /* Disable continuous mode */
-
+#else
   clrbits |= ADC_CFGR_CONT;
+#endif
 
   /* Disable external trigger for regular channels */
 
@@ -1018,15 +1036,8 @@ static int adc_setup(struct adc_dev_s *dev)
           priv->dma = stm32_dmachannel(GPDMA_TTYPE_P2M);
         }
 
-
-      uint32_t cfgr = getreg32(priv->base + STM32_ADC_CFGR_OFFSET);
-      cfgr |= ADC_CFGR_CONT;
-      cfgr |= ADC_CFGR_DMACFG;
-      putreg32(cfgr, priv->base + STM32_ADC_CFGR_OFFSET);
-      adc_dmacfg(priv, &dmacfg, 1);
-
+      adc_dmacfg(priv, &dmacfg);
       stm32_dmasetup(priv->dma, &dmacfg);
-
       stm32_dmastart(priv->dma, adc_dmaconvcallback, dev, false);
     }
 #endif
