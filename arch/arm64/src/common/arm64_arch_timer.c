@@ -87,16 +87,6 @@ static inline void arm64_arch_timer_set_compare(uint64_t value)
   write_sysreg(value, cntv_cval_el0);
 }
 
-static inline void arm64_arch_timer_set_relative(uint64_t value)
-{
-  write_sysreg(value, cntv_tval_el0);
-}
-
-static inline uint64_t arm64_arch_timer_get_compare(void)
-{
-  return read_sysreg(cntv_cval_el0);
-}
-
 static inline void arm64_arch_timer_enable(bool enable)
 {
   uint64_t value;

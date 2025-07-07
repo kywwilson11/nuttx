@@ -813,6 +813,7 @@ config ESP32S3_LEDC
 	default n
 	select PWM
 	select ARCH_HAVE_PWM_MULTICHAN
+	select ESPRESSIF_LEDC
 	---help---
 		Enable support to PWM on ESP32S3 using LEDC peripheral.
 
@@ -2680,6 +2681,7 @@ config ESPRESSIF_SIMPLE_BOOT
 config ESP32S3_APP_FORMAT_MCUBOOT
 	bool "Enable MCUboot-bootable format"
 	depends on !MCUBOOT_BOOTLOADER
+	select ESPRESSIF_BOOTLOADER_MCUBOOT
 	default n
 	select ESP32S3_HAVE_OTA_PARTITION
 	---help---

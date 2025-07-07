@@ -92,7 +92,7 @@
 #  include "esp32s3_efuse.h"
 #endif
 
-#ifdef CONFIG_ESP32S3_LEDC
+#ifdef CONFIG_ESPRESSIF_LEDC
 #  include "esp32s3_board_ledc.h"
 #endif
 
@@ -116,7 +116,7 @@
 #  endif
 #endif
 
-#ifdef CONFIG_ESP32S3_SDMMC
+#if defined(CONFIG_ESP32S3_SDMMC) || defined(CONFIG_MMCSD_SPI)
 #include "esp32s3_board_sdmmc.h"
 #endif
 
@@ -238,13 +238,13 @@ int esp32s3_bringup(void)
     }
 #endif
 
-#ifdef CONFIG_ESP32S3_LEDC
+#ifdef CONFIG_ESPRESSIF_LEDC
   ret = esp32s3_pwm_setup();
   if (ret < 0)
     {
       syslog(LOG_ERR, "ERROR: esp32s3_pwm_setup() failed: %d\n", ret);
     }
-#endif /* CONFIG_ESP32S3_LEDC */
+#endif /* CONFIG_ESPRESSIF_LEDC */
 
 #ifdef CONFIG_ESP32S3_TIMER
   /* Configure general purpose timers */
@@ -506,6 +506,14 @@ int esp32s3_bringup(void)
 
 #ifdef CONFIG_ESP32S3_SDMMC
   ret = board_sdmmc_initialize();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to initialize SDMMC: %d\n", ret);
+    }
+#endif
+
+#ifdef CONFIG_MMCSD_SPI
+  ret = board_sdmmc_spi_initialize();
   if (ret < 0)
     {
       syslog(LOG_ERR, "ERROR: Failed to initialize SDMMC: %d\n", ret);
