@@ -113,9 +113,6 @@ struct stm32_dev_s
   uint8_t intf;         /* ADC interface number */
   uint8_t current;      /* Current ADC channel being converted */
 #ifdef ADC_HAVE_DMA
-  // TODO: Probably don't need this for H5 implementation.
-  uint8_t dmachan;      /* DMA channel needed by this ADC */
-
   bool    hasdma;       /* True: This ADC supports DMA */
   bool    circular;     /* 0 = one-shot, 1 = circular */
 #endif
@@ -147,7 +144,6 @@ struct stm32_dev_s
 
   /* DMA transfer buffer */
 
-  /*uint16_t dmabuffer[2][ADC_MAX_SAMPLES];*/
   uint16_t dmabuffer[ADC_MAX_SAMPLES];
 #endif
 
@@ -812,8 +808,8 @@ static void adc_reset(struct adc_dev_s *dev)
  *   None
  *
  ****************************************************************************/
-#ifdef ADC_HAVE_DMA
-/* Code for oneshot */
+
+ #ifdef ADC_HAVE_DMA
 static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
 {
   struct adc_dev_s   *dev  = (struct adc_dev_s *)arg;
@@ -822,11 +818,13 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
   int i;
 
   /* Verify that the upper-half has bound its callback */
+
   if (priv->cb != NULL)
     {
       DEBUGASSERT(priv->cb->au_receive != NULL);
 
       /* Deliver one sample per configured channel */
+
       for (i = 0; i < priv->nchannels; i++)
         {
           priv->cb->au_receive(dev,
@@ -835,7 +833,6 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
           priv->current++;
           if (priv->current >= priv->nchannels)
             {
-              /* wrap around */
               priv->current = 0;
             }
         }
@@ -866,6 +863,7 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
  * Returned Value:
  *   None
  ****************************************************************************/
+
 static void adc_dmacfg(struct stm32_dev_s *priv,
                        struct stm32_gpdma_cfg_s *cfg)
 {
@@ -957,7 +955,7 @@ static int adc_setup(struct adc_dev_s *dev)
 #ifdef ADC_HAVE_DMA
   if (priv->hasdma)
     {
-      /* Enable One shot DMA.
+      /* Enable One-shot or Circular DMA.
        * WARNING: This doesn't work in dual-ADC modes. [RM0481] ADC_CFGR
        * register description (pg. 1122) - "In dual-ADC modes, this bit is
        * not relevant and replaced by control bit DMACFG of the ADC_CCR
@@ -1075,10 +1073,13 @@ static int adc_setup(struct adc_dev_s *dev)
         adc_getreg(priv, STM32_ADC_SQR4_OFFSET));
   ainfo("CCR:   0x%08" PRIx32 "\n", adc_getregm(priv, STM32_ADC_CCR_OFFSET));
 
+#ifndef ADC_HAVE_DMA
   /* Enable the ADC interrupt */
 
   ainfo("Enable the ADC interrupt: irq=%d\n", priv->irq);
-  /* up_enable_irq(priv->irq); */
+
+  up_enable_irq(priv->irq);
+#endif
 
   priv->initialized = true;
 

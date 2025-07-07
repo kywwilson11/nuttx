@@ -443,7 +443,6 @@ void weak_function arm_dma_initialize(void)
 {
   struct gpdma_ch_s *chan;
   int i;
-# warning "arm_dma_initialize not tested!!"
 
   /* Initialize each DMA stream */
 
