@@ -67,15 +67,6 @@
 
 /* ADC Channels/DMA *********************************************************/
 
-#define ADC_MAX_CHANNELS_DMA   20
-#define ADC_MAX_CHANNELS_NODMA 20
-
-#ifdef ADC_HAVE_DMA
-#  define ADC_MAX_SAMPLES ADC_MAX_CHANNELS_DMA
-#else
-#  define ADC_MAX_SAMPLES ADC_MAX_CHANNELS_NODMA
-#endif
-
 #define ADC_SMPR_DEFAULT    ADC_SMPR_640p5
 #define ADC_SMPR1_DEFAULT   ((ADC_SMPR_DEFAULT << ADC_SMPR1_SMP0_SHIFT) | \
                              (ADC_SMPR_DEFAULT << ADC_SMPR1_SMP1_SHIFT) | \
@@ -113,9 +104,9 @@ struct stm32_dev_s
   uint8_t intf;         /* ADC interface number */
   uint8_t current;      /* Current ADC channel being converted */
 #ifdef ADC_HAVE_DMA
-  bool    hasdma;       /* True: This ADC supports DMA */
+  bool     hasdma;      /* True: This ADC supports DMA */
   uint16_t dmabatch;    /* Number of conversions for DMA batch */
-  bool    circular;     /* 0 = one-shot, 1 = circular */
+  bool     circular;    /* 0 = one-shot, 1 = circular */
 #endif
 #ifdef ADC_HAVE_TIMER
   uint8_t trigger;      /* Timer trigger channel: 0=CC1, 1=CC2, 2=CC3,
@@ -259,10 +250,9 @@ static struct stm32_dev_s g_adcpriv1 =
   .freq        = CONFIG_STM32H5_ADC1_SAMPLE_FREQUENCY,
 #endif
 #ifdef ADC1_HAVE_DMA
-  .dmachan     = ADC1_DMA_CHAN,
   .hasdma      = true,
   .r_dmabuffer = g_adc1_dmabuffer,
-  .dmabatch    = CONFIG_STM32H5_ADC1_DMA_BATCH
+  .dmabatch    = CONFIG_STM32H5_ADC1_DMA_BATCH,
 #  ifdef CONFIG_STM32H5_ADC1_DMA_CFG
   .circular    = true,
 #  else
@@ -281,6 +271,12 @@ static struct adc_dev_s g_adcdev1 =
 /* ADC2 state */
 
 #ifdef CONFIG_STM32H5_ADC2
+
+#ifdef ADC2_HAVE_DMA
+static uint16_t g_adc2_dmabuffer[CONFIG_STM32H5_ADC_MAX_SAMPLES *
+                                 CONFIG_STM32H5_ADC2_DMA_BATCH];
+#endif
+
 static struct stm32_dev_s g_adcpriv2 =
 {
   .irq         = STM32_IRQ_ADC2,
@@ -298,14 +294,16 @@ static struct stm32_dev_s g_adcpriv2 =
   .pclck       = ADC2_TIMER_PCLK_FREQUENCY,
   .freq        = CONFIG_STM32H5_ADC2_SAMPLE_FREQUENCY,
 #endif
-#ifdef ADC_HAVE_DMA
+#ifdef ADC2_HAVE_DMA
   .hasdma      = true,
-#  if CONFIG_STM32H5_ADC2_DMA_CFG
+  .r_dmabuffer = g_adc2_dmabuffer,
+  .dmabatch    = CONFIG_STM32H5_ADC2_DMA_BATCH,
+#  ifdef CONFIG_STM32H5_ADC2_DMA_CFG
   .circular    = true,
 #  else
   .circular    = false,
 #  endif
-#endif
+  #endif
 };
 
 static struct adc_dev_s g_adcdev2 =
@@ -838,13 +836,13 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
 
       /* Deliver one sample per configured channel */
 
-      for (i = 0; i < priv->nchannels; i++)
+      for (i = 0; i < priv->rnchannels * priv->dmabatch; i++)
         {
           priv->cb->au_receive(dev,
                               priv->chanlist[priv->current],
-                              priv->dmabuffer[priv->current]);
+                              priv->r_dmabuffer[priv->current]);
           priv->current++;
-          if (priv->current >= priv->nchannels)
+          if (priv->current >= priv->rnchannels)
             {
               priv->current = 0;
             }
@@ -883,7 +881,7 @@ static void adc_dmacfg(struct stm32_dev_s *priv,
   const uint32_t sdw_log2 = 1;  /* Always 16-bit half-word for ADC_DR */
 
   cfg->src_addr   = priv->base + STM32_ADC_DR_OFFSET;
-  cfg->dest_addr  = (uintptr_t)priv->dmabuffer;
+  cfg->dest_addr  = (uintptr_t)priv->r_dmabuffer;
 
   cfg->request    = (priv->base == STM32_ADC1_BASE)
                      ? GPDMA_REQ_ADC1
@@ -893,7 +891,7 @@ static void adc_dmacfg(struct stm32_dev_s *priv,
 
   cfg->mode       = priv->circular ? GPDMACFG_MODE_CIRC : 0;
 
-  cfg->ntransfers = priv->cchannels * (1u << sdw_log2);
+  cfg->ntransfers = priv->cchannels * priv->dmabatch * (1u << sdw_log2);
 
   cfg->tr1        = (sdw_log2 << GPDMA_CXTR1_SDW_LOG2_SHIFT)
                   | (sdw_log2 << GPDMA_CXTR1_DDW_LOG2_SHIFT)
@@ -1043,16 +1041,10 @@ static int adc_setup(struct adc_dev_s *dev)
           stm32_dmafree(priv->dma);
         }
 
-      priv->dma = stm32_dmachannel(priv->dmachan);
+      priv->dma = stm32_dmachannel(GPDMA_TTYPE_P2M);
 
-      stm32_dmasetup(priv->dma,
-                     priv->base + STM32_ADC_DR_OFFSET,
-                     (uint32_t)priv->r_dmabuffer,
-                     priv->rnchannels * priv->dmabatch,
-                     ADC_DMA_CONTROL_WORD);
-
-      /* adc_dmacfg(priv, &dmacfg); */
-      /* stm32_dmasetup(priv->dma, &dmacfg); */
+      adc_dmacfg(priv, &dmacfg);
+      stm32_dmasetup(priv->dma, &dmacfg);
 
       stm32_dmastart(priv->dma, adc_dmaconvcallback, dev, false);
     }

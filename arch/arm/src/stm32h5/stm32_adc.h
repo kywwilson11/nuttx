@@ -89,6 +89,15 @@
 #  define ADC_HAVE_DMA 1
 #endif
 
+#if defined(CONFIG_STM32H5_ADC1_DMA)
+#  define ADC1_HAVE_DMA 1
+#endif
+
+#if defined(CONFIG_STM32H5_ADC2_DMA)
+#  define ADC2_HAVE_DMA 1
+#endif
+
+
 /* Timer configuration:  If a timer trigger is specified, then get
  * information about the timer.
  */
