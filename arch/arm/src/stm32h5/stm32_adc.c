@@ -840,7 +840,7 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
         {
           priv->cb->au_receive(dev,
                               priv->chanlist[priv->current],
-                              priv->r_dmabuffer[priv->current]);
+                              priv->r_dmabuffer[i]);
           priv->current++;
           if (priv->current >= priv->rnchannels)
             {
@@ -848,6 +848,8 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
             }
         }
     }
+
+  /* Restart DMA for the next conversion series */
 
   if (priv->circular == 0)
     {
