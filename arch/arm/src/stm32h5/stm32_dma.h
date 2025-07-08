@@ -98,7 +98,7 @@ enum gpdma_ttype_e
 
   GPDMA_TTYPE_M2M_LINEAR,
 
-  /* 2D Addressing needed (NOT IMPLEMENTED YET)*/
+  /* 2D Addressing needed (NOT IMPLEMENTED YET) */
 
   GPDMA_TTYPE_2D
 };
@@ -121,11 +121,11 @@ struct stm32_gpdma_reg_s
 };
 #endif
 
-struct stm32_gpdma_cfg_s 
+struct stm32_gpdma_cfg_s
 {
   uint32_t src_addr;
   uint32_t dest_addr;
-  
+
   /* CxTR1 register for specified channel. */
 
   uint32_t tr1;
@@ -151,7 +151,6 @@ struct stm32_gpdma_cfg_s
 
   uint8_t  mode;
 };
-
 
 /* DMA_HANDLE Provides an opaque reference that can be used to represent a
  * DMA stream.

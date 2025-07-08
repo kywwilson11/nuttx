@@ -97,7 +97,6 @@
 #  define ADC2_HAVE_DMA 1
 #endif
 
-
 /* Timer configuration:  If a timer trigger is specified, then get
  * information about the timer.
  */
