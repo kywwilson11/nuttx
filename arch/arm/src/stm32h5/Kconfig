@@ -895,6 +895,19 @@ config STM32H5_ADC_MAX_SAMPLES
 		for all supported devices, the user can change the default
 		values in the board initialization logic and avoid ADC overrun.
 
+config STM32H5_ADC_LL_OPS
+	bool "ADC low-level operations"
+	default n
+	---help---
+		Enable low-level ADC ops.
+
+config STM32H5_ADC_CHANGE_SAMPLETIME
+	bool "ADC sample time configuration"
+	default n
+	depends on STM32H5_ADC_LL_OPS
+	---help---
+		Enable ADC sample time configuration (SMPRx registers).
+
 config STM32H5_ADC1_RESOLUTION
 	int "ADC1 resolution"
 	depends on STM32H5_ADC1

@@ -113,6 +113,56 @@
 #  define ADC2_HAVE_OVERSAMPLE 1
 #endif
 
+/* Sample Time support */
+
+#ifdef CONFIG_STM32H5_ADC_CHANGE_SAMPLETIME
+
+/* Channel and sample time pair */
+
+typedef struct adc_channel_s
+{
+  uint8_t channel:5;
+
+  /* Sampling time individually for each channel */
+
+  uint8_t sample_time:3;
+} adc_channel_t;
+
+/* This structure will be used while setting channels to specified by the
+ * "channel-sample time" pairs' values
+ */
+
+struct adc_sample_time_s
+{
+  adc_channel_t *channel;                /* Array of channels */
+  uint8_t        channels_nbr:5;         /* Number of channels in array */
+  bool           all_same:1;             /* All channels will get the
+                                          * same value of the sample time */
+  uint8_t        all_ch_sample_time:3;   /* Sample time for all channels */
+};
+#endif /* CONFIG_STM32H5_ADC_CHANGE_SAMPLETIME */
+
+#ifdef CONFIG_STM32H5_ADC_LL_OPS
+struct stm32_adc_ops_s
+{
+  /* Low-level ADC setup */
+
+  int (*setup)(struct stm32_adc_dev_s *dev);
+
+#  ifdef CONFIG_STM32H5_ADC_CHANGE_SAMPLETIME
+  /* Set ADC sample time */
+
+  void (*stime_set)(struct stm32_adc_dev_s *dev,
+                    struct adc_sample_time_s *time_samples);
+
+  /* Write ADC sample time */
+
+  void (*stime_write)(struct stm32_adc_dev_s *dev);
+#  endif
+
+}
+#endif
+
 /* Timer configuration:  If a timer trigger is specified, then get
  * information about the timer.
  */
