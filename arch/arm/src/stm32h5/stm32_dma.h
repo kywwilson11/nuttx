@@ -124,7 +124,9 @@ struct stm32_gpdma_reg_s
 struct stm32_gpdma_cfg_s
 {
   uint32_t src_addr;
-  uint32_t dest_addr;
+  uint32_t dest_addr1;
+  uint32_t dest_addr2;
+  bool     double_buffer;
 
   /* CxTR1 register for specified channel. */
 

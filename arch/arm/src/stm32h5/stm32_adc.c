@@ -110,6 +110,7 @@ struct stm32_dev_s
 #ifdef ADC_HAVE_DMA
   uint16_t dmabatch;    /* Number of conversions for DMA batch */
   bool     circular;    /* 0 = one-shot, 1 = circular */
+  bool     buffer_sel;
 #endif
 #ifdef ADC_HAVE_TIMER
   uint8_t trigger;      /* Timer trigger channel: 0=CC1, 1=CC2, 2=CC3,
@@ -140,7 +141,8 @@ struct stm32_dev_s
 
   /* DMA transfer buffer */
 
-  uint16_t *r_dmabuffer;
+  uint16_t *r_dmabuffer1;
+  uint16_t *r_dmabuffer2;
 #endif
 
   bool oversample;
@@ -153,6 +155,7 @@ struct stm32_dev_s
   /* List of selected ADC channels to sample */
 
   uint8_t  chanlist[CONFIG_STM32H5_ADC_MAX_SAMPLES];
+
 };
 
 /****************************************************************************
@@ -242,8 +245,17 @@ static const struct adc_ops_s g_adcops =
 #ifdef CONFIG_STM32H5_ADC1
 
 #ifdef ADC1_HAVE_DMA
-static uint16_t g_adc1_dmabuffer[CONFIG_STM32H5_ADC_MAX_SAMPLES *
-                                 CONFIG_STM32H5_ADC1_DMA_BATCH];
+#  define ADC1_DMA_BUFFER_SIZE (CONFIG_STM32H5_ADC_MAX_SAMPLES *\
+                                CONFIG_STM32H5_ADC1_DMA_BATCH)
+
+static uint16_t g_adc1_dmabuffer1[ADC1_DMA_BUFFER_SIZE]
+__attribute__((aligned(32)));
+
+#  ifdef CONFIG_STM32H5_ADC1_DMA_CFG
+static uint16_t g_adc1_dmabuffer2[ADC1_DMA_BUFFER_SIZE]
+__attribute__((aligned(32)));
+#  endif
+
 #endif
 
 static struct stm32_dev_s g_adcpriv1 =
@@ -264,17 +276,20 @@ static struct stm32_dev_s g_adcpriv1 =
   .pclck       = ADC1_TIMER_PCLK_FREQUENCY,
   .freq        = CONFIG_STM32H5_ADC1_SAMPLE_FREQUENCY,
 #endif
+
 #ifdef ADC1_HAVE_DMA
-  .hasdma      = true,
-  .r_dmabuffer = g_adc1_dmabuffer,
-  .dmabatch    = CONFIG_STM32H5_ADC1_DMA_BATCH,
+  .hasdma       = true,
+  .r_dmabuffer1 = g_adc1_dmabuffer1,
+  .dmabatch     = CONFIG_STM32H5_ADC1_DMA_BATCH,
+  .buffer_sel   = false,
 #  ifdef CONFIG_STM32H5_ADC1_DMA_CFG
-  .circular    = true,
+  .circular     = true,
+  .r_dmabuffer2 = g_adc1_dmabuffer2,
 #  else
-  .circular    = false,
+  .circular     = false,
 #  endif
 #else
-  .hasdma      = false,
+  .hasdma       = false,
 #endif
 
 #ifdef ADC1_HAVE_OVERSAMPLE
@@ -303,8 +318,15 @@ static struct adc_dev_s g_adcdev1 =
 #ifdef CONFIG_STM32H5_ADC2
 
 #ifdef ADC2_HAVE_DMA
-static uint16_t g_adc2_dmabuffer[CONFIG_STM32H5_ADC_MAX_SAMPLES *
-                                 CONFIG_STM32H5_ADC2_DMA_BATCH];
+#  ifdef CONFIG_STM32H5_ADC2_DMA_CFG
+#    define ADC2_DMA_BUFFER_SIZE (CONFIG_STM32H5_ADC_MAX_SAMPLES *\
+                                  CONFIG_STM32H5_ADC2_DMA_BATCH * 2)
+#  else
+#    define ADC2_DMA_BUFFER_SIZE (CONFIG_STM32H5_ADC_MAX_SAMPLES *\
+                                  CONFIG_STM32H5_ADC2_DMA_BATCH)
+#  endif
+
+static uint16_t g_adc2_dmabuffer[ADC2_DMA_BUFFER_SIZE] __attribute__((aligned(32)));
 #endif
 
 static struct stm32_dev_s g_adcpriv2 =
@@ -895,6 +917,20 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
   struct stm32_dev_s *priv = (struct stm32_dev_s *)dev->ad_priv;
   struct stm32_gpdma_cfg_s dmacfg;
   int i;
+  //uint16_t offset;
+  uint16_t count = priv->rnchannels * priv->dmabatch;
+
+
+  /* Determine which half triggered the interrupt */
+
+  //if (status & DMA_STATUS_HTF)  // Half-transfer complete
+  // {
+  //    offset = 0;
+  //  }
+  //else if (status & DMA_STATUS_TCF)  // Full-transfer complete
+  //  {
+  //    offset = priv->circular ? count : 0;
+  //  }
 
   /* Verify that the upper-half has bound its callback */
 
@@ -904,11 +940,20 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
 
       /* Deliver one sample per configured channel */
 
-      for (i = 0; i < priv->rnchannels * priv->dmabatch; i++)
+      for (i = 0; i < count; i++)
         {
-          priv->cb->au_receive(dev,
-                              priv->chanlist[priv->current],
-                              priv->r_dmabuffer[i]);
+          if (!priv->buffer_sel)
+            {
+              priv->cb->au_receive(dev,
+                                  priv->chanlist[priv->current],
+                                  priv->r_dmabuffer1[i]);
+            }
+          else
+            {
+              priv->cb->au_receive(dev,
+                                  priv->chanlist[priv->current],
+                                  priv->r_dmabuffer2[i]);
+            }
           priv->current++;
           if (priv->current >= priv->rnchannels)
             {
@@ -917,10 +962,15 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
         }
     }
 
-  /* Restart DMA for the next conversion series */
 
-  if (priv->circular == 0)
+  if (priv->circular)
     {
+      priv->buffer_sel = !priv->buffer_sel;
+    }
+  else
+    {
+      /* Restart DMA for the next conversion series */
+
       adc_dmacfg(priv, &dmacfg);
       stm32_dmasetup(priv->dma, &dmacfg);
       stm32_dmastart(priv->dma, adc_dmaconvcallback, dev, false);
@@ -950,7 +1000,7 @@ static void adc_dmacfg(struct stm32_dev_s *priv,
   const uint32_t sdw_log2 = 1;  /* Always 16-bit half-word for ADC_DR */
 
   cfg->src_addr   = priv->base + STM32_ADC_DR_OFFSET;
-  cfg->dest_addr  = (uintptr_t)priv->r_dmabuffer;
+  cfg->dest_addr1 = (uintptr_t)priv->r_dmabuffer1;
 
   cfg->request    = (priv->base == STM32_ADC1_BASE)
                      ? GPDMA_REQ_ADC1
@@ -961,6 +1011,17 @@ static void adc_dmacfg(struct stm32_dev_s *priv,
   cfg->mode       = priv->circular ? GPDMACFG_MODE_CIRC : 0;
 
   cfg->ntransfers = priv->cchannels * priv->dmabatch * (1u << sdw_log2);
+
+  if (priv->circular)
+    {
+      cfg->double_buffer = true;
+      cfg->dest_addr2 = (uintptr_t)priv->r_dmabuffer2;
+    }
+  else
+    {
+      cfg->double_buffer = false;
+      cfg->dest_addr2 = (uintptr_t)priv->r_dmabuffer1;
+    }
 
   cfg->tr1        = (sdw_log2 << GPDMA_CXTR1_SDW_LOG2_SHIFT)
                   | (sdw_log2 << GPDMA_CXTR1_DDW_LOG2_SHIFT)
@@ -1125,6 +1186,7 @@ static int adc_setup(struct adc_dev_s *dev)
       stm32_dmasetup(priv->dma, &dmacfg);
 
       stm32_dmastart(priv->dma, adc_dmaconvcallback, dev, false);
+      //stm32_dmastart(priv->dma, adc_dmaconvcallback, dev, priv->circular);
     }
 #endif
 

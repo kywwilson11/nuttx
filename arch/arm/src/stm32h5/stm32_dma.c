@@ -338,7 +338,7 @@ static int gpdma_setup(struct gpdma_ch_s *chan,
   /* Set source and destination addresses. */
 
   gpdmach_putreg(chan, CH_CXSAR_OFFSET, cfg->src_addr);
-  gpdmach_putreg(chan, CH_CXDAR_OFFSET, cfg->dest_addr);
+  gpdmach_putreg(chan, CH_CXDAR_OFFSET, cfg->dest_addr1);
 
   /* Set the channel priority according to configuration. */
 
@@ -363,7 +363,7 @@ static int gpdma_setup(struct gpdma_ch_s *chan,
     {
       /* This only targets peripheral to memory, with memory increment */
 
-      circ_addr_1 = cfg->dest_addr;
+      circ_addr_1 = cfg->dest_addr1;
       gpdmach_putreg(chan, CH_CXLBAR_OFFSET,
                     (uint32_t)&circ_addr_1 & (0xffff << 16));
 
@@ -396,7 +396,7 @@ static int gpdma_setup_circular(struct gpdma_ch_s *chan,
              | (cfg->request & GPDMA_CXTR2_REQSEL_MASK);
   lli[0].br1 = cfg->ntransfers;
   lli[0].sar = cfg->src_addr;
-  lli[0].dar = cfg->dest_addr;
+  lli[0].dar = cfg->dest_addr1;
   lli[0].llr = (GPDMA_CXLLR_UT1  /* reload TR1 */
              | GPDMA_CXLLR_UT2   /* reload TR2 */
              | GPDMA_CXLLR_UB1   /* reload BR1 */
@@ -409,7 +409,12 @@ static int gpdma_setup_circular(struct gpdma_ch_s *chan,
   lli[1].tr2 = lli[0].tr2;
   lli[1].br1 = lli[0].br1;
   lli[1].sar = lli[0].sar;
-  lli[1].dar = lli[0].dar;
+
+  if (cfg->double_buffer)
+    {
+      lli[1].dar = cfg->dest_addr2;
+    }
+
   lli[1].llr = (lli[0].llr & ~GPDMA_CXLLR_LA_MASK)
              | (((uint32_t)&lli[0]) & GPDMA_CXLLR_LA_MASK);
 
