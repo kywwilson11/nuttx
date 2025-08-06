@@ -2406,10 +2406,8 @@ static bool fdcan_txempty(struct can_dev_s *dev)
 {
   struct stm32_fdcan_s *priv   = dev->cd_priv;
   uint32_t              regval = 0;
-#ifndef CONFIG_STM32H5_FDCAN_QUEUE_MODE
   int                   tffl   = 0;
   bool                  empty  = false;
-#endif
 
   DEBUGASSERT(priv != NULL && priv->config != NULL);
 
@@ -2426,13 +2424,10 @@ static bool fdcan_txempty(struct can_dev_s *dev)
 
   /* Tx FIFO Free Level */
 
-#ifndef CONFIG_STM32H5_FDCAN_QUEUE_MODE
   tffl  = (regval & FDCAN_TXFQS_TFFL_MASK) >> FDCAN_TXFQS_TFFL_SHIFT;
   empty = (tffl >= priv->config->ntxfifoq);
+
   return empty;
-#else
-  return true;
-#endif
 }
 
 /****************************************************************************

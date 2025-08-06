@@ -152,7 +152,12 @@
 
 #if defined(CONFIG_STM32H5_USBFS) || defined(CONFIG_STM32H5_RNG)
 #  define STM32H5_USE_CLK48       1
+#endif
+
+#if defined(CONFIG_STM32H5_USBFS)
 #  define STM32H5_CLKUSB_SEL      RCC_CCIPR4_USBSEL_HSI48KERCK
+#  define STM32H5_HSI48_SYNCSRC   SYNCSRC_USB
+#else
 #  define STM32H5_HSI48_SYNCSRC   SYNCSRC_NONE
 #endif
 
@@ -167,8 +172,8 @@
 
 /* Configure the APB1 prescaler */
 
-#define STM32_RCC_CFGR2_PPRE1     RCC_CFGR2_PPRE1_HCLK1      /* PCLK1 = HCLK / 1 */
-#define STM32_PCLK1_FREQUENCY    (STM32_HCLK_FREQUENCY / 1)
+#define STM32_RCC_CFGR2_PPRE1     RCC_CFGR2_PPRE1_HCLK1d2      /* PCLK1 = HCLK / 2 */
+#define STM32_PCLK1_FREQUENCY    (STM32_HCLK_FREQUENCY / 2)
 
 #define STM32_APB1_TIM2_CLKIN    (STM32_PCLK1_FREQUENCY)
 #define STM32_APB1_TIM3_CLKIN    (STM32_PCLK1_FREQUENCY)
@@ -194,7 +199,7 @@
 
 /* Configure the APB3 prescaler */
 
-#define STM32_RCC_CFGR2_PPRE3     RCC_CFGR2_PPRE3_HCLK1      /* PCLK2 = HCLK / 1 */
+#define STM32_RCC_CFGR2_PPRE3     RCC_CFGR2_PPRE3_HCLK1      /* PCLK3 = HCLK / 1 */
 #define STM32_PCLK3_FREQUENCY    (STM32_HCLK_FREQUENCY / 1)
 
 #define STM32_APB3_LPTIM1_CLKIN  (STM32_PCLK3_FREQUENCY)
@@ -231,15 +236,15 @@
 
 /* Ethernet definitions *****************************************************/
 
-#define GPIO_ETH_MDC          (GPIO_ETH_MDC_0 | GPIO_SPEED_100MHz)          /* PC1 */
-#define GPIO_ETH_MDIO         (GPIO_ETH_MDIO_0 | GPIO_SPEED_100MHz)         /* PA2 */
-#define GPIO_ETH_RMII_RXD0    (GPIO_ETH_RMII_RXD0_0 | GPIO_SPEED_100MHz)    /* PC4 */
-#define GPIO_ETH_RMII_RXD1    (GPIO_ETH_RMII_RXD1_0 | GPIO_SPEED_100MHz)    /* PC5 */
-#define GPIO_ETH_RMII_TXD0    (GPIO_ETH_RMII_TXD0_3 | GPIO_SPEED_100MHz)    /* PG13 */
-#define GPIO_ETH_RMII_TXD1    (GPIO_ETH_RMII_TXD1_1 | GPIO_SPEED_100MHz)    /* PB15 */
-#define GPIO_ETH_RMII_TX_EN   (GPIO_ETH_RMII_TX_EN_3 | GPIO_SPEED_100MHz)   /* PG11 */
-#define GPIO_ETH_RMII_CRS_DV  (GPIO_ETH_RMII_CRS_DV_0 | GPIO_SPEED_100MHz)  /* PA7 */
-#define GPIO_ETH_RMII_REF_CLK (GPIO_ETH_RMII_REF_CLK_0 | GPIO_SPEED_100MHz) /* PA1 */
+#define GPIO_ETH_MDC          (GPIO_ETH_MDC_0 | GPIO_SPEED_100MHZ)          /* PC1 */
+#define GPIO_ETH_MDIO         (GPIO_ETH_MDIO_0 | GPIO_SPEED_100MHZ)         /* PA2 */
+#define GPIO_ETH_RMII_RXD0    (GPIO_ETH_RMII_RXD0_0 | GPIO_SPEED_100MHZ)    /* PC4 */
+#define GPIO_ETH_RMII_RXD1    (GPIO_ETH_RMII_RXD1_0 | GPIO_SPEED_100MHZ)    /* PC5 */
+#define GPIO_ETH_RMII_TXD0    (GPIO_ETH_RMII_TXD0_3 | GPIO_SPEED_100MHZ)    /* PG13 */
+#define GPIO_ETH_RMII_TXD1    (GPIO_ETH_RMII_TXD1_1 | GPIO_SPEED_100MHZ)    /* PB15 */
+#define GPIO_ETH_RMII_TX_EN   (GPIO_ETH_RMII_TX_EN_3 | GPIO_SPEED_100MHZ)   /* PG11 */
+#define GPIO_ETH_RMII_CRS_DV  (GPIO_ETH_RMII_CRS_DV_0 | GPIO_SPEED_100MHZ)  /* PA7 */
+#define GPIO_ETH_RMII_REF_CLK (GPIO_ETH_RMII_REF_CLK_0 | GPIO_SPEED_100MHZ) /* PA1 */
 
 /* ADC Clock Source *********************************************************/
 
@@ -344,6 +349,26 @@
 #define BUTTON_USER        0
 #define NUM_BUTTONS        1
 #define BUTTON_USER_BIT    (1 << BUTTON_USER)
+
+/* Alternate function pin selections ****************************************/
+
+/* ADC */
+
+#define GPIO_ADC1_IN3   (GPIO_ADC1_IN3_0)
+#define GPIO_ADC1_IN10  (GPIO_ADC1_IN10_0)
+
+/* USART3 (Nucleo Virtual Console): Default board solder bridge configuration
+ * has USART3 going to the on board ST-Link to provide a VCP. Refer to
+ * STMicro user manual [UM3115] for more info on solder bridge configuration.
+ */
+
+#define GPIO_USART3_RX   GPIO_USART3_RX_4    /* PD9 */
+#define GPIO_USART3_TX   GPIO_USART3_TX_4    /* PD8 */
+
+/* USART2 */
+
+#define GPIO_USART2_RX   GPIO_USART2_RX_2    /* PD6 */
+#define GPIO_USART2_TX   GPIO_USART2_TX_2    /* PD5 */
 
 /****************************************************************************
  * Public Data
