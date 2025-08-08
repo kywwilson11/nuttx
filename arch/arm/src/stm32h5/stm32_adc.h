@@ -467,6 +467,18 @@
  * Public Types
  ****************************************************************************/
 
+/* STM32H5 ADC channel configuration */
+
+struct stm32_adc_channel_s
+{
+  uint8_t chan;                 /* Channel Number */
+  uint32_t p_gpio;              /* P GPIO */
+  uint32_t n_gpio;              /* N GPIO */
+  uint8_t tsamp:3;              /* Sampling time */
+  uint8_t mode:1;               /* Singe-ended 0 or differential mode 1 */
+  uint8_t _res:4;               /* Reserved */
+};
+
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
@@ -498,7 +510,7 @@ extern "C"
 
 struct adc_dev_s;
 struct adc_dev_s *stm32h5_adc_initialize(int intf,
-                                         const uint8_t *chanlist,
+                                         struct stm32_adc_channel_s *chanlist,
                                          int nchannels);
 #undef EXTERN
 #ifdef __cplusplus

@@ -152,7 +152,7 @@ struct stm32_dev_s
 
   /* List of selected ADC channels to sample */
 
-  uint8_t  chanlist[CONFIG_STM32H5_ADC_MAX_SAMPLES];
+  struct stm32_adc_channel_s chanlist[CONFIG_STM32H5_ADC_MAX_SAMPLES];
 };
 
 /****************************************************************************
@@ -1012,7 +1012,7 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
           for (i = 0; i < conversion_count; i++)
             {
               priv->cb->au_receive(dev,
-                priv->chanlist[priv->current],
+                priv->chanlist[priv->current].chan,
                 priv->r_dmabuffer[i]);
 
               priv->current++;
@@ -1028,7 +1028,7 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
           for (i = 0; i < conversion_count; i++)
             {
               priv->cb->au_receive(dev,
-                priv->chanlist[priv->current],
+                priv->chanlist[priv->current].chan,
                 priv->r_dmabuffer[buffer_offset + i]);
               priv->current++;
               if (priv->current >= priv->rnchannels)
@@ -1109,6 +1109,7 @@ static int adc_setup(struct adc_dev_s *dev)
 #ifdef ADC_HAVE_DMA
   struct stm32_gpdma_cfg_s dmacfg;
 #endif
+  int i;
   int ret;
   irqstate_t flags;
   uint32_t clrbits;
@@ -1145,8 +1146,26 @@ static int adc_setup(struct adc_dev_s *dev)
    * During sample cycles channel selection bits must remain unchanged.
    */
 
-  adc_putreg(priv, STM32_ADC_SMPR1_OFFSET, ADC_SMPR1_DEFAULT);
-  adc_putreg(priv, STM32_ADC_SMPR2_OFFSET, ADC_SMPR2_DEFAULT);
+  uint32_t smpr1 = 0;
+  uint32_t smpr2 = 0;
+  
+  for (i=0; i < priv->cchannels; i++) 
+    {
+      if (priv->chanlist[i].chan < 10)
+        {
+          smpr1 |= (priv->chanlist[i].tsamp << 
+                   (priv->chanlist[i].chan * 3));
+        }
+      else
+        {
+          smpr2 |= (priv->chanlist[i].tsamp << 
+                   ((priv->chanlist[i].chan - 10) * 3));
+
+        }
+    }
+
+  adc_putreg(priv, STM32_ADC_SMPR1_OFFSET, smpr1);
+  adc_putreg(priv, STM32_ADC_SMPR2_OFFSET, smpr2);
 
   /* Set the resolution of the conversion. */
 
@@ -1316,7 +1335,7 @@ static uint32_t adc_sqrbits(struct stm32_dev_s *priv, int first,
        i < priv->rnchannels && i < last;
        i++, offset += ADC_SQ_OFFSET)
     {
-      bits |= (uint32_t)priv->chanlist[i] << offset;
+      bits |= (uint32_t)priv->chanlist[i].chan << offset;
     }
 
   return bits;
@@ -1335,7 +1354,7 @@ static bool adc_internal(struct stm32_dev_s * priv, uint32_t *adc_ccr)
     {
       for (i = 0; i < priv->rnchannels; i++)
         {
-            switch (priv->chanlist[i])
+            switch (priv->chanlist[i].chan)
               {
                 case 16:
                   *adc_ccr |= ADC_CCR_TSEN;
@@ -1353,7 +1372,7 @@ static bool adc_internal(struct stm32_dev_s * priv, uint32_t *adc_ccr)
     {
       for (i = 0; i < priv->rnchannels; i++)
         {
-          switch (priv->chanlist[i])
+          switch (priv->chanlist[i].chan)
             {
               case 16:
                 *adc_ccr |= ADC_CCR_VBATEN;
@@ -1402,7 +1421,7 @@ static int adc_set_ch(struct adc_dev_s *dev, uint8_t ch)
     }
   else
     {
-      for (i = 0; i < priv->cchannels && priv->chanlist[i] != ch - 1; i++);
+      for (i = 0; i < priv->cchannels && priv->chanlist[i].chan != ch - 1; i++);
 
       if (i >= priv->cchannels)
         {
@@ -1694,7 +1713,7 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
                */
 
               DEBUGASSERT(priv->cb->au_receive != NULL);
-              priv->cb->au_receive(dev, priv->chanlist[priv->current],
+              priv->cb->au_receive(dev, priv->chanlist[priv->current].chan,
                                    value);
             }
 
@@ -2289,7 +2308,7 @@ static int adc_timinit(struct stm32_dev_s *priv)
  ****************************************************************************/
 
 struct adc_dev_s *stm32h5_adc_initialize(int intf,
-                                         const uint8_t *chanlist,
+                                         struct stm32_adc_channel_s *chanlist,
                                          int cchannels)
 {
   struct adc_dev_s *dev;
@@ -2328,7 +2347,8 @@ struct adc_dev_s *stm32h5_adc_initialize(int intf,
     }
 
   priv->cchannels = cchannels;
-  memcpy(priv->chanlist, chanlist, cchannels);
+  memcpy(priv->chanlist, chanlist, 
+         sizeof(struct stm32_adc_channel_s) * cchannels);
 
 #ifdef CONFIG_PM
   if (pm_register(&priv->pm_callback) != OK)
