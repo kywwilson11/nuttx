@@ -673,6 +673,15 @@ static int adc_wdog1_set_ch(struct stm32_dev_s *priv, uint8_t ch)
   regval |= (ADC_CFGR_AWD1SGL);
   adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
 
+  /* Restarting previously started conversions */
+
+  if (started != 0)
+    {
+      regval = adc_getreg(priv, STM32_ADC_CR_OFFSET);
+      regval |= started;
+      adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
+    }
+
   return OK;
 }
 
@@ -704,6 +713,15 @@ static int adc_wdog1_set_flt(struct stm32_dev_s *priv, uint8_t flt)
   regval &= ~(ADC_TR1_AWDFILT_MASK);
   regval |= (flt << ADC_TR1_AWDFILT_SHIFT);
   adc_putreg(priv, STM32_ADC_TR1_OFFSET, regval);
+
+  /* Restarting previously started conversions */
+
+  if (started != 0)
+    {
+      regval = adc_getreg(priv, STM32_ADC_CR_OFFSET);
+      regval |= started;
+      adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
+    }
 
   return OK;
 }
@@ -1766,7 +1784,6 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
   struct stm32_dev_s *priv = (struct stm32_dev_s *)dev->ad_priv;
   uint32_t regval;
   uint32_t tmp;
-  bool started;
   int ret = OK;
 
   switch (cmd)
