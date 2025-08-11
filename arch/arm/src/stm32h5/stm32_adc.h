@@ -463,6 +463,39 @@
 #  endif
 #endif
 
+/* IOCTL Support */
+
+#define ANIOC_WDOG_SET_CH    _ANIOC(AN_FIRST + AN_NCMDS + 1)
+
+#define ANIOC_WDOG_SET_FLT   _ANIOC(AN_FIRST + AN_NCMDS + 2)
+
+#define ANIOC_WDOG2_ENABLE   _ANIOC(AN_FIRST + AN_NCMDS + 3)
+
+#define ANIOC_WDOG2_LOWER    _ANIOC(AN_FIRST + AN_NCMDS + 4)
+                                                /* Set lower threshold for
+                                                 * watchdog
+                                                 * IN: Threshold value
+                                                 * OUT: None */
+
+#define ANIOC_WDOG2_UPPER    _ANIOC(AN_FIRST + AN_NCMDS + 5)
+                                                /* Set upper threshold for
+                                                 * watchdog
+                                                 * IN: Threshold value
+                                                 * OUT: None */
+
+#define ANIOC_WDOG3_ENABLE   _ANIOC(AN_FIRST + AN_NCMDS + 6)
+#define ANIOC_WDOG3_LOWER    _ANIOC(AN_FIRST + AN_NCMDS + 7)
+                                                /* Set lower threshold for
+                                                 * watchdog
+                                                 * IN: Threshold value
+                                                 * OUT: None */
+
+#define ANIOC_WDOG3_UPPER    _ANIOC(AN_FIRST + AN_NCMDS + 8)
+                                                /* Set upper threshold for
+                                                 * watchdog
+                                                 * IN: Threshold value
+                                                 * OUT: None */
+
 /****************************************************************************
  * Public Types
  ****************************************************************************/
