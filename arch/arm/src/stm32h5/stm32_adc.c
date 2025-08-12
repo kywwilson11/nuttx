@@ -640,7 +640,7 @@ static int adc_wdog1_configure(struct stm32_dev_s *priv,
 
   /* Verify new upper threshold greater than lower threshold */
 
-  if (cfg->high_thresh < cfg->low_thresh || cfg->high_thresh > 2047)
+  if (cfg->high_thresh < cfg->low_thresh || cfg->high_thresh > 4095)
     {
       return -EINVAL;
     }
@@ -673,8 +673,6 @@ static int adc_wdog1_configure(struct stm32_dev_s *priv,
       regval |= (ADC_CFGR_AWD1SGL);
       adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
     }
-
-  adc_wdog1_enable(priv);
 
   return OK;
 }
