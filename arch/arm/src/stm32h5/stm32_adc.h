@@ -465,7 +465,6 @@
 
 /* IOCTL Support */
 
-#define AN_STM32H5_FIRST            0x1000 /* TODO - Add to analog/ioctl.h */
 #define ANIOC_STM32H5_WDOG_CFG      _ANIOC(AN_STM32H5_FIRST + 0)
 #define ANIOC_STM32H5_WDOG2_CFG     _ANIOC(AN_STM32H5_FIRST + 1)
 #define ANIOC_STM32H5_WDOG3_CFG     _ANIOC(AN_STM32H5_FIRST + 2)
