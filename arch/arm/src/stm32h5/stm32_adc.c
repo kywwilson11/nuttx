@@ -188,12 +188,9 @@ static uint32_t adc_sqrbits(struct stm32_dev_s *priv, int first,
 static int  adc_set_ch(struct adc_dev_s *dev, uint8_t ch);
 static bool adc_internal(struct stm32_dev_s * priv, uint32_t *adc_ccr);
 static void adc_startconv(struct stm32_dev_s *priv, bool enable);
-static uint8_t adc_stopifstarted(struct stm32_dev_s *priv);
 static void adc_wdog1_enable(struct stm32_dev_s *priv);
-static int adc_wdog1_set_ch(struct stm32_dev_s *priv, uint8_t ch);
-static int adc_wdog1_set_flt(struct stm32_dev_s *priv, uint8_t flt);
-static int adc_wdog2_enable(struct stm32_dev_s *priv, uint32_t awdcr2);
-static int adc_wdog3_enable(struct stm32_dev_s *priv, uint32_t awdcr3);
+static void adc_wdog2_enable(struct stm32_dev_s *priv);
+static void adc_wdog3_enable(struct stm32_dev_s *priv);
 
 #ifdef ADC_HAVE_TIMER
 static void adc_timstart(struct stm32_dev_s *priv, bool enable);
@@ -614,11 +611,6 @@ static int adc_bind(struct adc_dev_s *dev,
 static void adc_wdog1_enable(struct stm32_dev_s *priv)
 {
   uint32_t regval;
-  uint8_t started;
-
-  /* Check for ongoing conversions */
-
-  started = adc_stopifstarted(priv);
 
   /* Initialize analog watchdog */
 
@@ -633,95 +625,53 @@ static void adc_wdog1_enable(struct stm32_dev_s *priv)
   regval &= ~ADC_INT_EOC;
   adc_putreg(priv, STM32_ADC_IER_OFFSET, regval);
 
-  /* Restarting previously started conversions */
-
-  if (started != 0)
-    {
-      regval = adc_getreg(priv, STM32_ADC_CR_OFFSET);
-      regval |= started;
-      adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
-    }
 }
 
 /****************************************************************************
- * Name: adc_wdog1_set_ch
+ * Name: adc_wdog1_configure
  *
  * Description:
  *
- *
  ****************************************************************************/
 
-static int adc_wdog1_set_ch(struct stm32_dev_s *priv, uint8_t ch)
+static int adc_wdog1_configure(struct stm32_dev_s *priv,
+                                struct stm32_adc_watchdog1_cfg_s *cfg)
 {
   uint32_t regval;
-  uint8_t started;
 
-  /* Check for valid channel */
+  /* Verify new upper threshold greater than lower threshold */
 
-  if (ch > 19)
+  if (cfg->high_thresh < cfg->low_thresh || cfg->high_thresh > 2047)
     {
       return -EINVAL;
     }
 
-  /* Check for ongoing conversions */
-
-  started = adc_stopifstarted(priv);
-
-  regval = adc_getreg(priv, STM32_ADC_CFGR_OFFSET);
-  regval &= ~(ADC_CFGR_AWD1CH_MASK);
-  regval |= (ch << ADC_CFGR_AWD1CH_SHIFT);
-  regval |= (ADC_CFGR_AWD1SGL);
-  adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
-
-  /* Restarting previously started conversions */
-
-  if (started != 0)
-    {
-      regval = adc_getreg(priv, STM32_ADC_CR_OFFSET);
-      regval |= started;
-      adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
-    }
-
-  return OK;
-}
-
-/****************************************************************************
- * Name: adc_wdog1_set_flt
- *
- * Description:
- *
- *
- ****************************************************************************/
-
-static int adc_wdog1_set_flt(struct stm32_dev_s *priv, uint8_t flt)
-{
-  uint32_t regval;
-  uint8_t started;
-
-  /* Check for valid filter */
-
-  if (flt > 3)
-    {
-      return -EINVAL;
-    }
-
-  /* Check for ongoing conversions */
-
-  started = adc_stopifstarted(priv);
+  /* Set the watchdog threshold and filter registers */
 
   regval = adc_getreg(priv, STM32_ADC_TR1_OFFSET);
+  regval &= ~(ADC_TR1_HT1_MASK | ADC_TR1_LT1_MASK);
+  regval = ((cfg->high_thresh << ADC_TR1_HT1_SHIFT) & ADC_TR1_HT1_MASK);
+  regval |= ((cfg->low_thresh << ADC_TR1_LT1_SHIFT) & ADC_TR1_LT1_MASK);
   regval &= ~(ADC_TR1_AWDFILT_MASK);
-  regval |= (flt << ADC_TR1_AWDFILT_SHIFT);
+  regval |= (cfg->filter << ADC_TR1_AWDFILT_SHIFT);
   adc_putreg(priv, STM32_ADC_TR1_OFFSET, regval);
 
-  /* Restarting previously started conversions */
+  /* Ensure analog watchdog is enabled */
 
-  if (started != 0)
+  if (cfg->all_channels == false)
     {
-      regval = adc_getreg(priv, STM32_ADC_CR_OFFSET);
-      regval |= started;
-      adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
+      if (cfg->channel > 19)
+        {
+          return -EINVAL;
+        }
+      regval = adc_getreg(priv, STM32_ADC_CFGR_OFFSET);
+      regval &= ~(ADC_CFGR_AWD1CH_MASK);
+      regval |= (cfg->channel << ADC_CFGR_AWD1CH_SHIFT);
+      regval |= (ADC_CFGR_AWD1SGL);
+      adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
     }
+
+  adc_wdog1_enable(priv);
 
   return OK;
 }
@@ -735,21 +685,9 @@ static int adc_wdog1_set_flt(struct stm32_dev_s *priv, uint8_t flt)
  *   channels provided by awd2ch argument.
  ****************************************************************************/
 
-static int adc_wdog2_enable(struct stm32_dev_s *priv, uint32_t awd2cr)
+static void adc_wdog2_enable(struct stm32_dev_s *priv)
 {
   uint32_t regval;
-  uint8_t started;
-
-  /* Verify valid AWD2CR */
-
-  if (awd2cr & ~(ADC_AWD2CR_CH_MASK))
-    {
-      return -EINVAL;
-    }
-
-  /* Check for ongoing conversions */
-
-  started = adc_stopifstarted(priv);
 
   /* Initialize analog watchdog */
 
@@ -757,25 +695,51 @@ static int adc_wdog2_enable(struct stm32_dev_s *priv, uint32_t awd2cr)
   regval |= (ADC_CFGR_CONT | ADC_CFGR_OVRMOD);
   adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
 
-  /* Set channels under AWD2 */
-
-  awd2cr &= ADC_AWD2CR_CH_MASK;
-  adc_putreg(priv,STM32_ADC_AWD2CR_OFFSET, awd2cr);
-
   /* Switch to analog watchdog interrupt */
 
   regval = adc_getreg(priv, STM32_ADC_IER_OFFSET);
   regval |= ADC_INT_AWD2;
   adc_putreg(priv, STM32_ADC_IER_OFFSET, regval);
+}
 
-  /* Restarting previously started conversions */
+/****************************************************************************
+ * Name: adc_wdog2_configure
+ *
+ * Description:
+ *
+ ****************************************************************************/
 
-  if (started != 0)
+static int adc_wdog2_configure(struct stm32_dev_s *priv,
+                                struct stm32_adc_watchdog23_cfg_s *cfg)
+{
+  uint32_t regval;
+
+  /* Verify new upper threshold greater than lower threshold */
+
+  if (cfg->high_thresh < cfg->low_thresh || cfg->high_thresh > 255)
     {
-      regval = adc_getreg(priv, STM32_ADC_CR_OFFSET);
-      regval |= started;
-      adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
+      return -EINVAL;
     }
+
+  /* Set the watchdog threshold and filter registers */
+
+  regval = adc_getreg(priv, STM32_ADC_TR2_OFFSET);
+  regval &= ~(ADC_TR2_HT2_MASK | ADC_TR2_LT2_MASK);
+  regval = ((cfg->high_thresh << ADC_TR2_HT2_SHIFT) & ADC_TR2_HT2_MASK);
+  regval |= ((cfg->low_thresh << ADC_TR2_LT2_SHIFT) & ADC_TR2_LT2_MASK);
+  adc_putreg(priv, STM32_ADC_TR2_OFFSET, regval);
+
+  /* Ensure analog watchdog is enabled */
+
+  if (cfg->channels & ~(ADC_AWD2CR_CH_MASK))
+    {
+      return -EINVAL;
+    }
+
+  regval = adc_getreg(priv, STM32_ADC_AWD2CR_OFFSET);
+  regval &= ~(ADC_AWD2CR_CH_MASK);
+  regval |= (cfg->channels << ADC_AWD2CR_CH_SHIFT);
+  adc_putreg(priv, STM32_ADC_AWD2CR_OFFSET, regval);
 
   return OK;
 }
@@ -789,21 +753,9 @@ static int adc_wdog2_enable(struct stm32_dev_s *priv, uint32_t awd2cr)
  *   channels provided by awd3ch argument.
  ****************************************************************************/
 
-static int adc_wdog3_enable(struct stm32_dev_s *priv, uint32_t awd3cr)
+static void adc_wdog3_enable(struct stm32_dev_s *priv)
 {
   uint32_t regval;
-  uint8_t started;
-
-  /* Verify valid AWD3CR */
-
-  if (awd3cr & ~(ADC_AWD3CR_CH_MASK))
-    {
-      return -EINVAL;
-    }
-
-  /* Check for ongoing conversions and stop them */
-
-  started = adc_stopifstarted(priv);
 
   /* Initialize analog watchdog */
 
@@ -811,78 +763,53 @@ static int adc_wdog3_enable(struct stm32_dev_s *priv, uint32_t awd3cr)
   regval |= ADC_CFGR_CONT | ADC_CFGR_OVRMOD;
   adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
 
-  /* Set channels under AWD3 */
-
-  awd3cr &= ADC_AWD3CR_CH_MASK;
-  adc_putreg(priv,STM32_ADC_AWD3CR_OFFSET, awd3cr);
-
   /* Switch to analog watchdog interrupt */
 
   regval = adc_getreg(priv, STM32_ADC_IER_OFFSET);
   regval |= ADC_INT_AWD3;
   adc_putreg(priv, STM32_ADC_IER_OFFSET, regval);
-
-  /* Restarting previously started conversions */
-
-  if (started != 0)
-    {
-      regval = adc_getreg(priv, STM32_ADC_CR_OFFSET);
-      regval |= started;
-      adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
-    }
-
-  return OK;
 }
 
 /****************************************************************************
- * Name: adc_stopifstarted
+ * Name: adc_wdog3_configure
  *
  * Description:
- *   Check to see if there is an ongoing regular conversion or injected
- *    conversion. If so, stop it.
- *
- * Input Parameters:
- *   priv - A reference to the ADC block status
- *
- * Returned Value:
- *   0 = Neither regular conversions nor injected conversion stopped
- *   1 = regular conversion stopped
- *   2 = injected conversion stopped
- *   3 = both types of conversions stopped
  *
  ****************************************************************************/
 
-static uint8_t adc_stopifstarted(struct stm32_dev_s *priv)
+static int adc_wdog3_configure(struct stm32_dev_s *priv,
+                                struct stm32_adc_watchdog23_cfg_s *cfg)
 {
   uint32_t regval;
-  uint8_t reg_started;
-  uint8_t inj_started;
 
-  /* Check for ongoing conversions */
+  /* Verify new upper threshold greater than lower threshold */
 
-  regval = adc_getreg(priv, STM32_ADC_CR_OFFSET);
-  reg_started = (regval & ADC_CR_ADSTART);
-  inj_started = (regval & ADC_CR_JADSTART);
-  regval &= ~(ADC_CR_ADSTART | ADC_CR_JADSTART);
-
-  if (inj_started || reg_started)
+  if (cfg->high_thresh < cfg->low_thresh || cfg->high_thresh > 255)
     {
-      if (reg_started != 0)
-        {
-          regval |= ADC_CR_ADSTP;
-        }
-
-      if (inj_started != 0)
-        {
-          regval |= ADC_CR_JADSTP;
-        }
-
-      adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
-      while (adc_getreg(priv, STM32_ADC_CR_OFFSET) & 
-                        (ADC_CR_JADSTART | ADC_CR_ADSTART));
+      return -EINVAL;
     }
 
-    return (reg_started | inj_started);
+  /* Set the watchdog threshold and filter registers */
+
+  regval = adc_getreg(priv, STM32_ADC_TR3_OFFSET);
+  regval &= ~(ADC_TR3_HT3_MASK | ADC_TR3_LT3_MASK);
+  regval = ((cfg->high_thresh << ADC_TR3_HT3_SHIFT) & ADC_TR3_HT3_MASK);
+  regval |= ((cfg->low_thresh << ADC_TR3_LT3_SHIFT) & ADC_TR3_LT3_MASK);
+  adc_putreg(priv, STM32_ADC_TR3_OFFSET, regval);
+
+  /* Ensure analog watchdog is enabled */
+
+  if (cfg->channels & ~(ADC_AWD3CR_CH_MASK))
+    {
+      return -EINVAL;
+    }
+
+  regval = adc_getreg(priv, STM32_ADC_AWD3CR_OFFSET);
+  regval &= ~(ADC_AWD3CR_CH_MASK);
+  regval |= (cfg->channels << ADC_AWD3CR_CH_SHIFT);
+  adc_putreg(priv, STM32_ADC_AWD3CR_OFFSET, regval);
+
+  return OK;
 }
 
 /****************************************************************************
@@ -911,15 +838,18 @@ static void adc_startconv(struct stm32_dev_s *priv, bool enable)
       /* Start conversion of regular channels */
 
       regval |= ADC_CR_ADSTART;
+      adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
     }
   else
     {
-      /* Disable the conversion of regular channels */
-
-      regval |= ADC_CR_ADSTP;
+      /* Disable the conversion of all channels */
+      regval &= ~(ADC_CR_ADSTART | ADC_CR_JADSTART);
+      regval |= (ADC_CR_ADSTP | ADC_CR_JADSTP);
+      adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
+      while (adc_getreg(priv, STM32_ADC_CR_OFFSET) &
+                        (ADC_CR_JADSTART | ADC_CR_ADSTART));
     }
 
-  adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
 }
 
 /****************************************************************************
@@ -1375,6 +1305,8 @@ static int adc_setup(struct adc_dev_s *dev)
   irqstate_t flags;
   uint32_t clrbits;
   uint32_t setbits;
+  uint32_t smpr1;
+  uint32_t smpr2;
 
   /* Attach the ADC interrupt */
 
@@ -1403,30 +1335,37 @@ static int adc_setup(struct adc_dev_s *dev)
       adc_reset(dev);
     }
 
-  /* Initialize the same sample time for each ADC.
-   * During sample cycles channel selection bits must remain unchanged.
-   */
 
-  uint32_t smpr1 = 0;
-  uint32_t smpr2 = 0;
-  
-  for (i=0; i < priv->cchannels; i++) 
+  smpr1 = 0;
+  smpr2 = 0;
+  setbits = 0;
+
+  for (i=0; i < priv->cchannels; i++)
     {
+      /* Initialize the same sample time for each ADC channel. */
+
       if (priv->chanlist[i].chan < 10)
         {
-          smpr1 |= (priv->chanlist[i].tsamp << 
+          smpr1 |= (priv->chanlist[i].tsamp <<
                    (priv->chanlist[i].chan * 3));
         }
       else
         {
-          smpr2 |= (priv->chanlist[i].tsamp << 
+          smpr2 |= (priv->chanlist[i].tsamp <<
                    ((priv->chanlist[i].chan - 10) * 3));
+        }
 
+      /* Configure differential channels */
+
+      if (priv->chanlist[i].mode == 1)
+        {
+          setbits |= (1 << priv->chanlist[i].chan);
         }
     }
 
   adc_putreg(priv, STM32_ADC_SMPR1_OFFSET, smpr1);
   adc_putreg(priv, STM32_ADC_SMPR2_OFFSET, smpr2);
+  adc_putreg(priv, STM32_ADC_DIFSEL_OFFSET, setbits);
 
   /* Set the resolution of the conversion. */
 
@@ -1804,6 +1743,8 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
 
       case ANIOC_WDOG_UPPER: /* Set watchdog upper threshold */
         {
+          adc_startconv(priv, false);
+
           regval = adc_getreg(priv, STM32_ADC_TR1_OFFSET);
 
           /* Verify new upper threshold greater than lower threshold */
@@ -1828,6 +1769,8 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
 
       case ANIOC_WDOG_LOWER: /* Set watchdog lower threshold */
         {
+          adc_startconv(priv, false);
+
           regval = adc_getreg(priv, STM32_ADC_TR1_OFFSET);
 
           /* Verify new lower threshold less than upper threshold */
@@ -1850,107 +1793,36 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
         }
         break;
 
-      case ANIOC_WDOG_SET_CH: /* Set Channel for AWD1 */
+      case ANIOC_STM32H5_WDOG_CFG:    /* Configure Watchdog 1  */
         {
-          ret = adc_wdog1_set_ch(priv, arg);
+          struct stm32_adc_watchdog1_cfg_s *cfg =
+          (struct stm32_adc_watchdog1_cfg_s *) arg;
+
+          adc_startconv(priv, false);
+          adc_wdog1_configure(priv, cfg);
+          adc_wdog1_enable(priv);
         }
         break;
 
-      case ANIOC_WDOG_SET_FLT: /* Set Channel for AWD1 */
+      case ANIOC_STM32H5_WDOG2_CFG:    /* Configure Watchdog 1  */
         {
-          ret = adc_wdog1_set_flt(priv, arg);
+          struct stm32_adc_watchdog23_cfg_s *cfg =
+          (struct stm32_adc_watchdog23_cfg_s *) arg;
+
+          adc_startconv(priv, false);
+          adc_wdog2_configure(priv, cfg);
+          adc_wdog2_enable(priv);
         }
         break;
 
-      case ANIOC_WDOG2_ENABLE: /* Set Analog Watchdog 3 Channels */
+      case ANIOC_STM32H5_WDOG3_CFG:    /* Configure Watchdog 1  */
         {
-          ret = adc_wdog2_enable(priv, arg);
-        }
-        break;
+          struct stm32_adc_watchdog23_cfg_s *cfg =
+          (struct stm32_adc_watchdog23_cfg_s *) arg;
 
-      case ANIOC_WDOG2_UPPER: /* Set watchdog upper threshold */
-        {
-          regval = adc_getreg(priv, STM32_ADC_TR2_OFFSET);
-
-          /* Verify new upper threshold greater than lower threshold */
-
-          tmp = (regval & ADC_TR2_LT2_MASK) >> ADC_TR2_LT2_SHIFT;
-          if (arg < tmp)
-            {
-              ret = -EINVAL;
-              break;
-            }
-
-          /* Set the watchdog threshold register */
-
-          regval = ((arg << ADC_TR2_HT2_SHIFT) & ADC_TR2_HT2_MASK);
-          adc_putreg(priv, STM32_ADC_TR2_OFFSET, regval);
-        }
-        break;
-
-      case ANIOC_WDOG2_LOWER: /* Set watchdog lower threshold */
-        {
-          regval = adc_getreg(priv, STM32_ADC_TR2_OFFSET);
-
-          /* Verify new lower threshold less than upper threshold */
-
-          tmp = (regval & ADC_TR2_HT2_MASK) >> ADC_TR2_HT2_SHIFT;
-          if (arg > tmp)
-            {
-              ret = -EINVAL;
-              break;
-            }
-
-          /* Set the watchdog threshold register */
-
-          regval = ((arg << ADC_TR2_LT2_SHIFT) & ADC_TR2_LT2_MASK);
-          adc_putreg(priv, STM32_ADC_TR2_OFFSET, regval);
-        }
-        break;
-
-      case ANIOC_WDOG3_ENABLE: /* Set Analog Watchdog 3 Channels */
-        {
-          ret = adc_wdog3_enable(priv, arg);
-        }
-        break;
-
-      case ANIOC_WDOG3_UPPER: /* Set watchdog upper threshold */
-        {
-          regval = adc_getreg(priv, STM32_ADC_TR3_OFFSET);
-
-          /* Verify new upper threshold greater than lower threshold */
-
-          tmp = (regval & ADC_TR3_LT3_MASK) >> ADC_TR3_LT3_SHIFT;
-          if (arg < tmp)
-            {
-              ret = -EINVAL;
-              break;
-            }
-
-          /* Set the watchdog threshold register */
-
-          regval = ((arg << ADC_TR3_HT3_SHIFT) & ADC_TR3_HT3_MASK);
-          adc_putreg(priv, STM32_ADC_TR3_OFFSET, regval);
-        }
-        break;
-
-      case ANIOC_WDOG3_LOWER: /* Set watchdog lower threshold */
-        {
-          regval = adc_getreg(priv, STM32_ADC_TR3_OFFSET);
-
-          /* Verify new lower threshold less than upper threshold */
-
-          tmp = (regval & ADC_TR3_HT3_MASK) >> ADC_TR3_HT3_SHIFT;
-          if (arg > tmp)
-            {
-              ret = -EINVAL;
-              break;
-            }
-
-          /* Set the watchdog threshold register */
-
-          regval = ((arg << ADC_TR3_LT3_SHIFT) & ADC_TR3_LT3_MASK);
-          adc_putreg(priv, STM32_ADC_TR3_OFFSET, regval);
+          adc_startconv(priv, false);
+          adc_wdog3_configure(priv, cfg);
+          adc_wdog3_enable(priv);
         }
         break;
 
@@ -1994,10 +1866,12 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
 
   if ((adcisr & ADC_INT_AWD1) != 0)
     {
+      /* TODO - Check if injected */
+
       value  = adc_getreg(priv, STM32_ADC_DR_OFFSET);
       value &= ADC_DR_MASK;
 
-      awarn("WARNING: Analog Watchdog, Value (0x%03" PRIx32 ") "
+      awarn("WARNING: Analog Watchdog 1, Value (0x%03" PRIx32 ") "
             "out of range!\n", value);
 
       /* Stop ADC conversions to avoid continuous interrupts */
@@ -2010,6 +1884,50 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
        */
 
       adc_putreg(priv, STM32_ADC_ISR_OFFSET, ADC_INT_AWD1);
+    }
+
+  if ((adcisr & ADC_INT_AWD2) != 0)
+    {
+      /* TODO - Check if injected */
+
+      value  = adc_getreg(priv, STM32_ADC_DR_OFFSET);
+      value &= ADC_DR_MASK;
+
+      awarn("WARNING: Analog Watchdog 2, Value (0x%03" PRIx32 ") "
+            "out of range!\n", value);
+
+      /* Stop ADC conversions to avoid continuous interrupts */
+
+      adc_startconv(priv, false);
+
+      /* Clear the interrupt. This register only accepts write 1's so its
+       * safe to only set the 1 bit without regard for the rest of the
+       * register
+       */
+
+      adc_putreg(priv, STM32_ADC_ISR_OFFSET, ADC_INT_AWD2);
+    }
+
+  if ((adcisr & ADC_INT_AWD3) != 0)
+    {
+      /* TODO - Check if injected */
+
+      value  = adc_getreg(priv, STM32_ADC_DR_OFFSET);
+      value &= ADC_DR_MASK;
+
+      awarn("WARNING: Analog Watchdog 3, Value (0x%03" PRIx32 ") "
+            "out of range!\n", value);
+
+      /* Stop ADC conversions to avoid continuous interrupts */
+
+      adc_startconv(priv, false);
+
+      /* Clear the interrupt. This register only accepts write 1's so its
+       * safe to only set the 1 bit without regard for the rest of the
+       * register
+       */
+
+      adc_putreg(priv, STM32_ADC_ISR_OFFSET, ADC_INT_AWD3);
     }
 
   /* OVR: Overrun */
@@ -2714,7 +2632,7 @@ struct adc_dev_s *stm32h5_adc_initialize(int intf,
     }
 
   priv->cchannels = cchannels;
-  memcpy(priv->chanlist, chanlist, 
+  memcpy(priv->chanlist, chanlist,
          sizeof(struct stm32_adc_channel_s) * cchannels);
 
 #ifdef CONFIG_PM

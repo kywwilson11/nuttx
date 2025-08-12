@@ -465,36 +465,10 @@
 
 /* IOCTL Support */
 
-#define ANIOC_WDOG_SET_CH    _ANIOC(AN_FIRST + AN_NCMDS + 1)
-
-#define ANIOC_WDOG_SET_FLT   _ANIOC(AN_FIRST + AN_NCMDS + 2)
-
-#define ANIOC_WDOG2_ENABLE   _ANIOC(AN_FIRST + AN_NCMDS + 3)
-
-#define ANIOC_WDOG2_LOWER    _ANIOC(AN_FIRST + AN_NCMDS + 4)
-                                                /* Set lower threshold for
-                                                 * watchdog
-                                                 * IN: Threshold value
-                                                 * OUT: None */
-
-#define ANIOC_WDOG2_UPPER    _ANIOC(AN_FIRST + AN_NCMDS + 5)
-                                                /* Set upper threshold for
-                                                 * watchdog
-                                                 * IN: Threshold value
-                                                 * OUT: None */
-
-#define ANIOC_WDOG3_ENABLE   _ANIOC(AN_FIRST + AN_NCMDS + 6)
-#define ANIOC_WDOG3_LOWER    _ANIOC(AN_FIRST + AN_NCMDS + 7)
-                                                /* Set lower threshold for
-                                                 * watchdog
-                                                 * IN: Threshold value
-                                                 * OUT: None */
-
-#define ANIOC_WDOG3_UPPER    _ANIOC(AN_FIRST + AN_NCMDS + 8)
-                                                /* Set upper threshold for
-                                                 * watchdog
-                                                 * IN: Threshold value
-                                                 * OUT: None */
+#define AN_STM32H5_FIRST            0x1000 /* TODO - Add to analog/ioctl.h */
+#define ANIOC_STM32H5_WDOG_CFG      _ANIOC(AN_STM32H5_FIRST + 0)
+#define ANIOC_STM32H5_WDOG2_CFG     _ANIOC(AN_STM32H5_FIRST + 1)
+#define ANIOC_STM32H5_WDOG3_CFG     _ANIOC(AN_STM32H5_FIRST + 2)
 
 /****************************************************************************
  * Public Types
@@ -508,8 +482,25 @@ struct stm32_adc_channel_s
   uint32_t p_gpio;              /* P GPIO */
   uint32_t n_gpio;              /* N GPIO */
   uint8_t tsamp:3;              /* Sampling time */
-  uint8_t mode:1;               /* Singe-ended 0 or differential mode 1 */
-  uint8_t _res:4;               /* Reserved */
+  uint8_t mode:1;               /* Single-ended 0 or differential mode 1 */
+  uint8_t injected:1;           /* Regular 0 or Injected 1 */
+  uint8_t _res:3;               /* Reserved */
+};
+
+struct stm32_adc_watchdog1_cfg_s
+{
+  uint8_t filter:3;
+  uint8_t channel:5;
+  bool all_channels;
+  uint16_t high_thresh;
+  uint16_t low_thresh;
+};
+
+struct stm32_adc_watchdog23_cfg_s
+{
+  uint32_t channels;
+  uint8_t high_thresh;
+  uint8_t low_thresh;
 };
 
 /****************************************************************************
