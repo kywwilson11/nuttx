@@ -36,7 +36,7 @@
 
 #include "stm32.h"
 
-#if defined(CONFIG_ADC) 
+#if defined(CONFIG_ADC)
 #if defined(CONFIG_STM32H5_ADC1) || defined(CONFIG_STM32H5_ADC2)
 
 /****************************************************************************
