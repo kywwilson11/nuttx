@@ -533,8 +533,8 @@ extern "C"
 
 struct adc_dev_s;
 struct adc_dev_s *stm32h5_adc_initialize(int intf,
-                                         struct stm32_adc_channel_s *chanlist,
-                                         int nchannels);
+                                         struct stm32_adc_channel_s *chanlist
+                                         , int nchannels);
 #undef EXTERN
 #ifdef __cplusplus
 }

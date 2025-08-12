@@ -624,7 +624,6 @@ static void adc_wdog1_enable(struct stm32_dev_s *priv)
   regval |= ADC_INT_AWD1;
   regval &= ~ADC_INT_EOC;
   adc_putreg(priv, STM32_ADC_IER_OFFSET, regval);
-
 }
 
 /****************************************************************************
@@ -649,11 +648,14 @@ static int adc_wdog1_configure(struct stm32_dev_s *priv,
   /* Set the watchdog threshold and filter registers */
 
   regval = adc_getreg(priv, STM32_ADC_TR1_OFFSET);
+
   regval &= ~(ADC_TR1_HT1_MASK | ADC_TR1_LT1_MASK);
   regval = ((cfg->high_thresh << ADC_TR1_HT1_SHIFT) & ADC_TR1_HT1_MASK);
   regval |= ((cfg->low_thresh << ADC_TR1_LT1_SHIFT) & ADC_TR1_LT1_MASK);
+
   regval &= ~(ADC_TR1_AWDFILT_MASK);
   regval |= (cfg->filter << ADC_TR1_AWDFILT_SHIFT);
+
   adc_putreg(priv, STM32_ADC_TR1_OFFSET, regval);
 
   /* Ensure analog watchdog is enabled */
@@ -664,6 +666,7 @@ static int adc_wdog1_configure(struct stm32_dev_s *priv,
         {
           return -EINVAL;
         }
+
       regval = adc_getreg(priv, STM32_ADC_CFGR_OFFSET);
       regval &= ~(ADC_CFGR_AWD1CH_MASK);
       regval |= (cfg->channel << ADC_CFGR_AWD1CH_SHIFT);
@@ -724,12 +727,12 @@ static int adc_wdog2_configure(struct stm32_dev_s *priv,
   /* Set the watchdog threshold and filter registers */
 
   regval = adc_getreg(priv, STM32_ADC_TR2_OFFSET);
+
   regval &= ~(ADC_TR2_HT2_MASK | ADC_TR2_LT2_MASK);
   regval = ((cfg->high_thresh << ADC_TR2_HT2_SHIFT) & ADC_TR2_HT2_MASK);
   regval |= ((cfg->low_thresh << ADC_TR2_LT2_SHIFT) & ADC_TR2_LT2_MASK);
-  adc_putreg(priv, STM32_ADC_TR2_OFFSET, regval);
 
-  /* Ensure analog watchdog is enabled */
+  adc_putreg(priv, STM32_ADC_TR2_OFFSET, regval);
 
   if (cfg->channels & ~(ADC_AWD2CR_CH_MASK))
     {
@@ -737,8 +740,10 @@ static int adc_wdog2_configure(struct stm32_dev_s *priv,
     }
 
   regval = adc_getreg(priv, STM32_ADC_AWD2CR_OFFSET);
+
   regval &= ~(ADC_AWD2CR_CH_MASK);
   regval |= (cfg->channels << ADC_AWD2CR_CH_SHIFT);
+
   adc_putreg(priv, STM32_ADC_AWD2CR_OFFSET, regval);
 
   return OK;
@@ -792,9 +797,11 @@ static int adc_wdog3_configure(struct stm32_dev_s *priv,
   /* Set the watchdog threshold and filter registers */
 
   regval = adc_getreg(priv, STM32_ADC_TR3_OFFSET);
+
   regval &= ~(ADC_TR3_HT3_MASK | ADC_TR3_LT3_MASK);
   regval = ((cfg->high_thresh << ADC_TR3_HT3_SHIFT) & ADC_TR3_HT3_MASK);
   regval |= ((cfg->low_thresh << ADC_TR3_LT3_SHIFT) & ADC_TR3_LT3_MASK);
+
   adc_putreg(priv, STM32_ADC_TR3_OFFSET, regval);
 
   /* Ensure analog watchdog is enabled */
@@ -805,8 +812,10 @@ static int adc_wdog3_configure(struct stm32_dev_s *priv,
     }
 
   regval = adc_getreg(priv, STM32_ADC_AWD3CR_OFFSET);
+
   regval &= ~(ADC_AWD3CR_CH_MASK);
   regval |= (cfg->channels << ADC_AWD3CR_CH_SHIFT);
+
   adc_putreg(priv, STM32_ADC_AWD3CR_OFFSET, regval);
 
   return OK;
@@ -833,6 +842,7 @@ static void adc_startconv(struct stm32_dev_s *priv, bool enable)
   ainfo("enable: %d\n", enable ? 1 : 0);
 
   regval = adc_getreg(priv, STM32_ADC_CR_OFFSET);
+
   if (enable)
     {
       /* Start conversion of regular channels */
@@ -843,13 +853,14 @@ static void adc_startconv(struct stm32_dev_s *priv, bool enable)
   else
     {
       /* Disable the conversion of all channels */
+
       regval &= ~(ADC_CR_ADSTART | ADC_CR_JADSTART);
       regval |= (ADC_CR_ADSTP | ADC_CR_JADSTP);
       adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
+
       while (adc_getreg(priv, STM32_ADC_CR_OFFSET) &
                         (ADC_CR_JADSTART | ADC_CR_ADSTART));
     }
-
 }
 
 /****************************************************************************
@@ -1335,12 +1346,11 @@ static int adc_setup(struct adc_dev_s *dev)
       adc_reset(dev);
     }
 
-
   smpr1 = 0;
   smpr2 = 0;
   setbits = 0;
 
-  for (i=0; i < priv->cchannels; i++)
+  for (i = 0; i < priv->cchannels; i++)
     {
       /* Initialize the same sample time for each ADC channel. */
 
@@ -1621,7 +1631,8 @@ static int adc_set_ch(struct adc_dev_s *dev, uint8_t ch)
     }
   else
     {
-      for (i = 0; i < priv->cchannels && priv->chanlist[i].chan != ch - 1; i++);
+      for (i = 0; i < priv->cchannels &&
+           priv->chanlist[i].chan != ch - 1; i++);
 
       if (i >= priv->cchannels)
         {
@@ -1793,7 +1804,7 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
         }
         break;
 
-      case ANIOC_STM32H5_WDOG_CFG:    /* Configure Watchdog 1  */
+      case ANIOC_STM32H5_WDOG_CFG:    /* Configure Watchdog 1 */
         {
           struct stm32_adc_watchdog1_cfg_s *cfg =
           (struct stm32_adc_watchdog1_cfg_s *) arg;
@@ -1804,7 +1815,7 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
         }
         break;
 
-      case ANIOC_STM32H5_WDOG2_CFG:    /* Configure Watchdog 1  */
+      case ANIOC_STM32H5_WDOG2_CFG:    /* Configure Watchdog 2 */
         {
           struct stm32_adc_watchdog23_cfg_s *cfg =
           (struct stm32_adc_watchdog23_cfg_s *) arg;
@@ -1815,7 +1826,7 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
         }
         break;
 
-      case ANIOC_STM32H5_WDOG3_CFG:    /* Configure Watchdog 1  */
+      case ANIOC_STM32H5_WDOG3_CFG:    /* Configure Watchdog 3 */
         {
           struct stm32_adc_watchdog23_cfg_s *cfg =
           (struct stm32_adc_watchdog23_cfg_s *) arg;
@@ -1855,7 +1866,7 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
  *
  ****************************************************************************/
 
- /*TODO - Add Injected functionality later */
+/* TODO - Add Injected functionality later */
 
 static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
 {
@@ -2593,8 +2604,8 @@ static int adc_timinit(struct stm32_dev_s *priv)
  ****************************************************************************/
 
 struct adc_dev_s *stm32h5_adc_initialize(int intf,
-                                         struct stm32_adc_channel_s *chanlist,
-                                         int cchannels)
+                                         struct stm32_adc_channel_s *chanlist
+                                         , int cchannels)
 {
   struct adc_dev_s *dev;
   struct stm32_dev_s *priv;

@@ -50,7 +50,8 @@
 #define ADC1_NCHANNELS 2
 #define ADC2_NCHANNELS 0
 
-enum {
+enum
+{
   SINGLE_ENDED,
   DIFFERENTIAL
 };
@@ -122,15 +123,15 @@ int stm32_adc_setup(void)
 #ifdef CONFIG_STM32H5_ADC1
       for (i = 0; i < ADC1_NCHANNELS; i++)
         {
-	  if (g_chanlist1[i].p_gpio != 0)
-	    {
+          if (g_chanlist1[i].p_gpio != 0)
+            {
               stm32_configgpio(g_chanlist1[i].p_gpio);
-	    }
+            }
 
-	  if (g_chanlist1[i].n_gpio != 0)
-	    {
+          if (g_chanlist1[i].n_gpio != 0)
+            {
               stm32_configgpio(g_chanlist1[i].n_gpio);
-	    }
+            }
         }
 
       adc1 = stm32h5_adc_initialize(1, g_chanlist1, ADC1_NCHANNELS);
@@ -153,17 +154,16 @@ int stm32_adc_setup(void)
 #ifdef CONFIG_STM32H5_ADC2
       for (i = 0; i < ADC2_NCHANNELS; i++)
         {
-	  if (g_chanlist2[i].p_gpio != 0)
-	    {
-              stm32_configgpio(g_chanlist2[i].p_gpio);
-	    }
+          if (g_chanlist2[i].p_gpio != 0)
+            {
+              stm32_configgpio(g_chanlist2[i].p_gpio)
+            }
 
-	  if (g_chanlist2[i].n_gpio != 0)
-	    {
+          if (g_chanlist2[i].n_gpio != 0)
+            {
               stm32_configgpio(g_chanlist2[i].n_gpio);
-	    }
+            }
         }
-
 
       adc2 = stm32h5_adc_initialize(2, g_chanlist2, ADC2_NCHANNELS);
       if (adc2 == NULL)
