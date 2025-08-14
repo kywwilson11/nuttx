@@ -33,12 +33,16 @@
 #include <assert.h>
 #include <debug.h>
 #include <string.h>
+#include <stdint.h>
+#include <signal.h>
 
 #include <arch/board/board.h>
 #include <nuttx/nuttx.h>
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
+#include <nuttx/signal.h>
 #include <nuttx/fs/ioctl.h>
+#include <nuttx/wqueue.h>
 #include <nuttx/analog/adc.h>
 #include <nuttx/analog/ioctl.h>
 #include <nuttx/power/pm.h>
@@ -66,6 +70,9 @@
 #ifndef ANIOC_SET_OVERSAMPLE
 #  define ANIOC_SET_OVERSAMPLE _ANIOC(0x0f)
 #endif
+
+#define ADC_COPYIN(kdst, uptr, len)   (memcpy((kdst), (const void *)(uptr), (len)), OK)
+#define ADC_COPYOUT(udst, ksrc, len)  (memcpy((void *)(udst), (ksrc), (len)), OK)
 
 /* ADC Channels/DMA *********************************************************/
 
@@ -106,7 +113,8 @@ struct stm32_dev_s
   uint8_t intf;         /* ADC interface number */
   uint8_t current;      /* Current ADC channel being converted */
   uint8_t resolution;   /* ADC resolution (0-3) */
-  bool     hasdma;      /* True: This ADC supports DMA */
+  bool    hasdma;       /* True: This ADC supports DMA */
+  bool    continuous;   /* True: Run in continuous conversion mode */
 #ifdef ADC_HAVE_DMA
   uint16_t dmabatch;    /* Number of conversions for DMA batch */
   bool     circular;    /* 0 = one-shot, 1 = circular */
@@ -136,11 +144,8 @@ struct stm32_dev_s
 #endif
 
 #ifdef ADC_HAVE_DMA
-  DMA_HANDLE dma;       /* Allocated DMA channel */
-
-  /* DMA transfer buffer */
-
-  uint16_t *r_dmabuffer;
+  DMA_HANDLE dma;        /* Allocated DMA channel */
+  uint16_t *r_dmabuffer; /* DMA transfer buffer */
 #endif
 
   bool oversample;
@@ -149,6 +154,9 @@ struct stm32_dev_s
   uint8_t ovsr;
   uint8_t ovss;
 #endif
+
+  struct stm32_adc_wdg_queue_s wdgq; /* Watchdog Event queue */
+  struct stm32_adc_sig_s sig; /* Aggregated signal/notification state */
 
   /* List of selected ADC channels to sample */
 
@@ -287,11 +295,14 @@ static struct stm32_dev_s g_adcpriv1 =
   .dmabatch    = CONFIG_STM32H5_ADC1_DMA_BATCH,
 #  ifdef CONFIG_STM32H5_ADC1_DMA_CFG
   .circular    = true,
+  .continuous  = true,
 #  else
   .circular    = false,
+  .continuous  = false,
 #  endif
 #else
   .hasdma      = false,
+  .continuous  = false,
 #endif
 
 #ifdef ADC1_HAVE_OVERSAMPLE
@@ -356,11 +367,14 @@ static struct stm32_dev_s g_adcpriv2 =
   .dmabatch    = CONFIG_STM32H5_ADC2_DMA_BATCH,
 #  ifdef CONFIG_STM32H5_ADC2_DMA_CFG
   .circular    = true,
+  .continuous  = true,
 #  else
   .circular    = false,
+  .continuous  = false,
 #  endif
 #else
   .hasdma      = false,
+  .continuous  = false,
 #endif
 
 #ifdef ADC2_HAVE_OVERSAMPLE
@@ -520,6 +534,62 @@ static void adc_modifyregm(struct stm32_dev_s *priv, int offset,
               (adc_getregm(priv, offset) & ~clrbits) | setbits);
 }
 
+
+static inline bool wq_empty(struct stm32_adc_wdg_queue_s *q)
+{
+  return q->wq_head == q->wq_tail;
+}
+
+static inline bool wq_full(struct stm32_adc_wdg_queue_s *q)
+{
+  return (((q->wq_head + 1) & WQ_MASK) == q->wq_tail);
+}
+
+static void adc_wdg_sigwork(void *arg)
+{
+  struct stm32_dev_s *priv = (struct stm32_dev_s *)arg;
+
+  if (priv->sig.pid > 0 && priv->sig.signo != 0)  
+    {
+      union sigval sv;
+      /* Pack which + value; adjust packing as desired */
+      sv.sival_int = (priv->sig.last.wdg_num & 0xFF);
+      (void)nxsig_queue(priv->sig.pid, priv->sig.signo, sv);
+    }
+}
+
+static inline void wq_push(struct stm32_dev_s *priv,
+                           uint8_t wdg_num, uint32_t isr)
+{
+  struct stm32_adc_wdg_queue_s *q = &priv->wdgq;
+  irqstate_t flags = enter_critical_section();
+
+  uint8_t next = (uint8_t)((q->wq_head + 1) & WQ_MASK);
+  if (next != q->wq_tail)  /* not full */
+    {
+      q->wq[q->wq_head] = (struct stm32_adc_wdg_event_s){ wdg_num, isr };
+      q->wq_head = next;   /* wrap */
+    }
+  else
+    {
+      q->wq_dropped++;     /* drop-new policy; or advance tail to overwrite-oldest */
+    }
+
+  /* Remember last for coalesced signal payload */
+  priv->sig.last.wdg_num = wdg_num;
+  priv->sig.last.isr   = isr;
+
+  /* Schedule a signal if enabled for this watchdog */
+  if (priv->sig.pid > 0 && priv->sig.signo != 0 &&
+      (priv->sig.mask & (1u << (wdg_num - 1))) != 0)
+    {
+      (void)work_cancel(HPWORK, &priv->sig.work); /* coalesce */
+      (void)work_queue(HPWORK, &priv->sig.work, adc_wdg_sigwork, priv, 0);
+    }
+
+  leave_critical_section(flags);
+}
+
 /****************************************************************************
  * Name: adc_enable
  *
@@ -616,6 +686,7 @@ static void adc_wdog1_enable(struct stm32_dev_s *priv)
 
   regval = adc_getreg(priv, STM32_ADC_CFGR_OFFSET);
   regval |= ADC_CFGR_AWD1EN | ADC_CFGR_CONT | ADC_CFGR_OVRMOD;
+  priv->continuous = true;
   adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
 
   /* Switch to analog watchdog interrupt */
@@ -660,7 +731,7 @@ static int adc_wdog1_configure(struct stm32_dev_s *priv,
 
   /* Ensure analog watchdog is enabled */
 
-  if (cfg->all_channels == false)
+  if (cfg->all_channels == 0x0)
     {
       if (cfg->channel > 19)
         {
@@ -694,6 +765,7 @@ static void adc_wdog2_enable(struct stm32_dev_s *priv)
 
   regval = adc_getreg(priv, STM32_ADC_CFGR_OFFSET);
   regval |= (ADC_CFGR_CONT | ADC_CFGR_OVRMOD);
+  priv->continuous = true;
   adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
 
   /* Switch to analog watchdog interrupt */
@@ -727,7 +799,7 @@ static int adc_wdog2_configure(struct stm32_dev_s *priv,
   regval = adc_getreg(priv, STM32_ADC_TR2_OFFSET);
 
   regval &= ~(ADC_TR2_HT2_MASK | ADC_TR2_LT2_MASK);
-  regval = ((cfg->high_thresh << ADC_TR2_HT2_SHIFT) & ADC_TR2_HT2_MASK);
+  regval |= ((cfg->high_thresh << ADC_TR2_HT2_SHIFT) & ADC_TR2_HT2_MASK);
   regval |= ((cfg->low_thresh << ADC_TR2_LT2_SHIFT) & ADC_TR2_LT2_MASK);
 
   adc_putreg(priv, STM32_ADC_TR2_OFFSET, regval);
@@ -763,7 +835,8 @@ static void adc_wdog3_enable(struct stm32_dev_s *priv)
   /* Initialize analog watchdog */
 
   regval = adc_getreg(priv, STM32_ADC_CFGR_OFFSET);
-  regval |= ADC_CFGR_CONT | ADC_CFGR_OVRMOD;
+  regval |= (ADC_CFGR_CONT | ADC_CFGR_OVRMOD);
+  priv->continuous = true;
   adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
 
   /* Switch to analog watchdog interrupt */
@@ -797,7 +870,7 @@ static int adc_wdog3_configure(struct stm32_dev_s *priv,
   regval = adc_getreg(priv, STM32_ADC_TR3_OFFSET);
 
   regval &= ~(ADC_TR3_HT3_MASK | ADC_TR3_LT3_MASK);
-  regval = ((cfg->high_thresh << ADC_TR3_HT3_SHIFT) & ADC_TR3_HT3_MASK);
+  regval |= ((cfg->high_thresh << ADC_TR3_HT3_SHIFT) & ADC_TR3_HT3_MASK);
   regval |= ((cfg->low_thresh << ADC_TR3_LT3_SHIFT) & ADC_TR3_LT3_MASK);
 
   adc_putreg(priv, STM32_ADC_TR3_OFFSET, regval);
@@ -847,6 +920,13 @@ static void adc_startconv(struct stm32_dev_s *priv, bool enable)
 
       regval |= ADC_CR_ADSTART;
       adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
+
+      if (priv->continuous)
+        {
+          regval = adc_getreg(priv, STM32_ADC_CFGR_OFFSET);
+          regval |= ADC_CFGR_CONT;
+          adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
+        }
     }
   else
     {
@@ -855,6 +935,13 @@ static void adc_startconv(struct stm32_dev_s *priv, bool enable)
       regval &= ~(ADC_CR_ADSTART | ADC_CR_JADSTART);
       regval |= (ADC_CR_ADSTP | ADC_CR_JADSTP);
       adc_putreg(priv, STM32_ADC_CR_OFFSET, regval);
+
+      if (priv->continuous)
+        {
+          regval = adc_getreg(priv, STM32_ADC_CFGR_OFFSET);
+          regval &= ~ADC_CFGR_CONT;
+          adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
+        }
 
       while (adc_getreg(priv, STM32_ADC_CR_OFFSET) &
                         (ADC_CR_JADSTART | ADC_CR_ADSTART));
@@ -961,7 +1048,12 @@ static void adc_rxint(struct adc_dev_s *dev, bool enable)
     {
       /* Enable end of conversion and overrun interrupts */
 
-      regval |= ADC_INT_EOC | ADC_INT_OVR;
+      regval |= ADC_INT_OVR;
+
+      if (!priv->hasdma)
+        {
+          regval |= ADC_INT_EOC;
+        }
     }
   else
     {
@@ -1515,14 +1607,15 @@ static int adc_setup(struct adc_dev_s *dev)
         adc_getreg(priv, STM32_ADC_SQR4_OFFSET));
   ainfo("CCR:   0x%08" PRIx32 "\n", adc_getregm(priv, STM32_ADC_CCR_OFFSET));
 
-  if (!priv->hasdma)
+  if (priv->hasdma)
     {
       /* Enable the ADC interrupt */
 
-      ainfo("Enable the ADC interrupt: irq=%d\n", priv->irq);
-
-      up_enable_irq(priv->irq);
     }
+
+  ainfo("Enable the ADC interrupt: irq=%d\n", priv->irq);
+
+  up_enable_irq(priv->irq);
 
   priv->initialized = true;
 
@@ -1835,6 +1928,69 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
         }
         break;
 
+      case ANIOC_STM32H5_WDG_GET_EVENT:
+        {
+          struct stm32_adc_wdg_event_s *uout =
+            (struct stm32_adc_wdg_event_s *)(uintptr_t)arg;
+
+          if (uout == NULL)
+            {
+              ret = -EINVAL;
+              break;
+            }
+
+          if (wq_empty(&priv->wdgq))
+            {
+              ret = -EAGAIN;   /* non-blocking: nothing queued */
+              break;
+            }
+
+          /* Pop one event with wrap and copy to user */
+          struct stm32_adc_wdg_event_s tmp_wdg_event;
+          irqstate_t flags = enter_critical_section();
+          tmp_wdg_event = priv->wdgq.wq[priv->wdgq.wq_tail];
+          priv->wdgq.wq_tail = (uint8_t)((priv->wdgq.wq_tail + 1) & WQ_MASK);
+          leave_critical_section(flags);
+
+          if (ADC_COPYOUT(uout, &tmp_wdg_event, sizeof(tmp_wdg_event)) < 0)
+            {
+              ret = -EFAULT;
+              break;
+            }
+
+          ret = OK;
+        }
+        break;
+
+      case ANIOC_STM32H5_WDG_SIGCFG:
+        {
+          const struct stm32_adc_sigcfg_s *ucfg =
+            (const struct stm32_adc_sigcfg_s *)(uintptr_t)arg;
+
+          if (ucfg == NULL)
+            {
+              ret = -EINVAL;
+              break;
+            }
+
+          struct stm32_adc_sigcfg_s kcfg;
+          if (ADC_COPYIN(&kcfg, ucfg, sizeof(kcfg)) < 0)
+            {
+              ret = -EFAULT;
+              break;
+            }
+
+          /* pid==0 or signo==0 disables signaling; mask limited to AWD1..3 */
+          irqstate_t flags = enter_critical_section();
+          priv->sig.pid   = kcfg.pid;
+          priv->sig.signo = kcfg.signo;
+          priv->sig.mask  = (kcfg.mask & 0x07);
+          leave_critical_section(flags);
+
+          ret = OK;
+        }
+        break;
+
 #ifdef ADC_HAVE_OVERSAMPLE
       case ANIOC_SET_OVERSAMPLE:
         {
@@ -1870,71 +2026,54 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
 {
   struct stm32_dev_s *priv = (struct stm32_dev_s *)dev->ad_priv;
   int32_t value;
+  uint32_t regval;
+  bool processed;
+
+  value = adc_getreg(priv, STM32_ADC_DR_OFFSET) & ADC_DR_MASK;
+  processed = false;
 
   /* Identifies the AWD interrupt */
 
   if ((adcisr & ADC_INT_AWD1) != 0)
     {
-      /* TODO - Check if injected */
-
-      value  = adc_getreg(priv, STM32_ADC_DR_OFFSET);
-      value &= ADC_DR_MASK;
-
       awarn("WARNING: Analog Watchdog 1, Value (0x%03" PRIx32 ") "
             "out of range!\n", value);
 
-      /* Stop ADC conversions to avoid continuous interrupts */
+      /* Disable AWD1 Interrupt to avoid constant interrupts */
 
-      adc_startconv(priv, false);
+      regval = adc_getreg(priv, STM32_ADC_IER_OFFSET);
+      regval &= ~(ADC_INT_AWD1);
+      adc_putreg(priv, STM32_ADC_IER_OFFSET, regval);
 
-      /* Clear the interrupt. This register only accepts write 1's so its
-       * safe to only set the 1 bit without regard for the rest of the
-       * register
-       */
-
+      wq_push(priv, 1, adcisr);
+     
       adc_putreg(priv, STM32_ADC_ISR_OFFSET, ADC_INT_AWD1);
     }
 
   if ((adcisr & ADC_INT_AWD2) != 0)
     {
-      /* TODO - Check if injected */
-
-      value  = adc_getreg(priv, STM32_ADC_DR_OFFSET);
-      value &= ADC_DR_MASK;
-
       awarn("WARNING: Analog Watchdog 2, Value (0x%03" PRIx32 ") "
             "out of range!\n", value);
 
-      /* Stop ADC conversions to avoid continuous interrupts */
+      regval = adc_getreg(priv, STM32_ADC_IER_OFFSET);
+      regval &= ~(ADC_INT_AWD2);
+      adc_putreg(priv, STM32_ADC_IER_OFFSET, regval);
 
-      adc_startconv(priv, false);
-
-      /* Clear the interrupt. This register only accepts write 1's so its
-       * safe to only set the 1 bit without regard for the rest of the
-       * register
-       */
+      wq_push(priv, 2, adcisr);
 
       adc_putreg(priv, STM32_ADC_ISR_OFFSET, ADC_INT_AWD2);
     }
 
   if ((adcisr & ADC_INT_AWD3) != 0)
     {
-      /* TODO - Check if injected */
-
-      value  = adc_getreg(priv, STM32_ADC_DR_OFFSET);
-      value &= ADC_DR_MASK;
-
       awarn("WARNING: Analog Watchdog 3, Value (0x%03" PRIx32 ") "
             "out of range!\n", value);
 
-      /* Stop ADC conversions to avoid continuous interrupts */
+      regval = adc_getreg(priv, STM32_ADC_IER_OFFSET);
+      regval &= ~(ADC_INT_AWD2);
+      adc_putreg(priv, STM32_ADC_IER_OFFSET, regval);
 
-      adc_startconv(priv, false);
-
-      /* Clear the interrupt. This register only accepts write 1's so its
-       * safe to only set the 1 bit without regard for the rest of the
-       * register
-       */
+      wq_push(priv, 3, adcisr);
 
       adc_putreg(priv, STM32_ADC_ISR_OFFSET, ADC_INT_AWD3);
     }
@@ -1953,9 +2092,7 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
        * stopped first before reading out the data register.
        */
 
-      adc_startconv(priv, false);
-
-      while ((adc_getreg(priv, STM32_ADC_CR_OFFSET) & ADC_CR_ADSTART) != 0);
+      //adc_startconv(priv, false);
 
       /* Verify that the upper-half driver has bound its callback functions */
 
@@ -1965,11 +2102,6 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
 
           priv->cb->au_reset(dev);
         }
-
-      /* Clear the interrupt. This register only accepts write 1's so its
-       * safe to only set the 1 bit without regard for the rest of the
-       * register
-       */
 
       adc_putreg(priv, STM32_ADC_ISR_OFFSET, ADC_INT_OVR);
     }
@@ -1989,8 +2121,10 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
            * (It is cleared by reading the ADC_DR)
            */
 
-          value  = adc_getreg(priv, STM32_ADC_DR_OFFSET);
-          value &= ADC_DR_MASK;
+          if (processed)
+            {
+              value = adc_getreg(priv, STM32_ADC_DR_OFFSET) & ADC_DR_MASK;
+            }
 
           /* Verify that the upper-half driver has bound its
            * callback functions
@@ -2023,6 +2157,7 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
 
               priv->current = 0;
             }
+            processed = true;
         }
       while ((adc_getreg(priv, STM32_ADC_ISR_OFFSET) & ADC_INT_EOC) != 0);
 

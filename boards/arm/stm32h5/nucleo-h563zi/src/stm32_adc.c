@@ -73,14 +73,14 @@ static struct stm32_adc_channel_s g_chanlist1[ADC1_NCHANNELS] =
       .chan   = 3,
       .p_gpio = GPIO_ADC1_INP3,
       .n_gpio = 0,
-      .tsamp  = ADC_SMPR_92p5,
+      .tsamp  = ADC_SMPR_640p5,
       .mode   = SINGLE_ENDED
   },
   {
       .chan   = 10,
       .p_gpio = GPIO_ADC1_INP10,
       .n_gpio = 0,
-      .tsamp  = ADC_SMPR_92p5,
+      .tsamp  = ADC_SMPR_640p5,
       .mode   = SINGLE_ENDED
   }
 };
