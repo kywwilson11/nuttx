@@ -549,17 +549,17 @@ static void adc_wdg_sigwork(void *arg)
 {
   struct stm32_dev_s *priv = (struct stm32_dev_s *)arg;
 
-  if (priv->sig.pid > 0 && priv->sig.signo != 0)  
+  if (priv->sig.sigcfg.pid > 0 && priv->sig.sigcfg.signo != 0)
     {
       union sigval sv;
       /* Pack which + value; adjust packing as desired */
       sv.sival_int = (priv->sig.last_wdg_num & 0xFF);
-      (void)nxsig_queue(priv->sig.pid, priv->sig.signo, sv);
+      (void)nxsig_queue(priv->sig.sigcfg.pid, priv->sig.sigcfg.signo, sv);
     }
 }
 
 static inline void wq_push(struct stm32_dev_s *priv,
-                           uint8_t wdg_num, uint16_t value, uint32_t isr)
+                           uint8_t wdg_num, uint32_t isr)
 {
   struct stm32_adc_wdg_queue_s *q = &priv->wdgq;
   irqstate_t flags = enter_critical_section();
@@ -567,7 +567,7 @@ static inline void wq_push(struct stm32_dev_s *priv,
   uint8_t next = (uint8_t)((q->wq_head + 1) & WQ_MASK);
   if (next != q->wq_tail)  /* not full */
     {
-      q->wq[q->wq_head] = (struct stm32_adc_wdg_event_s){wdg_num, value, isr};
+      q->wq[q->wq_head] = (struct stm32_adc_wdg_event_s){wdg_num, isr};
       q->wq_head = next;   /* wrap */
     }
   else
@@ -579,8 +579,8 @@ static inline void wq_push(struct stm32_dev_s *priv,
   priv->sig.last_wdg_num = wdg_num;
 
   /* Schedule a signal if enabled for this watchdog */
-  if (priv->sig.pid > 0 && priv->sig.signo != 0 &&
-      (priv->sig.mask & (1u << (wdg_num - 1))) != 0)
+  if (priv->sig.sigcfg.pid > 0 && priv->sig.sigcfg.signo != 0 &&
+      (priv->sig.sigcfg.mask & (1u << (wdg_num - 1))) != 0)
     {
       (void)work_cancel(HPWORK, &priv->sig.work); /* coalesce */
       (void)work_queue(HPWORK, &priv->sig.work, adc_wdg_sigwork, priv, 0);
@@ -1920,7 +1920,7 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
         }
         break;
 
-      case ANIOC_STM32H5_WDG_GET_EVENT:
+      case ANIOC_STM32H5_WDOG_GET_EVENT:
         {
           struct stm32_adc_wdg_event_s *uout =
             (struct stm32_adc_wdg_event_s *)(uintptr_t)arg;
@@ -1954,7 +1954,7 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
         }
         break;
 
-      case ANIOC_STM32H5_WDG_SIGCFG:
+      case ANIOC_STM32H5_WDOG_SIGCFG:
         {
           const struct stm32_adc_sigcfg_s *ucfg =
             (const struct stm32_adc_sigcfg_s *)(uintptr_t)arg;
@@ -1974,9 +1974,9 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
 
           /* pid==0 or signo==0 disables signaling; mask limited to AWD1..3 */
           irqstate_t flags = enter_critical_section();
-          priv->sig.pid   = kcfg.pid;
-          priv->sig.signo = kcfg.signo;
-          priv->sig.mask  = (kcfg.mask & 0x07);
+          priv->sig.sigcfg.pid   = kcfg.pid;
+          priv->sig.sigcfg.signo = kcfg.signo;
+          priv->sig.sigcfg.mask  = (kcfg.mask & 0x07);
           leave_critical_section(flags);
 
           ret = OK;
@@ -2061,13 +2061,11 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
 {
   struct stm32_dev_s *priv = (struct stm32_dev_s *)dev->ad_priv;
   uint32_t awd_mask = adcisr & (ADC_INT_AWD1 | ADC_INT_AWD2 | ADC_INT_AWD3);
-  uint16_t sample;
   int32_t value;
   uint32_t regval;
 
   if (awd_mask != 0)
     {
-      sample = adc_capture_last_sample(priv);
 
       regval = adc_getreg(priv, STM32_ADC_IER_OFFSET);
       regval &= ~(awd_mask);
@@ -2075,20 +2073,20 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
 
       if ((adcisr & ADC_INT_AWD1) != 0)
         {
-          awarn("WARNING: Analog Watchdog 1 out of range! sample=%u\n", sample);
-          wq_push(priv, 1, sample, adcisr);
+          awarn("WARNING: Analog Watchdog 1 out of range!\n");
+          wq_push(priv, 1, adcisr);
         }
 
       if ((adcisr & ADC_INT_AWD2) != 0)
         {
           awarn("WARNING: Analog Watchdog 2 out of range!\n");
-          wq_push(priv, 2, sample, adcisr);
+          wq_push(priv, 2, adcisr);
         }
 
       if ((adcisr & ADC_INT_AWD3) != 0)
         {
           awarn("WARNING: Analog Watchdog 3 out of range!\n");
-          wq_push(priv, 3, sample, adcisr);
+          wq_push(priv, 3, adcisr);
         }
 
       adc_putreg(priv, STM32_ADC_ISR_OFFSET, awd_mask);

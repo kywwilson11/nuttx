@@ -465,11 +465,11 @@
 
 /* IOCTL Support */
 
-#define ANIOC_STM32H5_WDOG_CFG      _ANIOC(AN_STM32H5_FIRST + 0)
-#define ANIOC_STM32H5_WDOG2_CFG     _ANIOC(AN_STM32H5_FIRST + 1)
-#define ANIOC_STM32H5_WDOG3_CFG     _ANIOC(AN_STM32H5_FIRST + 2)
-#define ANIOC_STM32H5_WDG_GET_EVENT _ANIOC(AN_STM32H5_FIRST + 3) /* OUT: struct stm32_adc_wdg_event_s* */
-#define ANIOC_STM32H5_WDG_SIGCFG    _ANIOC(AN_STM32H5_FIRST + 4) /*  IN: struct stm32_adc_sigcfg_s*  */
+#define ANIOC_STM32H5_WDOG_CFG       _ANIOC(AN_STM32H5_FIRST + 0)
+#define ANIOC_STM32H5_WDOG2_CFG      _ANIOC(AN_STM32H5_FIRST + 1)
+#define ANIOC_STM32H5_WDOG3_CFG      _ANIOC(AN_STM32H5_FIRST + 2)
+#define ANIOC_STM32H5_WDOG_GET_EVENT _ANIOC(AN_STM32H5_FIRST + 3) /* OUT: struct stm32_adc_wdg_event_s* */
+#define ANIOC_STM32H5_WDOG_SIGCFG    _ANIOC(AN_STM32H5_FIRST + 4) /*  IN: struct stm32_adc_sigcfg_s*  */
 
 
 /* Watchdog Event Queue Support */
@@ -512,9 +512,8 @@ struct stm32_adc_watchdog23_cfg_s
 
 struct stm32_adc_wdg_event_s
 {
-  uint8_t  wdg_num;   /* 1..3 => AWD1/2/3 */
-  uint16_t  value;   /* Value of last conversion */
-  uint32_t isr;     /* ISR snapshot */
+  uint8_t  wdg_num;  /* 1..3 => AWD1/2/3 */
+  uint32_t isr;      /* ISR snapshot */
 };
 
 struct stm32_adc_wdg_queue_s
@@ -530,21 +529,20 @@ struct stm32_adc_sigcfg_s
   pid_t    pid;     /* 0 disables signaling */
   uint8_t  signo;   /* e.g., SIGUSR1; 0 disables */
   uint8_t  mask;    /* bit0:AWD1, bit1:AWD2, bit2:AWD3 */
-  uint8_t  _pad;
 };
 
 struct stm32_adc_sig_s
 {
   /* Who to notify and which AWDs */
-  pid_t         pid;         /* 0 disables signaling */
-  uint8_t       signo;       /* POSIX signal (e.g., SIGUSR1); 0 disables */
-  uint8_t       mask;        /* bit0:AWD1, bit1:AWD2, bit2:AWD3 */
-  uint8_t       _pad;
+
+  struct stm32_adc_sigcfg_s sigcfg;
 
   /* Work item used to deliver the signal outside ISR context */
+
   struct work_s work;
 
   /* Last event cached for the signal payload (coalesced) */
+
   uint8_t last_wdg_num;         /* 1..3 */
 };
 
