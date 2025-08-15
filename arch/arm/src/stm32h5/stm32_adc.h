@@ -513,6 +513,7 @@ struct stm32_adc_watchdog23_cfg_s
 struct stm32_adc_wdg_event_s
 {
   uint8_t  wdg_num;   /* 1..3 => AWD1/2/3 */
+  uint16_t  value;   /* Value of last conversion */
   uint32_t isr;     /* ISR snapshot */
 };
 
@@ -544,10 +545,7 @@ struct stm32_adc_sig_s
   struct work_s work;
 
   /* Last event cached for the signal payload (coalesced) */
-  struct {
-    uint8_t   wdg_num;         /* 1..3 */
-    uint32_t  isr;           /* optional/context */
-  } last;
+  uint8_t last_wdg_num;         /* 1..3 */
 };
 
 /****************************************************************************

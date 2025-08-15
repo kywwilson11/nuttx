@@ -553,13 +553,13 @@ static void adc_wdg_sigwork(void *arg)
     {
       union sigval sv;
       /* Pack which + value; adjust packing as desired */
-      sv.sival_int = (priv->sig.last.wdg_num & 0xFF);
+      sv.sival_int = (priv->sig.last_wdg_num & 0xFF);
       (void)nxsig_queue(priv->sig.pid, priv->sig.signo, sv);
     }
 }
 
 static inline void wq_push(struct stm32_dev_s *priv,
-                           uint8_t wdg_num, uint32_t isr)
+                           uint8_t wdg_num, uint16_t value, uint32_t isr)
 {
   struct stm32_adc_wdg_queue_s *q = &priv->wdgq;
   irqstate_t flags = enter_critical_section();
@@ -567,7 +567,7 @@ static inline void wq_push(struct stm32_dev_s *priv,
   uint8_t next = (uint8_t)((q->wq_head + 1) & WQ_MASK);
   if (next != q->wq_tail)  /* not full */
     {
-      q->wq[q->wq_head] = (struct stm32_adc_wdg_event_s){ wdg_num, isr };
+      q->wq[q->wq_head] = (struct stm32_adc_wdg_event_s){wdg_num, value, isr};
       q->wq_head = next;   /* wrap */
     }
   else
@@ -576,8 +576,7 @@ static inline void wq_push(struct stm32_dev_s *priv,
     }
 
   /* Remember last for coalesced signal payload */
-  priv->sig.last.wdg_num = wdg_num;
-  priv->sig.last.isr   = isr;
+  priv->sig.last_wdg_num = wdg_num;
 
   /* Schedule a signal if enabled for this watchdog */
   if (priv->sig.pid > 0 && priv->sig.signo != 0 &&
@@ -1607,14 +1606,7 @@ static int adc_setup(struct adc_dev_s *dev)
         adc_getreg(priv, STM32_ADC_SQR4_OFFSET));
   ainfo("CCR:   0x%08" PRIx32 "\n", adc_getregm(priv, STM32_ADC_CCR_OFFSET));
 
-  if (priv->hasdma)
-    {
-      /* Enable the ADC interrupt */
-
-    }
-
   ainfo("Enable the ADC interrupt: irq=%d\n", priv->irq);
-
   up_enable_irq(priv->irq);
 
   priv->initialized = true;
@@ -2008,6 +2000,50 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
   return ret;
 }
 
+/* Return the best-effort sample that corresponded to the AWD trip.
+ * Uses DMA residual when DMA is active; otherwise reads DR directly.
+ */
+static inline uint16_t adc_capture_last_sample(struct stm32_dev_s *priv)
+{
+  /* 16-bit transfers from ADC_DR on H5 */
+  const size_t elem_bytes = 2;
+
+#ifdef ADC_HAVE_DMA
+  if (priv->hasdma && priv->dma != NULL)
+    {
+      /* Total elements in the active DMA block (matches dmacfg.ntransfers / 2) */
+      size_t total_elems = (size_t)priv->cchannels * (size_t)priv->dmabatch;
+      if (priv->circular)
+        {
+          /* Double-sized buffer used for circular mode */
+          total_elems <<= 1;
+        }
+
+      /* Remaining bytes in current DMA block (GPDMA CxBR1.BNDT) */
+      size_t rem_bytes  = stm32_dmaresidual(priv->dma);
+      size_t rem_elems  = rem_bytes / elem_bytes;
+
+      /* Index of the last completed element */
+      ssize_t last = (ssize_t)total_elems - (ssize_t)rem_elems - 1;
+      if (priv->circular)
+        {
+          if (last < 0) last += (ssize_t)total_elems;
+          last %= (ssize_t)total_elems;
+        }
+      else
+        {
+          if (last < 0) last = 0;
+          if ((size_t)last >= total_elems) last = (ssize_t)total_elems - 1;
+        }
+
+      return (uint16_t)(priv->r_dmabuffer[(size_t)last] & ADC_DR_MASK);
+    }
+#endif
+
+  /* Non-DMA (or DMA not yet active): read DR immediately */
+  return (uint16_t)(adc_getreg(priv, STM32_ADC_DR_OFFSET) & ADC_DR_MASK);
+}
+
 /****************************************************************************
  * Name: adc_interrupt
  *
@@ -2020,62 +2056,42 @@ static int adc_ioctl(struct adc_dev_s *dev, int cmd, unsigned long arg)
  *
  ****************************************************************************/
 
-/* TODO - Add Injected functionality later */
 
 static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
 {
   struct stm32_dev_s *priv = (struct stm32_dev_s *)dev->ad_priv;
+  uint32_t awd_mask = adcisr & (ADC_INT_AWD1 | ADC_INT_AWD2 | ADC_INT_AWD3);
+  uint16_t sample;
   int32_t value;
   uint32_t regval;
-  bool processed;
 
-  value = adc_getreg(priv, STM32_ADC_DR_OFFSET) & ADC_DR_MASK;
-  processed = false;
-
-  /* Identifies the AWD interrupt */
-
-  if ((adcisr & ADC_INT_AWD1) != 0)
+  if (awd_mask != 0)
     {
-      awarn("WARNING: Analog Watchdog 1, Value (0x%03" PRIx32 ") "
-            "out of range!\n", value);
-
-      /* Disable AWD1 Interrupt to avoid constant interrupts */
+      sample = adc_capture_last_sample(priv);
 
       regval = adc_getreg(priv, STM32_ADC_IER_OFFSET);
-      regval &= ~(ADC_INT_AWD1);
+      regval &= ~(awd_mask);
       adc_putreg(priv, STM32_ADC_IER_OFFSET, regval);
 
-      wq_push(priv, 1, adcisr);
-     
-      adc_putreg(priv, STM32_ADC_ISR_OFFSET, ADC_INT_AWD1);
-    }
+      if ((adcisr & ADC_INT_AWD1) != 0)
+        {
+          awarn("WARNING: Analog Watchdog 1 out of range! sample=%u\n", sample);
+          wq_push(priv, 1, sample, adcisr);
+        }
 
-  if ((adcisr & ADC_INT_AWD2) != 0)
-    {
-      awarn("WARNING: Analog Watchdog 2, Value (0x%03" PRIx32 ") "
-            "out of range!\n", value);
+      if ((adcisr & ADC_INT_AWD2) != 0)
+        {
+          awarn("WARNING: Analog Watchdog 2 out of range!\n");
+          wq_push(priv, 2, sample, adcisr);
+        }
 
-      regval = adc_getreg(priv, STM32_ADC_IER_OFFSET);
-      regval &= ~(ADC_INT_AWD2);
-      adc_putreg(priv, STM32_ADC_IER_OFFSET, regval);
+      if ((adcisr & ADC_INT_AWD3) != 0)
+        {
+          awarn("WARNING: Analog Watchdog 3 out of range!\n");
+          wq_push(priv, 3, sample, adcisr);
+        }
 
-      wq_push(priv, 2, adcisr);
-
-      adc_putreg(priv, STM32_ADC_ISR_OFFSET, ADC_INT_AWD2);
-    }
-
-  if ((adcisr & ADC_INT_AWD3) != 0)
-    {
-      awarn("WARNING: Analog Watchdog 3, Value (0x%03" PRIx32 ") "
-            "out of range!\n", value);
-
-      regval = adc_getreg(priv, STM32_ADC_IER_OFFSET);
-      regval &= ~(ADC_INT_AWD2);
-      adc_putreg(priv, STM32_ADC_IER_OFFSET, regval);
-
-      wq_push(priv, 3, adcisr);
-
-      adc_putreg(priv, STM32_ADC_ISR_OFFSET, ADC_INT_AWD3);
+      adc_putreg(priv, STM32_ADC_ISR_OFFSET, awd_mask);
     }
 
   /* OVR: Overrun */
@@ -2121,10 +2137,7 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
            * (It is cleared by reading the ADC_DR)
            */
 
-          if (processed)
-            {
-              value = adc_getreg(priv, STM32_ADC_DR_OFFSET) & ADC_DR_MASK;
-            }
+          value = adc_getreg(priv, STM32_ADC_DR_OFFSET) & ADC_DR_MASK;
 
           /* Verify that the upper-half driver has bound its
            * callback functions
@@ -2157,7 +2170,6 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
 
               priv->current = 0;
             }
-            processed = true;
         }
       while ((adc_getreg(priv, STM32_ADC_ISR_OFFSET) & ADC_INT_EOC) != 0);
 
