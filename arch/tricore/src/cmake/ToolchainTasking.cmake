@@ -83,7 +83,7 @@ add_compile_options(--tradeoff=2)
 if(CONFIG_DEBUG_SYMBOLS)
   add_compile_options(--debug-info=default)
   add_compile_options(--keep-temporary-files)
-  add_link_options(-g)
+  add_compile_options(${CONFIG_DEBUG_SYMBOLS_LEVEL})
 endif()
 
 # merge source code with assembly output
@@ -108,6 +108,7 @@ add_compile_options(--branch-target-align)
 # cmake-format: on
 
 add_compile_options(--fp-model=2)
+add_link_options(--no-default-libraries)
 add_link_options(--fp-model=2)
 add_link_options(-lfp_fpu)
 
