@@ -1267,6 +1267,64 @@ config STM32H5_ADC2_WDG1_CHAN
 	---help---
 		Select the channel to enable for ADC2 Watchdog 1.
 
+config STM32H5_ADC1_AWD1_BREAK_HWLINK
+    bool "Link ADC1 AWD1 to TIM1 Break (hardware OFF window)"
+    default n
+    depends on STM32H5_ADC1_WDG1
+
+config STM32H5_ADC2_AWD1_BREAK_HWLINK
+    bool "Link ADC2 AWD1 to TIM8 Break (hardware OFF window)"
+    default n
+    depends on STM32H5_ADC2_WDG1
+
+# Per-ADC selection of the output channel (1..4)
+config STM32H5_ADC1_AWD_TIM_CH
+    int "ADC1: TIM1 channel for AWD safety output (1..4)"
+    depends on STM32H5_ADC1_AWD1_BREAK_HWLINK
+    range 1 4
+    default 1
+
+config STM32H5_ADC2_AWD_TIM_CH
+    int "ADC2: TIM8 channel for AWD safety output (1..4)"
+    depends on STM32H5_ADC2_AWD1_BREAK_HWLINK
+    range 1 4
+    default 1
+
+# Per-ADC OFF-time (microseconds)
+config STM32H5_ADC1_AWD_OFFTIME_US
+    int "ADC1: OFF-time after AWD trip (µs)"
+    depends on STM32H5_ADC1_AWD1_BREAK_HWLINK
+    default 20000
+
+config STM32H5_ADC2_AWD_OFFTIME_US
+    int "ADC2: OFF-time after AWD trip (µs)"
+    depends on STM32H5_ADC2_AWD1_BREAK_HWLINK
+    default 20000
+
+# Per-ADC output polarity during Break (OFF level)
+config STM32H5_ADC1_AWD_ACTIVE_LOW
+    bool "ADC1: OFF level is low during Break (BKP=1)"
+    depends on STM32H5_ADC1_AWD1_BREAK_HWLINK
+    default y
+
+config STM32H5_ADC2_AWD_ACTIVE_LOW
+    bool "ADC2: OFF level is low during Break (BKP=1)"
+    depends on STM32H5_ADC2_AWD1_BREAK_HWLINK
+    default y
+
+# Optional per-ADC Break input digital filter (0..15)
+config STM32H5_ADC1_AWD_BKFILTER
+    int "ADC1: TIM1 Break digital filter"
+    depends on STM32H5_ADC1_AWD1_BREAK_HWLINK
+    range 0 15
+    default 0
+
+config STM32H5_ADC2_AWD_BKFILTER
+    int "ADC2: TIM8 Break digital filter"
+    depends on STM32H5_ADC2_AWD1_BREAK_HWLINK
+    range 0 15
+    default 0
+
 endmenu # ADC Configuration
 
 menu "SPI Configuration"

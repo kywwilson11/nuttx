@@ -150,6 +150,22 @@ struct stm32_dev_s
   /* List of selected ADC channels to sample */
 
   struct stm32_adc_channel_s chanlist[CONFIG_STM32H5_ADC_MAX_SAMPLES];
+
+  /* TIMsafe: dedicated to AWD1 reaction; independent of the ADC trigger timer */
+
+  uint32_t awd_tim_base;        /* TIM1 if priv->intf==1, TIM8 if priv->intf==2 */
+  uint32_t awd_timclk_hz;       /* real timer kernel clock */
+  uint8_t  awd_tim_ch;          /* 1..4: which channel drives the output pin */
+  bool     awd_active_low;      /* OFF level during Break is low? */
+  uint32_t awd_offtime_us;      /* OFF window length (µs) */
+  bool     awd_link_init_state; /* one-time wiring guard */
+
+  /* cached in wdog1_init(), used to re-arm AWD1 in the Update ISR */
+
+  uint32_t awd1_flt_cached;
+  uint32_t awd1_low_cached;
+  uint32_t awd1_high_cached;
+
 };
 
 /****************************************************************************
@@ -192,6 +208,11 @@ static void adc_wdog1_init(struct stm32_dev_s *priv);
 static void adc_timstart(struct stm32_dev_s *priv, bool enable);
 static int  adc_timinit(struct stm32_dev_s *priv);
 #endif
+
+static void adc_pick_timsafe(struct stm32_dev_s *priv);
+static void adc_timsafe_setup(struct stm32_dev_s *priv);
+static int timsafe_brk_isr(int irq, void *ctx, void *arg);
+static int timsafe_up_isr(int irq, void *ctx, void *arg);
 
 #ifdef ADC_HAVE_DMA
 static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status,
@@ -669,6 +690,7 @@ static void adc_wdog1_init(struct stm32_dev_s *priv)
     }
 #endif
 
+#if defined(CONFIG_STM32H5_ADC1_WDG1) || defined(CONFIG_STM32H5_ADC2_WDG1)
   if (enable)
     {
       regval = ((high_thresh << ADC_TR1_HT1_SHIFT)
@@ -689,7 +711,14 @@ static void adc_wdog1_init(struct stm32_dev_s *priv)
 
       adc_putreg(priv, STM32_ADC_CFGR_OFFSET, regval);
       adc_wdog1_enable(priv);
+      
+      /* cache for re-arm at end of OFF window */
+
+      priv->awd1_flt_cached  = flt;
+      priv->awd1_low_cached  = low_thresh;
+      priv->awd1_high_cached = high_thresh;
     }
+#endif
 }
 
 /****************************************************************************
@@ -1431,7 +1460,10 @@ static int adc_setup(struct adc_dev_s *dev)
     }
 #endif
 
+  /* Add guards here */
   adc_wdog1_init(priv);
+  adc_pick_timsafe(priv);
+  adc_timsafe_setup(priv);
 
   /* Set ADEN to wake up the ADC from Power Down. */
 
@@ -2473,6 +2505,298 @@ static int adc_timinit(struct stm32_dev_s *priv)
   return OK;
 }
 #endif
+
+/* AWD/TIM (advanced timers only) register helpers */
+
+static inline uint32_t awd_tim_getreg(struct stm32_dev_s *priv, int offset)
+{
+  return getreg32(priv->awd_tim_base + offset);
+}
+
+static inline void awd_tim_putreg(struct stm32_dev_s *priv, int offset, uint32_t value)
+{
+  putreg32(value, priv->awd_tim_base + offset);
+}
+
+static inline void awd_tim_modifyreg32(struct stm32_dev_s *priv, int offset,
+                                       uint32_t clrbits, uint32_t setbits)
+{
+  uint32_t val = awd_tim_getreg(priv, offset);
+  val &= ~clrbits;
+  val |= setbits;
+  awd_tim_putreg(priv, offset, val);
+}
+
+
+/* Pick and populate the “TIMsafe” config for this ADC instance
+ * (TIM1 for ADC1, TIM8 for ADC2) — guarded by per-ADC Kconfig.
+ * If the HW link is disabled for this ADC, we leave awd_tim_base==0
+ * so adc_timsafe_setup() can early-exit.
+ */
+static void adc_pick_timsafe(struct stm32_dev_s *priv)
+{
+  const bool is_adc1 = (priv->intf == 1);
+
+  /* Default = disabled for this ADC instance */
+  priv->awd_tim_base    = 0;
+  priv->awd_timclk_hz   = 0;
+  priv->awd_tim_ch      = 0;
+  priv->awd_offtime_us  = 0;
+  priv->awd_active_low  = false;
+
+#if defined(CONFIG_STM32H5_ADC1_AWD1_BREAK_HWLINK)
+  if (is_adc1)
+    {
+      priv->awd_tim_base   = STM32_TIM1_BASE;
+      priv->awd_tim_ch     = CONFIG_STM32H5_ADC1_AWD_TIM_CH;         /* 1..4 */
+      priv->awd_active_low = CONFIG_STM32H5_ADC1_AWD_ACTIVE_LOW;
+      priv->awd_offtime_us = CONFIG_STM32H5_ADC1_AWD_OFFTIME_US;
+      /* TIM1 kernel clock */
+      priv->awd_timclk_hz  = STM32_APB2_TIM1_CLKIN;
+      return;
+    }
+#endif
+
+#if defined(CONFIG_STM32H5_ADC2_AWD1_BREAK_HWLINK)
+  if (!is_adc1)
+    {
+      priv->awd_tim_base   = STM32_TIM8_BASE;
+      priv->awd_tim_ch     = CONFIG_STM32H5_ADC2_AWD_TIM_CH;         /* 1..4 */
+      priv->awd_active_low = IS_ENABLED(CONFIG_STM32H5_ADC2_AWD_ACTIVE_LOW);
+      priv->awd_offtime_us = CONFIG_STM32H5_ADC2_AWD_OFFTIME_US;
+      /* TIM8 kernel clock */
+      priv->awd_timclk_hz  = STM32_APB2_TIM8_CLKIN;
+      return;
+    }
+#endif
+
+  /* Neither ADCx_AWD1_BREAK_HWLINK Kconfig is enabled for this instance.
+   * Leave awd_tim_base==0 so setup can skip TIMsafe entirely.
+   */
+}
+
+/*                                            */
+/* Local helpers (filled below) */
+static void timsafe_configure_output_channel(struct stm32_dev_s *priv, int ch, bool active_low);
+static void timsafe_enable_internal_break_awd(struct stm32_dev_s *priv);
+
+/* One-time init of the "TIMsafe" path used for AWD1 trip handling. */
+static void adc_timsafe_setup(struct stm32_dev_s *priv)
+{
+  if (priv->awd_tim_base == 0 || priv->awd_link_init_state)
+    {
+      return;
+    }
+
+  /* 1) Base period == OFF window; pick 1 MHz timer tick for easy µs math. */
+  uint32_t psc = (priv->awd_timclk_hz / 1000000u) - 1; /* 1 MHz */
+  if ((psc + 1u) == 0) psc = 0;                         /* exact-match guard */
+  uint32_t arr = (priv->awd_offtime_us ? priv->awd_offtime_us : 1) - 1;
+
+  awd_tim_putreg(priv, STM32_ATIM_PSC_OFFSET, psc);
+  awd_tim_putreg(priv, STM32_ATIM_ARR_OFFSET, arr);
+
+  /* 2) Configure the selected output channel so Break forces the true OFF level. */
+  timsafe_configure_output_channel(priv, priv->awd_tim_ch, priv->awd_active_low);
+
+  /* 3) Break/BDTR config (advanced timers on H5):
+   *    - BKE: enable Break (accepts ORed sources incl. internal AWD)
+   *    - AOE: MOE auto-reasserts at Update → OFF-time = one period
+   *    - BKP: OFF level polarity during Break (low if OFF=low)
+   *    - BKF: optional digital filter on Break (per-ADC Kconfig with guards)
+   *    - OSSI/OSSR: off-state in idle/run when MOE=0 (on H5 they live in BDTR)
+   *    - MOE: main output enable
+   */
+  const bool is_adc1 = (priv->intf == 1);
+
+  /* Per-ADC BKFILTER value with compile-time guards to avoid undefined symbols */
+  uint32_t bkf = 0;
+#if defined(CONFIG_STM32H5_ADC1_AWD1_BREAK_HWLINK)
+  if (is_adc1)
+    {
+      bkf = (uint32_t)(CONFIG_STM32H5_ADC1_AWD_BKFILTER & 0xF);
+    }
+#endif
+#if defined(CONFIG_STM32H5_ADC2_AWD1_BREAK_HWLINK)
+  if (!is_adc1)
+    {
+      bkf = (uint32_t)(CONFIG_STM32H5_ADC2_AWD_BKFILTER & 0xF);
+    }
+#endif
+
+  uint32_t bdtr = ATIM_BDTR_MOE | ATIM_BDTR_BKE | ATIM_BDTR_AOE
+                | ATIM_BDTR_OSSI | ATIM_BDTR_OSSR;  /* H5: OSSI/OSSR in BDTR */
+
+  if (priv->awd_active_low)
+    {
+      bdtr |= ATIM_BDTR_BKP;                        /* Break forces LOW = OFF */
+    }
+
+  bdtr |= (bkf << ATIM_BDTR_BKF_SHIFT);             /* standard: 4-bit field shift */
+
+  awd_tim_putreg(priv, STM32_ATIM_BDTR_OFFSET, bdtr);
+
+  /* 4) Wire ADCx.AWD1 into the timer's internal Break OR gate. */
+  timsafe_enable_internal_break_awd(priv);
+
+  /* 5) Local IRQs: BRK (book-keeping) + UP (re-arm AWD1 after OFF window). */
+  awd_tim_modifyreg32(priv, STM32_ATIM_DIER_OFFSET, 0, ATIM_DIER_BIE | ATIM_DIER_UIE);
+
+  int irq_brk = (priv->awd_tim_base == STM32_TIM1_BASE) ? STM32_IRQ_TIM1_BRK : STM32_IRQ_TIM8_BRK;
+  int irq_up  = (priv->awd_tim_base == STM32_TIM1_BASE) ? STM32_IRQ_TIM1_UP  : STM32_IRQ_TIM8_UP;
+
+  irq_attach(irq_brk, timsafe_brk_isr, priv);
+  irq_attach(irq_up,  timsafe_up_isr,  priv);
+  up_enable_irq(irq_brk);
+  up_enable_irq(irq_up);
+
+  /* 6) Run the counter (free-run). Each Update ends the OFF window; with AOE set,
+   *    MOE re-enables there automatically.
+   */
+  awd_tim_modifyreg32(priv, STM32_ATIM_CR1_OFFSET, 0, ATIM_CR1_CEN);
+
+  priv->awd_link_init_state = true;
+}
+
+/* Break happened: acknowledge; hardware already forced the channel OFF. */
+static int timsafe_brk_isr(int irq, void *ctx, void *arg)
+{
+  struct stm32_dev_s *priv = (struct stm32_dev_s *)arg;
+  uint32_t sr = awd_tim_getreg(priv, STM32_ATIM_SR_OFFSET);         /* SR bits verified for ATIM :contentReference[oaicite:5]{index=5} */
+  if (sr & ATIM_SR_BIF)
+    {
+      awd_tim_putreg(priv, STM32_ATIM_SR_OFFSET, sr & ~ATIM_SR_BIF);
+    }
+  return OK;
+}
+
+/* Update: OFF window ended; AOE has re-enabled outputs.
+ * Re-arm AWD1 using thresholds cached in wdog1_init().
+ */
+static int timsafe_up_isr(int irq, void *ctx, void *arg)
+{
+  struct stm32_dev_s *priv = (struct stm32_dev_s *)arg;
+  uint32_t sr = awd_tim_getreg(priv, STM32_ATIM_SR_OFFSET);
+  if (sr & ATIM_SR_UIF)
+    {
+      awd_tim_putreg(priv, STM32_ATIM_SR_OFFSET, sr & ~ATIM_SR_UIF);
+      adc_wdog1_enable(priv);
+    }
+  return OK;
+}
+
+/* Configure one TIM1/TIM8 channel:
+ * - Force a known level in run mode (OCxM forced active/inactive).
+ * - Enable CCxE, clear CCxP (active-high) unless you need inversion.
+ * - Program OISx in CR2 so OFF level during Break (MOE=0) matches 'active_low'.
+ * NOTE: On H5, OSSI/OSSR live in BDTR and are set in adc_timsafe_setup().
+ */
+static void timsafe_configure_output_channel(struct stm32_dev_s *priv, int ch, bool active_low)
+{
+  uint32_t ccmr_off;
+  unsigned ocm_shift;  /* OCxM[2:0] position */
+  unsigned ocpe_bit;   /* OCxPE bit */
+  unsigned ocm3_bit;   /* OCxM bit3 position (extended) */
+  uint32_t ccer_mask_e  = 0;
+  uint32_t ccer_mask_p  = 0;
+
+  switch (ch)
+    {
+      case 1: ccmr_off = STM32_ATIM_CCMR1_OFFSET; ocm_shift=4;  ocpe_bit=3;  ocm3_bit=16; ccer_mask_e=ATIM_CCER_CC1E; ccer_mask_p=ATIM_CCER_CC1P; break;
+      case 2: ccmr_off = STM32_ATIM_CCMR1_OFFSET; ocm_shift=12; ocpe_bit=11; ocm3_bit=24; ccer_mask_e=ATIM_CCER_CC2E; ccer_mask_p=ATIM_CCER_CC2P; break;
+      case 3: ccmr_off = STM32_ATIM_CCMR2_OFFSET; ocm_shift=4;  ocpe_bit=3;  ocm3_bit=16; ccer_mask_e=ATIM_CCER_CC3E; ccer_mask_p=ATIM_CCER_CC3P; break;
+      case 4: ccmr_off = STM32_ATIM_CCMR2_OFFSET; ocm_shift=12; ocpe_bit=11; ocm3_bit=24; ccer_mask_e=ATIM_CCER_CC4E; ccer_mask_p=ATIM_CCER_CC4P; break;
+      default: return;
+    }
+
+  /* OCxM forced level:
+   *   OFF=low  → "Forced Active" (101) so the 'normal' driven level is high.
+   *   OFF=high → "Forced Inactive" (100) so the 'normal' driven level is low.
+   * Also set OCxM bit3 = 0 for a plain forced mode (no extended PWM mode).
+   */
+  uint32_t ccmr = awd_tim_getreg(priv, ccmr_off);
+  ccmr &= ~((0x7u << ocm_shift) | (1u << ocm3_bit));
+  ccmr |=  ((active_low ? 0x5u : 0x4u) << ocm_shift);
+  ccmr |=  (1u << ocpe_bit); /* preload safe */
+  awd_tim_putreg(priv, ccmr_off, ccmr);
+
+  /* Enable channel, active-high (clear CCxP). */
+  uint32_t ccer = awd_tim_getreg(priv, STM32_ATIM_CCER_OFFSET);
+  ccer |=  ccer_mask_e;
+  ccer &= ~ccer_mask_p;
+  awd_tim_putreg(priv, STM32_ATIM_CCER_OFFSET, ccer);
+
+  /* OISx in CR2: OFF level when MOE=0 → choose per 'active_low'. */
+  uint32_t cr2 = awd_tim_getreg(priv, STM32_ATIM_CR2_OFFSET);
+  uint32_t ois_set = 0, ois_clr = 0;
+  switch (ch)
+    {
+      case 1: active_low ? (ois_clr |= ATIM_CR2_OIS1) : (ois_set |= ATIM_CR2_OIS1); break;
+      case 2: active_low ? (ois_clr |= ATIM_CR2_OIS2) : (ois_set |= ATIM_CR2_OIS2); break;
+      case 3: active_low ? (ois_clr |= ATIM_CR2_OIS3) : (ois_set |= ATIM_CR2_OIS3); break;
+      case 4: active_low ? (ois_clr |= ATIM_CR2_OIS4) : (ois_set |= ATIM_CR2_OIS4); break;
+    }
+  cr2 &= ~ois_clr;
+  cr2 |=  ois_set;
+  awd_tim_putreg(priv, STM32_ATIM_CR2_OFFSET, cr2);
+}
+
+/* Wire ADCx.AWD1 into TIM1/TIM8 via AF1.ETRSEL → ETR → OCREF_CLR.
+ * (RM0481 Table 399: tim_etr3=adc1_awd1/adc2_awd1, tim_etr4=AWD2, tim_etr5=AWD3.)
+ */
+static void timsafe_enable_internal_break_awd(struct stm32_dev_s *priv)
+{
+  const bool is_adc1 = (priv->intf == 1);
+  uint32_t af1 = awd_tim_getreg(priv, STM32_ATIM_AF1_OFFSET);
+  uint32_t af2 = awd_tim_getreg(priv, STM32_ATIM_AF2_OFFSET);
+
+  /* --- Route ETRSEL to the right adcX_awdY --- */
+#if defined(CONFIG_STM32H5_ADC1_AWD1_BREAK_HWLINK)
+  if (is_adc1)
+    {
+      af1 &= ~ATIM_AF1_ETRSEL_MASK;
+      af1 |= ATIM_AF1_ETRSEL(3);   /* tim_etr3 = adc1_awd1 */
+    }
+#endif
+#if defined(CONFIG_STM32H5_ADC2_AWD1_BREAK_HWLINK)
+  if (!is_adc1)
+    {
+      af1 &= ~ATIM_AF1_ETRSEL_MASK;
+      af1 |= ATIM_AF1_ETRSEL(3);   /* tim_etr3 = adc2_awd1 */
+    }
+#endif
+
+  awd_tim_putreg(priv, STM32_ATIM_AF1_OFFSET, af1);
+
+  /* --- Route ETR into OCREF_CLR via AF2.OCRSEL --- */
+  af2 &= ~ATIM_AF2_OCRSEL_MASK;
+  af2 |= ATIM_AF2_OCRSEL(0);  /* tim_ocref_clr0 = ETRF (see RM0481 AF2 table) */
+  awd_tim_putreg(priv, STM32_ATIM_AF2_OFFSET, af2);
+
+  /* --- Enable OCREF_CLR on the configured channel --- */
+  switch (priv->awd_tim_ch)
+    {
+      case 1:
+        awd_tim_modifyreg32(priv, STM32_ATIM_CCMR1_OFFSET, 0, ATIM_CCMR1_OC1CE);
+        break;
+      case 2:
+        awd_tim_modifyreg32(priv, STM32_ATIM_CCMR1_OFFSET, 0, ATIM_CCMR1_OC2CE);
+        break;
+      case 3:
+        awd_tim_modifyreg32(priv, STM32_ATIM_CCMR2_OFFSET, 0, ATIM_CCMR2_OC3CE);
+        break;
+      case 4:
+        awd_tim_modifyreg32(priv, STM32_ATIM_CCMR2_OFFSET, 0, ATIM_CCMR2_OC4CE);
+        break;
+      default:
+        break;
+    }
+
+  /* --- Optional: clean SMCR ETF/ETP (filter/polarity for ETRF) --- */
+  uint32_t smcr = awd_tim_getreg(priv, STM32_ATIM_SMCR_OFFSET);
+  smcr &= ~(ATIM_SMCR_ETF_MASK | ATIM_SMCR_ETP);
+  awd_tim_putreg(priv, STM32_ATIM_SMCR_OFFSET, smcr);
+}
 
 /****************************************************************************
  * Public Functions
