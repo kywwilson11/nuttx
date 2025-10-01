@@ -97,6 +97,19 @@
 #  define ADC2_HAVE_DMA 1
 #endif
 
+#undef ADC_HAVE_WDG1
+#if defined(CONFIG_STM32H5_ADC1_WDG1) || defined(CONFIG_STM32H5_ADC2_DMA)
+#  define ADC_HAVE_WDG1 1
+#endif
+
+#if defined(CONFIG_STM32H5_ADC1_WDG1)
+#  define ADC1_HAVE_WDG1 1
+#endif
+
+#if defined(CONFIG_STM32H5_ADC2_WDG1)
+#  define ADC2_HAVE_WDG1 1
+#endif
+
 /* Oversampling support */
 
 #undef ADC_HAVE_OVERSAMPLE

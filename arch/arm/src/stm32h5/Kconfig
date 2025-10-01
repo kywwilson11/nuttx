@@ -1758,6 +1758,31 @@ endif # !STM32H5_PWM_MULTICHAN
 
 endif # STM32H5_TIM1_PWM
 
+config STM32H5_TIM1_WDG1_HWLINK
+	bool "TIM1: ADC1 AWD1 to clear OCx (OCREF_CLR)"
+	depends on STM32H5_TIM1 && STM32H5_ADC1 && STM32H5_ADC1_WDG1
+	default n
+	---help---
+	When enabled, the board may wire ADC1.AWD1 to TIM1 OCREF_CLR using ETRF,
+	so a selected TIM1 channel is cleared in hardware on watchdog trips.
+
+config STM32H5_TIM1_WDG1_CH
+	int "TIM1 channel to clear (1..4)"
+	depends on STM32H5_TIM1_WDG1_HWLINK
+	range 1 4
+	default 1
+
+config STM32H5_TIM1_WDG1_ETF
+	int "TIM1 ETR digital filter for AWD1 (0..15)"
+	depends on STM32H5_TIM1_WDG1_HWLINK
+	range 0 15
+	default 0
+
+config STM32H5_TIM1_WDG1_ETP
+	bool "TIM1 invert AWD1 ETR polarity (ETP)"
+	depends on STM32H5_TIM1_WDG1_HWLINK
+	default n
+
 config STM32H5_TIM2_PWM
 	bool "TIM2 PWM"
 	default n
@@ -2755,6 +2780,28 @@ config STM32H5_TIM8_CHMODE
 endif # !STM32H5_PWM_MULTICHAN
 
 endif # STM32H5_TIM8_PWM
+
+config STM32H5_TIM8_WDG1_HWLINK
+	bool "TIM8: Consume ADC2 AWD1 via ETRF to clear OCx (OCREF_CLR)"
+	depends on STM32H5_TIM8 && STM32H5_ADC2 && STM32H5_ADC2_WDG1
+	default n
+
+config STM32H5_TIM8_WDG1_CH
+	int "TIM8 channel to clear (1..4)"
+	depends on STM32H5_TIM8_WDG1_HWLINK
+	range 1 4
+	default 1
+
+config STM32H5_TIM8_WDG1_ETF
+	int "TIM8 ETR digital filter for AWD1 (0..15)"
+	depends on STM32H5_TIM8_WDG1_HWLINK
+	range 0 15
+	default 0
+
+config STM32H5_TIM8_WDG1_ETP
+	bool "TIM8 invert AWD1 ETR polarity (ETP)"
+	depends on STM32H5_TIM8_WDG1_HWLINK
+	default n
 
 config STM32H5_TIM12_PWM
 	bool "TIM12 PWM"

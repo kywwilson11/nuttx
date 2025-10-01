@@ -282,6 +282,11 @@ static void     stm32_tim_ackint(struct stm32_tim_dev_s *dev,
                                  int source);
 static int      stm32_tim_checkint(struct stm32_tim_dev_s *dev,
                                    int source);
+static int      stm32_tim_ocrefclr_from_etr(struct stm32_tim_dev_s *dev,
+                                       uint8_t channel, uint8_t etrsel,
+                                       uint8_t etf, bool etp);
+static int      stm32_tim_ocrefclr_unroute(struct stm32_tim_dev_s *dev,
+                                      uint8_t channel);
 
 /****************************************************************************
  * Private Data
@@ -289,22 +294,24 @@ static int      stm32_tim_checkint(struct stm32_tim_dev_s *dev,
 
 static const struct stm32_tim_ops_s stm32_tim_ops =
 {
-  .enable         = &stm32_tim_enable,
-  .disable        = &stm32_tim_disable,
-  .setmode        = &stm32_tim_setmode,
-  .setclock       = &stm32_tim_setclock,
-  .setperiod      = &stm32_tim_setperiod,
-  .getcounter     = &stm32_tim_getcounter,
-  .setcounter     = &stm32_tim_setcounter,
-  .getwidth       = &stm32_tim_getwidth,
-  .setchannel     = &stm32_tim_setchannel,
-  .setcompare     = &stm32_tim_setcompare,
-  .getcapture     = &stm32_tim_getcapture,
-  .setisr         = &stm32_tim_setisr,
-  .enableint      = &stm32_tim_enableint,
-  .disableint     = &stm32_tim_disableint,
-  .ackint         = &stm32_tim_ackint,
-  .checkint       = &stm32_tim_checkint,
+  .enable             = &stm32_tim_enable,
+  .disable            = &stm32_tim_disable,
+  .setmode            = &stm32_tim_setmode,
+  .setclock           = &stm32_tim_setclock,
+  .setperiod          = &stm32_tim_setperiod,
+  .getcounter         = &stm32_tim_getcounter,
+  .setcounter         = &stm32_tim_setcounter,
+  .getwidth           = &stm32_tim_getwidth,
+  .setchannel         = &stm32_tim_setchannel,
+  .setcompare         = &stm32_tim_setcompare,
+  .getcapture         = &stm32_tim_getcapture,
+  .setisr             = &stm32_tim_setisr,
+  .enableint          = &stm32_tim_enableint,
+  .disableint         = &stm32_tim_disableint,
+  .ackint             = &stm32_tim_ackint,
+  .checkint           = &stm32_tim_checkint,
+  .ocrefclr_from_etr  = &stm32_tim_ocrefclr_from_etr,
+  .ocrefclr_unroute   = &stm32_tim_ocrefclr_unroute,
 };
 
 #ifdef CONFIG_STM32H5_TIM1
@@ -1345,6 +1352,75 @@ static int stm32_tim_getcapture(struct stm32_tim_dev_s *dev,
     }
 
   return -EINVAL;
+}
+
+/* ===== OCREF_CLR from ETRF (H5 ATIM only: TIM1/TIM8) ==================== */
+
+static int stm32_tim_ocrefclr_from_etr(struct stm32_tim_dev_s *dev,
+                                       uint8_t channel, uint8_t etrsel,
+                                       uint8_t etf, bool etp)
+{
+  struct stm32_tim_priv_s *priv = (struct stm32_tim_priv_s *)dev;
+  uintptr_t base = priv->base;
+
+  /* Validate: ATIM only, channel 1..4, etrsel 0..15, etf 0..15 */
+  if ((base != STM32_TIM1_BASE && base != STM32_TIM8_BASE) ||
+      channel < 1 || channel > 4 || etrsel > 15 || etf > 15)
+    {
+      return -EINVAL;
+    }
+
+  /* 1) AF1.ETRSEL → choose ETR source (H5: 3=AWD1, 4=AWD2, 5=AWD3) */
+  modifyreg32(base + STM32_ATIM_AF1_OFFSET,
+              ATIM_AF1_ETRSEL_MASK,
+              ATIM_AF1_ETRSEL((uint32_t)etrsel & 0x0F));
+
+  /* 2) Channel OCREF_CLR enable: set OCxCE in CCMR1/2 */
+  switch (channel)
+    {
+      case 1: modifyreg32(base + STM32_ATIM_CCMR1_OFFSET, 0, ATIM_CCMR1_OC1CE); break;
+      case 2: modifyreg32(base + STM32_ATIM_CCMR1_OFFSET, 0, ATIM_CCMR1_OC2CE); break;
+      case 3: modifyreg32(base + STM32_ATIM_CCMR2_OFFSET, 0, ATIM_CCMR2_OC3CE); break;
+      case 4: modifyreg32(base + STM32_ATIM_CCMR2_OFFSET, 0, ATIM_CCMR2_OC4CE); break;
+      default: return -EINVAL;
+    }
+
+  /* 3) Take OCREF_CLR from ETRF: SMCR.OCCS = 1 */
+  modifyreg32(base + STM32_ATIM_SMCR_OFFSET, 0, GTIM_SMCR_OCCS);
+
+  /* 4) Optional ETR filtering & polarity (SMCR.ETF/ETP) */
+  uint32_t smcr = getreg32(base + STM32_ATIM_SMCR_OFFSET);
+  smcr &= ~(ATIM_SMCR_ETF_MASK | ATIM_SMCR_ETP);
+  smcr |=  ((uint32_t)(etf & 0x0F) << ATIM_SMCR_ETF_SHIFT);
+  if (etp) smcr |= ATIM_SMCR_ETP;
+  putreg32(smcr, base + STM32_ATIM_SMCR_OFFSET);
+
+  return OK;
+}
+
+/* Disable OCREF_CLR response on a channel (leave OCCS/ETRSEL as-is) */
+static int stm32_tim_ocrefclr_unroute(struct stm32_tim_dev_s *dev,
+                                      uint8_t channel)
+{
+  struct stm32_tim_priv_s *priv = (struct stm32_tim_priv_s *)dev;
+  uintptr_t base = priv->base;
+
+  if ((base != STM32_TIM1_BASE && base != STM32_TIM8_BASE) ||
+      channel < 1 || channel > 4)
+    {
+      return -EINVAL;
+    }
+
+  switch (channel)
+    {
+      case 1: modifyreg32(base + STM32_ATIM_CCMR1_OFFSET, ATIM_CCMR1_OC1CE, 0); break;
+      case 2: modifyreg32(base + STM32_ATIM_CCMR1_OFFSET, ATIM_CCMR1_OC2CE, 0); break;
+      case 3: modifyreg32(base + STM32_ATIM_CCMR2_OFFSET, ATIM_CCMR2_OC3CE, 0); break;
+      case 4: modifyreg32(base + STM32_ATIM_CCMR2_OFFSET, ATIM_CCMR2_OC4CE, 0); break;
+      default: return -EINVAL;
+    }
+
+  return OK;
 }
 
 /****************************************************************************

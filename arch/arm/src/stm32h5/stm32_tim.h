@@ -54,6 +54,10 @@
 #define STM32_TIM_DISABLEINT(d,s)       ((d)->ops->disableint(d,s))
 #define STM32_TIM_ACKINT(d,s)           ((d)->ops->ackint(d,s))
 #define STM32_TIM_CHECKINT(d,s)         ((d)->ops->checkint(d,s))
+#define STM32_TIM_OCREFCLR_FROM_ETR(d, channel, etrsel, etf, etp) \
+  ((d)->ops->ocrefclr_from_etr(d, channel, etrsel, etf, etp))
+#define STM32_TIM_OCREFCLR_UNROUTE(d, channel) \
+  ((d)->ops->ocrefclr_unroute(d, channel))
 
 /****************************************************************************
  * Public Types
@@ -170,6 +174,13 @@ struct stm32_tim_ops_s
                      uint32_t compare);
   int  (*getcapture)(struct stm32_tim_dev_s *dev, uint8_t channel);
 
+  /* Channels 1, 2, 3, 4, 5, 8 */
+ 
+  int (*ocrefclr_from_etr)(struct stm32_tim_dev_s *dev,
+                           uint8_t channel, uint8_t etrsel,
+                           uint8_t etf, bool etp);
+  int (*ocrefclr_unroute)(struct stm32_tim_dev_s *dev, uint8_t channel);
+
   /* Timer interrupts */
 
   int  (*setisr)(struct stm32_tim_dev_s *dev, xcpt_t handler, void *arg,
@@ -178,6 +189,8 @@ struct stm32_tim_ops_s
   void (*disableint)(struct stm32_tim_dev_s *dev, int source);
   void (*ackint)(struct stm32_tim_dev_s *dev, int source);
   int  (*checkint)(struct stm32_tim_dev_s *dev, int source);
+
+
 };
 
 /****************************************************************************
