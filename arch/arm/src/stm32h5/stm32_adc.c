@@ -1838,7 +1838,7 @@ static int adc_interrupt(struct adc_dev_s *dev, uint32_t adcisr)
   struct stm32_dev_s *priv = (struct stm32_dev_s *)dev->ad_priv;
   int32_t value;
 
-#ifdef ADC_HAVE_WDG1
+#ifdef ADC_HAVE_WDG
   uint32_t awd_mask = adcisr & (ADC_INT_AWD1 | ADC_INT_AWD2 | ADC_INT_AWD3);
   uint32_t regval;
   if (awd_mask != 0)

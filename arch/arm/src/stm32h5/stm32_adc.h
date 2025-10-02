@@ -110,6 +110,11 @@
 #  define ADC2_HAVE_WDG1 1
 #endif
 
+#undef ADC_HAVE_WDG
+#if defined(ADC_HAVE_WDG1) || defined(ADC_HAVE_WDG2) || defined(ADC_HAVE_WDG3)
+#  define ADC_HAVE_WDG 1
+#endif
+
 /* Oversampling support */
 
 #undef ADC_HAVE_OVERSAMPLE

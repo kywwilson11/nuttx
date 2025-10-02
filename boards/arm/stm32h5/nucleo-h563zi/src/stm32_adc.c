@@ -102,13 +102,12 @@ static int tim1_trg_latch_isr(int irq, void *ctx, void *arg)
   
   /* 1) Ack TRG event */
 
-  //modifyreg32(STM32_TIM1_BASE + STM32_ATIM_CCER_OFFSET, ATIM_CCER_CC1E, 0);
-  modifyreg32(STM32_TIM1_BASE + STM32_ATIM_BDTR_OFFSET, ATIM_BDTR_MOE, 0);
-  
-  modifyreg32(STM32_TIM1_BASE + STM32_ATIM_SR_OFFSET, ATIM_SR_TIF, 0);
+  STM32_TIM_ACKINT(t1, ATIM_SR_TIF);
 
   /* 2) Latch outputs OFF — Only kill CH1 output: */
 
+  //modifyreg32(STM32_TIM1_BASE + STM32_ATIM_CCER_OFFSET, ATIM_CCER_CC1E, 0);
+  //modifyreg32(STM32_TIM1_BASE + STM32_ATIM_BDTR_OFFSET, ATIM_BDTR_MOE, 0);
 
   /* 3) Stop further TRG interrupts (we’ve latched) */
 
@@ -148,9 +147,8 @@ static void board_link_adc_awd_to_tim(int adc_index,
 
   if (!t) return;
 
-  //STM32_TIM_ENABLE(t);
-  //STM32_TIM_SETMODE(t, STM32_TIM_MODE_UP);
-  STM32_TIM_SETMODE(t, STM32_TIM_MODE_DISABLED);
+  STM32_TIM_ENABLE(t);
+  STM32_TIM_SETMODE(t, STM32_TIM_MODE_UP);
 
   const uint8_t etrsel = STM32H5_ETRSEL_FROM_AWD(awd);  /* 3/4/5 */
   
