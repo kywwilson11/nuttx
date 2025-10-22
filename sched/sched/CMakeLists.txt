@@ -46,7 +46,15 @@ set(SRCS
     sched_get_stackinfo.c
     sched_get_tls.c
     sched_sysinfo.c
-    sched_get_stateinfo.c)
+    sched_get_stateinfo.c
+    sched_switchcontext.c
+    sched_sleep.c)
+
+if(DEFINED CONFIG_STACKCHECK_MARGIN)
+  if(NOT CONFIG_STACKCHECK_MARGIN EQUAL -1)
+    list(APPEND SRCS nxsched_checkstackoverflow.c)
+  endif()
+endif()
 
 if(CONFIG_PRIORITY_INHERITANCE)
   list(APPEND SRCS sched_reprioritize.c)
@@ -76,16 +84,6 @@ endif()
 
 if(CONFIG_SCHED_SPORADIC)
   list(APPEND SRCS sched_sporadic.c)
-endif()
-
-if(CONFIG_SCHED_SUSPENDSCHEDULER)
-  list(APPEND SRCS sched_suspendscheduler.c)
-endif()
-
-if(NOT "${CONFIG_RR_INTERVAL}" STREQUAL "0")
-  list(APPEND SRCS sched_resumescheduler.c)
-elseif(CONFIG_SCHED_RESUMESCHEDULER)
-  list(APPEND SRCS sched_resumescheduler.c)
 endif()
 
 if(NOT CONFIG_SCHED_CPULOAD_NONE)

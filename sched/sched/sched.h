@@ -393,6 +393,13 @@ static inline_function FAR struct tcb_s *this_task(void)
 }
 #endif
 
+#if defined(CONFIG_STACKCHECK_MARGIN) && \
+           (CONFIG_STACKCHECK_MARGIN != -1)
+void nxsched_checkstackoverflow(FAR struct tcb_s *tcb);
+#else
+#  define nxsched_checkstackoverflow(tcb)
+#endif
+
 #ifdef CONFIG_SMP
 bool nxsched_switch_running(int cpu, bool switch_equal);
 void nxsched_process_delivered(int cpu);
@@ -413,9 +420,10 @@ void nxsched_process_cpuload_ticks(clock_t ticks);
 
 /* Critical section monitor */
 
+void nxsched_switch_context(FAR struct tcb_s *from, FAR struct tcb_s *to);
+
 #ifdef CONFIG_SCHED_CRITMONITOR
-void nxsched_resume_critmon(FAR struct tcb_s *tcb);
-void nxsched_suspend_critmon(FAR struct tcb_s *tcb);
+void nxsched_switch_critmon(FAR struct tcb_s *from, FAR struct tcb_s *to);
 void nxsched_update_critmon(FAR struct tcb_s *tcb);
 #endif
 

@@ -1,5 +1,5 @@
 /****************************************************************************
- * sched/clock/clock_dow.c
+ * boards/risc-v/rp23xx-rv/common/include/rp23xx_common_pico.h
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,56 +20,53 @@
  *
  ****************************************************************************/
 
+#ifndef __BOARDS_RISCV_RP23XX_RV_COMMON_INCLUDE_RP23XX_COMMON_PICO_H
+#define __BOARDS_RISCV_RP23XX_RV_COMMON_INCLUDE_RP23XX_COMMON_PICO_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
-
 #include <nuttx/config.h>
 
-#include <stdint.h>
-
-#include <nuttx/clock.h>
-
-#include "clock/clock.h"
-
 /****************************************************************************
- * Private Data
+ * Pre-processor Definitions
  ****************************************************************************/
 
-/* 23 * (month + 1) / 9, month = 0..11 */
+/****************************************************************************
+ * Public Types
+ ****************************************************************************/
 
-static const uint8_t g_lookup[12] =
+/****************************************************************************
+ * Public Data
+ ****************************************************************************/
+
+#ifdef __cplusplus
+#define EXTERN extern "C"
+extern "C"
 {
-  2, 5, 7, 10, 12, 15, 17, 20, 23, 25, 28, 30
-};
+#else
+#define EXTERN extern
+#endif
 
 /****************************************************************************
- * Public Functions
+ * Inline Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: clock_dow
- *
- * Description:
- *   Calculate the day of week (DOW) from they year month and day.  Based on
- *   an algorithm published in 1990 by Michael Keith and Tom Craver with some
- *   tweaks to handle months in the range 0-11.
- *
- * Input Parameters:
- *   year  - year (e.g., 1988)
- *   month - 0 through 11
- *   day   - 1 through 31
- *
- * Returned Value:
- *   The day of the week as days since Sunday: 0 = Sunday, 1 = Monday, etc.
- *
- * Assumptions:
- *
+ * Public Function Prototypes
  ****************************************************************************/
 
-int clock_dow(int year, int month, int day)
-{
-  day += month < 2 ? year-- : year - 2;
-  return ((int)g_lookup[month] + day + 4 + year / 4 -
-           year / 100 + year / 400) % 7;
+/****************************************************************************
+ * Name: rp23xx_dev_gpio_init
+ ****************************************************************************/
+
+#ifdef CONFIG_DEV_GPIO
+int rp23xx_dev_gpio_init(void);
+#endif
+
+#undef EXTERN
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* __BOARDS_RISCV_RP23XX_RV_COMMON_INCLUDE_RP23XX_COMMON_PICO_H */

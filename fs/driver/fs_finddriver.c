@@ -1,5 +1,5 @@
 /****************************************************************************
- * sched/sched/sched_suspendscheduler.c
+ * fs/driver/fs_finddriver.c
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -25,81 +25,54 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <debug.h>
 
-#include <time.h>
-#include <assert.h>
-
-#include <nuttx/arch.h>
-#include <nuttx/sched.h>
-#include <nuttx/clock.h>
-#include <nuttx/sched_note.h>
-
-#include "clock/clock.h"
-#include "sched/sched.h"
-
-#ifdef CONFIG_SCHED_SUSPENDSCHEDULER
+#include "inode/inode.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: nxsched_suspend_scheduler
+ * Name: find_driver
  *
  * Description:
- *   Called by architecture specific implementations that starts task
- *   execution.  This function prepares the scheduler for the thread that is
- *   about to be restarted.
+ *   Returns the pointer of a registered driver specified by 'pathname'
  *
  * Input Parameters:
- *   tcb - The TCB of the thread that is being suspended.
+ *   pathname - the full path to the driver's device node in file system
  *
  * Returned Value:
- *   None
+ *   Pointer to driver's registered private pointer or NULL if not found.
  *
  ****************************************************************************/
 
-void nxsched_suspend_scheduler(FAR struct tcb_s *tcb)
+FAR void *find_driver(FAR const char *pathname)
 {
-  /* Handle the task exiting case */
+  struct inode_search_s desc;
+  FAR void *drvr = NULL;
 
-  if (tcb == NULL)
+  DEBUGASSERT(pathname != NULL);
+
+  /* Find the inode registered with this pathname */
+
+  SETUP_SEARCH(&desc, pathname, false);
+
+  /* Get the search results */
+
+  inode_lock();
+  if (inode_find(&desc) < 0)
     {
-      return;
+      ferr("ERROR: Failed to find %s\n", pathname);
+    }
+  else
+    {
+      drvr = desc.node->i_private;
+      inode_release(desc.node);
     }
 
-#ifdef CONFIG_STACKCHECK_SOFTWARE
-  if (tcb->xcp.regs)
-    {
-      uintptr_t sp = up_getusrsp(tcb->xcp.regs);
-      uintptr_t top = (uintptr_t)tcb->stack_base_ptr + tcb->adj_stack_size;
-      uintptr_t bottom = (uintptr_t)tcb->stack_base_ptr;
-      DEBUGASSERT(sp > bottom && sp <= top);
-    }
+  inode_unlock();
+  RELEASE_SEARCH(&desc);
 
-#if CONFIG_STACKCHECK_MARGIN > 0
-    DEBUGASSERT(up_check_tcbstack(tcb, CONFIG_STACKCHECK_MARGIN) == 0);
-#endif
-
-#endif
-
-#ifdef CONFIG_SCHED_SPORADIC
-  /* Perform sporadic schedule operations */
-
-  if ((tcb->flags & TCB_FLAG_POLICY_MASK) == TCB_FLAG_SCHED_SPORADIC)
-    {
-      DEBUGVERIFY(nxsched_suspend_sporadic(tcb));
-    }
-#endif
-
-  /* Indicate that the task has been suspended */
-
-#ifdef CONFIG_SCHED_CRITMONITOR
-  nxsched_suspend_critmon(tcb);
-#endif
-#ifdef CONFIG_SCHED_INSTRUMENTATION
-  sched_note_suspend(tcb);
-#endif
+  return drvr;
 }
-
-#endif /* CONFIG_SCHED_SUSPENDSCHEDULER */

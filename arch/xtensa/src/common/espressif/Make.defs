@@ -91,6 +91,10 @@ CHIP_CSRCS += esp_crypto.c
 endif
 endif
 
+ifeq ($(CONFIG_ESPRESSIF_USE_ULP_RISCV_CORE), y)
+CHIP_CSRCS += esp_ulp.c
+endif
+
 ifeq ($(CONFIG_SYSTEM_NXDIAG_ESPRESSIF_CHIP_WO_TOOL),y)
 CHIP_CSRCS += esp_nxdiag.c
 endif
