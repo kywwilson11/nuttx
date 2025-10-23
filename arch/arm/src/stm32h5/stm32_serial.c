@@ -378,7 +378,7 @@ static char g_usart6rxfifo[RXDMA_BUFFER_SIZE];
 #  endif
 #endif
 
-#ifdef CONFIG_STM32H7_UART7_SERIALDRIVER
+#ifdef CONFIG_STM32H5_UART7_SERIALDRIVER
 static char g_uart7rxbuffer[CONFIG_UART7_RXBUFSIZE];
 static char g_uart7txbuffer[CONFIG_UART7_TXBUFSIZE];
 #  ifdef CONFIG_UART7_RXDMA
@@ -386,7 +386,7 @@ static char g_uart7rxfifo[RXDMA_BUFFER_SIZE];
 #  endif
 #endif
 
-#ifdef CONFIG_STM32H8_UART8_SERIALDRIVER
+#ifdef CONFIG_STM32H5_UART8_SERIALDRIVER
 static char g_uart8rxbuffer[CONFIG_UART8_RXBUFSIZE];
 static char g_uart8txbuffer[CONFIG_UART8_TXBUFSIZE];
 #  ifdef CONFIG_UART8_RXDMA
