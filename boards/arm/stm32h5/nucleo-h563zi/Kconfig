@@ -16,4 +16,14 @@ config STM32H5_USE_HSE
 			- SB48 and SB50 OFF (Default)
 			- C69 and C70 ON, 5.6 pF (Default)
 		
+config NUCLEO_H563ZI_AWD_PWM_LATCH
+	bool "Enable AWD→PWM hardware latch glue (PWM2/CEN=0)"
+	default n
+	depends on PWM && ADC && STM32H5_PWM_LL_OPS
+	---help---
+		Wires ADC AWD→TIMx via ETRSEL and configures PWM2 with CEN=0 so that an
+		AWD edge resets CNT to 0 in hardware and forces the output LOW until
+		software re-arms by writing CNT=ARR and enabling outputs. Uses the
+		STM32H5 PWM low-level ops for configuration and control.
+
 endif

@@ -49,6 +49,8 @@
 #include "stm32_rcc.h"
 #include "stm32_dma.h"
 
+#include <nuttx/wqueue.h>
+
 /* ADC "upper half" support must be enabled */
 
 #ifdef CONFIG_ADC
@@ -69,7 +71,7 @@
 
 /* ADC Channels/DMA *********************************************************/
 
-#define ADC_SMPR_DEFAULT    ADC_SMPR_640p5
+#define ADC_SMPR_DEFAULT    ADC_SMPR_2p5
 #define ADC_SMPR1_DEFAULT   ((ADC_SMPR_DEFAULT << ADC_SMPR1_SMP0_SHIFT) | \
                              (ADC_SMPR_DEFAULT << ADC_SMPR1_SMP1_SHIFT) | \
                              (ADC_SMPR_DEFAULT << ADC_SMPR1_SMP2_SHIFT) | \
@@ -112,8 +114,10 @@ struct stm32_dev_s
   uint8_t resolution;   /* ADC resolution (0-3) */
   bool    hasdma;       /* True: This ADC supports DMA */
 #ifdef ADC_HAVE_DMA
-  uint16_t dmabatch;    /* Number of conversions for DMA batch */
-  bool     circular;    /* 0 = one-shot, 1 = circular */
+  uint16_t dmabatch;        /* Number of conversions for DMA batch */
+  bool     circular;        /* 0 = one-shot, 1 = circular */
+  volatile uint8_t dmapend; /* bit0=HT pending, bit1=TC pending */
+  struct work_s    dmaidle;
 #endif
 #ifdef ADC_HAVE_TIMER
   uint8_t trigger;      /* Timer trigger channel: 0=CC1, 1=CC2, 2=CC3,
@@ -219,6 +223,7 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status,
 static void adc_dmacfg(struct stm32_dev_s *priv,
                                struct stm32_gpdma_cfg_s *cfg);
 static void adc_reset_dma(struct adc_dev_s *dev);
+static void adc_dma_drain_work(void *arg);
 #endif
 
 #ifdef ADC_HAVE_OVERSAMPLE
@@ -343,7 +348,7 @@ static struct stm32_dev_s g_adcpriv1 =
   .oversample = false,
 #endif
 
-#ifdef ADC1_HAVE_WDG1
+#ifdef ADC_HAVE_WDG1
   .wdg1_enable = true,
   .wdg1_flt = CONFIG_STM32H5_ADC1_WDG1_FLT,
   .wdg1_low_thresh = CONFIG_STM32H5_ADC1_WDG1_LOWTHRESH,
@@ -1157,6 +1162,59 @@ static void adc_reset_dma(struct adc_dev_s *dev)
   stm32_dmastart(priv->dma, adc_dmaconvcallback, dev, priv->circular);
 }
 
+static void adc_dma_drain_work(void *arg)
+{
+  struct adc_dev_s   *dev  = (struct adc_dev_s *)arg;
+  struct stm32_dev_s *priv = (struct stm32_dev_s *)dev->ad_priv;
+
+  const uint16_t nconv = priv->rnchannels * priv->dmabatch;
+
+  for (;;)
+    {
+      /* Snapshot & clear pending bits atomically */
+      irqstate_t flags = enter_critical_section();
+      uint8_t pend = priv->dmapend;
+      priv->dmapend = 0;
+      leave_critical_section(flags);
+
+      if (pend == 0)
+        {
+          break; /* nothing left to drain */
+        }
+
+      /* Process exactly one half indicated; if both were set, we’ll loop */
+      if (priv->circular && (pend & 0x1))
+        {
+          /* First half: r_dmabuffer[0 .. nconv-1] */
+          for (uint16_t i = 0; i < nconv; i++)
+            {
+              priv->cb->au_receive(dev,
+                                   priv->chanlist[i % priv->rnchannels],
+                                   priv->r_dmabuffer[i]);
+            }
+        }
+      else if (pend & 0x10)
+        {
+          /* Second half: r_dmabuffer[nconv .. 2*nconv-1] */
+          const uint16_t off = nconv;
+          for (uint16_t i = 0; i < nconv; i++)
+            {
+              priv->cb->au_receive(dev,
+                                   priv->chanlist[i % priv->rnchannels],
+                                   priv->r_dmabuffer[off + i]);
+            }
+        }
+
+      /* If more halves arrive while we’re draining, the for(;;) will loop again. */
+    }
+
+  /* One-shot mode? restart after we finish draining */
+  if (!priv->circular)
+    {
+      adc_restart_dma(dev);
+    }
+}
+
 /****************************************************************************
  * Name: adc_dmaconvcallback
  *
@@ -1179,10 +1237,6 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
 {
   struct adc_dev_s   *dev  = (struct adc_dev_s *)arg;
   struct stm32_dev_s *priv = (struct stm32_dev_s *)dev->ad_priv;
-
-  uint16_t conversion_count;
-  uint16_t buffer_offset;
-  int i;
 
   /* About Circular Mode
    * The size of r_dmabuffer and transfer size is doubled
@@ -1228,32 +1282,25 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
           return;
         }
 
-      /* Circular Mode - Use second half of double size buffer on TCF */
+      /* Mark exactly ONE half per IRQ to avoid double work if flags coalesce. */
 
-      conversion_count = priv->rnchannels * priv->dmabatch;
-      buffer_offset = (priv->circular) ? conversion_count : 0;
-
-      /* Half-Transfer Interrupt enabled for circular mode only */
-
-      if (status & DMA_STATUS_HTF && priv->circular)
+      if (priv->circular && (status & DMA_STATUS_HTF))
         {
-          for (i = 0; i < conversion_count; i++)
-            {
-              priv->cb->au_receive(dev,
-                priv->chanlist[i % priv->rnchannels],
-                priv->r_dmabuffer[i]);
-            }
+          priv->dmapend |= 0x1; /* first half ready */
+        }
+      else if (status & DMA_STATUS_TCF)
+        {
+          priv->dmapend |= 0x10; /* second half ready */
+        }
+      else
+        {
+          /* nothing to do */
+          return;
         }
 
-      if (status & DMA_STATUS_TCF)
-        {
-          for (i = 0; i < conversion_count; i++)
-            {
-              priv->cb->au_receive(dev,
-                priv->chanlist[i % priv->rnchannels],
-                priv->r_dmabuffer[buffer_offset + i]);
-            }
-        }
+      /* Queue the drain work (idempotent; work_queue will coalesce). */
+
+      work_queue(LPWORK, &priv->dmaidle, adc_dma_drain_work, dev, 0);
     }
 
   /* Restart DMA for the next conversion series if in one-shot mode */

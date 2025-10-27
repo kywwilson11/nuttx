@@ -55,4 +55,8 @@ ifeq ($(CONFIG_STM32H5_PWM),y)
 CSRCS += stm32_pwm.c
 endif
 
+ifeq ($(CONFIG_NUCLEO_H563ZI_AWD_PWM_LATCH),y)
+CSRCS += stm32_awd_pwm_latch.c
+endif
+
 include $(TOPDIR)/boards/Board.mk

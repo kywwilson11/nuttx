@@ -157,5 +157,13 @@ int stm32_can_setup(uint8_t port);
 int stm32_pwm_setup(void);
 #endif
 
+int board_awd_pwm_latch_init(int tim, uint8_t ch, uint8_t awd,
+uint8_t etf, bool etp,
+uint32_t arr, uint32_t ccr);
+int board_awd_pwm_latch_arm(void);
+int board_awd_pwm_latch_rearm(void);
+int board_awd_pwm_latch_disarm(void);
+bool board_awd_pwm_latch_tripped(void);
+
 #endif /* __ASSEMBLY__ */
 #endif /* __BOARDS_ARM_STM32H5_NUCLEO_H563ZI_SRC_NUCLEO_H563ZI_H */

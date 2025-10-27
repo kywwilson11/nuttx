@@ -47,14 +47,16 @@
 
 /* The number of ADC channels in the conversion list */
 
-#define ADC1_NCHANNELS 2
+//#define ADC1_NCHANNELS 2
+#define ADC1_NCHANNELS 1
 #define ADC2_NCHANNELS 0
 
 /* Dependent on NCHANNELS and Differential/Single-Ended Mode
  * ADCx_NCHANNELS <= ADCx_NPINS <= 2 * ADCx_NCHANNELS
  */
 
-#define ADC1_NPINS     2
+//#define ADC1_NPINS     2
+#define ADC1_NPINS     1
 #define ADC2_NPINS     0
 
 /****************************************************************************
@@ -72,13 +74,13 @@
 static const uint8_t g_chanlist1[ADC1_NCHANNELS] =
 {
   3,
-  10
+  //10
 };
 
 static uint32_t g_pinlist1[ADC1_NPINS] =
 {
   GPIO_ADC1_INP3, /* Channel  3 - Positive */
-  GPIO_ADC1_INP10 /* Channel 10 - Positive */
+  //GPIO_ADC1_INP10 /* Channel 10 - Positive */
 };
 #endif
 
