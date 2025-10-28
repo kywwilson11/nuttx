@@ -115,7 +115,7 @@
 
 #undef ADC_HAVE_WDG1
 #if defined(CONFIG_STM32H5_ADC1_WDG1) || defined(CONFIG_STM32H5_ADC2_WDG1)
-#  define ADC_HAVE_WDG1 1
+#  define ADC_HAVE_WDG1
 #endif
 
 #undef ADC_HAVE_WDG2
@@ -130,7 +130,7 @@
 
 #if defined(ADC_HAVE_WDG1) || defined (ADC_HAVE_WDG2) || \
     defined(ADC_HAVE_WDG3)
-#  define ADC_HAVE_WDG 1
+#  define ADC_HAVE_WDG
 #endif
 /* Timer configuration:  If a timer trigger is specified, then get
  * information about the timer.

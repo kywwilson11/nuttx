@@ -49,8 +49,6 @@
 #include "stm32_rcc.h"
 #include "stm32_dma.h"
 
-#include <nuttx/wqueue.h>
-
 /* ADC "upper half" support must be enabled */
 
 #ifdef CONFIG_ADC
@@ -114,10 +112,8 @@ struct stm32_dev_s
   uint8_t resolution;   /* ADC resolution (0-3) */
   bool    hasdma;       /* True: This ADC supports DMA */
 #ifdef ADC_HAVE_DMA
-  uint16_t dmabatch;        /* Number of conversions for DMA batch */
-  bool     circular;        /* 0 = one-shot, 1 = circular */
-  volatile uint8_t dmapend; /* bit0=HT pending, bit1=TC pending */
-  struct work_s    dmaidle;
+  uint16_t dmabatch;    /* Number of conversions for DMA batch */
+  bool     circular;    /* 0 = one-shot, 1 = circular */
 #endif
 #ifdef ADC_HAVE_TIMER
   uint8_t trigger;      /* Timer trigger channel: 0=CC1, 1=CC2, 2=CC3,
@@ -149,7 +145,8 @@ struct stm32_dev_s
 
 #ifdef ADC_HAVE_DMA
   DMA_HANDLE dma;        /* Allocated DMA channel */
-  uint16_t *r_dmabuffer; /* DMA transfer buffer */
+  uint32_t *r_dmabuffer; /* DMA transfer buffer */
+  uint8_t *r_chanbuffer; /* DMA Channel buffer */
 #endif
 
   bool wdg1_enable;          /* True - Analog Watchdog 1 Enabled */
@@ -222,8 +219,8 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status,
                                 void *arg);
 static void adc_dmacfg(struct stm32_dev_s *priv,
                                struct stm32_gpdma_cfg_s *cfg);
+static void adc_dma_init_chanbuf(struct stm32_dev_s *priv);
 static void adc_reset_dma(struct adc_dev_s *dev);
-static void adc_dma_drain_work(void *arg);
 #endif
 
 #ifdef ADC_HAVE_OVERSAMPLE
@@ -272,17 +269,20 @@ static const struct adc_ops_s g_adcops =
  */
 
 #ifdef ADC1_HAVE_DMA
+#  define ADC1_CHAN_BUFFER_SIZE (CONFIG_STM32H5_ADC_MAX_SAMPLES *\
+                                 CONFIG_STM32H5_ADC1_DMA_BATCH)
+
 #  ifdef CONFIG_STM32H5_ADC1_DMA_CFG
-#    define ADC1_DMA_BUFFER_SIZE (CONFIG_STM32H5_ADC_MAX_SAMPLES *\
-                                  CONFIG_STM32H5_ADC1_DMA_BATCH * 2)
+#    define ADC1_DMA_BUFFER_SIZE (ADC1_CHAN_BUFFER_SIZE * 2)
 #  else
-#    define ADC1_DMA_BUFFER_SIZE (CONFIG_STM32H5_ADC_MAX_SAMPLES *\
-                                  CONFIG_STM32H5_ADC1_DMA_BATCH)
+#    define ADC1_DMA_BUFFER_SIZE (ADC1_CHAN_BUFFER_SIZE)
 #  endif
 
-static uint16_t g_adc1_dmabuffer[ADC1_DMA_BUFFER_SIZE]
+static uint8_t g_adc1_chanbuffer[ADC1_CHAN_BUFFER_SIZE]
 __attribute__((aligned(32)));
 
+static uint32_t g_adc1_dmabuffer[ADC1_DMA_BUFFER_SIZE]
+__attribute__((aligned(32)));
 #endif
 
 static struct stm32_dev_s g_adcpriv1 =
@@ -323,16 +323,17 @@ static struct stm32_dev_s g_adcpriv1 =
 #endif
 
 #ifdef ADC1_HAVE_DMA
-  .hasdma      = true,
-  .r_dmabuffer = g_adc1_dmabuffer,
-  .dmabatch    = CONFIG_STM32H5_ADC1_DMA_BATCH,
+  .hasdma       = true,
+  .r_chanbuffer = g_adc1_chanbuffer,
+  .r_dmabuffer  = g_adc1_dmabuffer,
+  .dmabatch     = CONFIG_STM32H5_ADC1_DMA_BATCH,
 #  ifdef CONFIG_STM32H5_ADC1_DMA_CFG
-  .circular    = true,
+  .circular     = true,
 #  else
-  .circular    = false,
+  .circular     = false,
 #  endif
 #else
-  .hasdma      = false,
+  .hasdma       = false,
 #endif
 
 #ifdef ADC1_HAVE_OVERSAMPLE
@@ -348,7 +349,7 @@ static struct stm32_dev_s g_adcpriv1 =
   .oversample = false,
 #endif
 
-#ifdef ADC_HAVE_WDG1
+#ifdef CONFIG_STM32H5_ADC1_WDG1
   .wdg1_enable = true,
   .wdg1_flt = CONFIG_STM32H5_ADC1_WDG1_FLT,
   .wdg1_low_thresh = CONFIG_STM32H5_ADC1_WDG1_LOWTHRESH,
@@ -377,15 +378,19 @@ static struct adc_dev_s g_adcdev1 =
 #ifdef CONFIG_STM32H5_ADC2
 
 #ifdef ADC2_HAVE_DMA
+#  define ADC2_CHAN_BUFFER_SIZE (CONFIG_STM32H5_ADC_MAX_SAMPLES *\
+                                 CONFIG_STM32H5_ADC2_DMA_BATCH)
+
 #  ifdef CONFIG_STM32H5_ADC2_DMA_CFG
-#    define ADC2_DMA_BUFFER_SIZE (CONFIG_STM32H5_ADC_MAX_SAMPLES *\
-                                  CONFIG_STM32H5_ADC2_DMA_BATCH * 2)
+#    define ADC2_DMA_BUFFER_SIZE (ADC2_CHAN_BUFFER_SIZE * 2)
 #  else
-#    define ADC2_DMA_BUFFER_SIZE (CONFIG_STM32H5_ADC_MAX_SAMPLES *\
-                                  CONFIG_STM32H5_ADC2_DMA_BATCH)
+#    define ADC2_DMA_BUFFER_SIZE (ADC2_CHAN_BUFFER_SIZE)
 #  endif
 
-static uint16_t g_adc2_dmabuffer[ADC2_DMA_BUFFER_SIZE]
+static uint8_t g_adc2_chanbuffer[ADC2_CHAN_BUFFER_SIZE]
+__attribute__((aligned(32)));
+
+static uint32_t g_adc2_dmabuffer[ADC2_DMA_BUFFER_SIZE]
 __attribute__((aligned(32)));
 #endif
 
@@ -427,16 +432,17 @@ static struct stm32_dev_s g_adcpriv2 =
 #endif
 
 #ifdef ADC2_HAVE_DMA
-  .hasdma      = true,
-  .r_dmabuffer = g_adc2_dmabuffer,
-  .dmabatch    = CONFIG_STM32H5_ADC2_DMA_BATCH,
+  .hasdma       = true,
+  .r_chanbuffer = g_adc2_chanbuffer,
+  .r_dmabuffer  = g_adc2_dmabuffer,
+  .dmabatch     = CONFIG_STM32H5_ADC2_DMA_BATCH,
 #  ifdef CONFIG_STM32H5_ADC2_DMA_CFG
-  .circular    = true,
+  .circular     = true,
 #  else
-  .circular    = false,
+  .circular     = false,
 #  endif
 #else
-  .hasdma      = false,
+  .hasdma       = false,
 #endif
 
 #ifdef ADC2_HAVE_OVERSAMPLE
@@ -452,7 +458,7 @@ static struct stm32_dev_s g_adcpriv2 =
   .oversample = false,
 #endif
 
-#ifdef ADC2_HAVE_WDG1
+#ifdef CONFIG_STM32H5_ADC2_WDG1
   .wdg1_enable = true,
   .wdg1_flt = CONFIG_STM32H5_ADC2_WDG1_FLT,
   .wdg1_low_thresh = CONFIG_STM32H5_ADC2_WDG1_LOWTHRESH,
@@ -1162,59 +1168,6 @@ static void adc_reset_dma(struct adc_dev_s *dev)
   stm32_dmastart(priv->dma, adc_dmaconvcallback, dev, priv->circular);
 }
 
-static void adc_dma_drain_work(void *arg)
-{
-  struct adc_dev_s   *dev  = (struct adc_dev_s *)arg;
-  struct stm32_dev_s *priv = (struct stm32_dev_s *)dev->ad_priv;
-
-  const uint16_t nconv = priv->rnchannels * priv->dmabatch;
-
-  for (;;)
-    {
-      /* Snapshot & clear pending bits atomically */
-      irqstate_t flags = enter_critical_section();
-      uint8_t pend = priv->dmapend;
-      priv->dmapend = 0;
-      leave_critical_section(flags);
-
-      if (pend == 0)
-        {
-          break; /* nothing left to drain */
-        }
-
-      /* Process exactly one half indicated; if both were set, we’ll loop */
-      if (priv->circular && (pend & 0x1))
-        {
-          /* First half: r_dmabuffer[0 .. nconv-1] */
-          for (uint16_t i = 0; i < nconv; i++)
-            {
-              priv->cb->au_receive(dev,
-                                   priv->chanlist[i % priv->rnchannels],
-                                   priv->r_dmabuffer[i]);
-            }
-        }
-      else if (pend & 0x10)
-        {
-          /* Second half: r_dmabuffer[nconv .. 2*nconv-1] */
-          const uint16_t off = nconv;
-          for (uint16_t i = 0; i < nconv; i++)
-            {
-              priv->cb->au_receive(dev,
-                                   priv->chanlist[i % priv->rnchannels],
-                                   priv->r_dmabuffer[off + i]);
-            }
-        }
-
-      /* If more halves arrive while we’re draining, the for(;;) will loop again. */
-    }
-
-  /* One-shot mode? restart after we finish draining */
-  if (!priv->circular)
-    {
-      adc_restart_dma(dev);
-    }
-}
-
 /****************************************************************************
  * Name: adc_dmaconvcallback
  *
@@ -1238,6 +1191,9 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
   struct adc_dev_s   *dev  = (struct adc_dev_s *)arg;
   struct stm32_dev_s *priv = (struct stm32_dev_s *)dev->ad_priv;
 
+  uint32_t conversion_count;
+  uint32_t buffer_offset;
+
   /* About Circular Mode
    * The size of r_dmabuffer and transfer size is doubled
    * half-transfer interrupts are enabled. Code should do this:
@@ -1249,7 +1205,7 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
 
   if (priv->cb != NULL)
     {
-      DEBUGASSERT(priv->cb->au_receive != NULL);
+      DEBUGASSERT(priv->cb->au_receive_batch != NULL);
 
       if (status & DMA_STATUS_FATAL)
         {
@@ -1282,25 +1238,29 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
           return;
         }
 
-      /* Mark exactly ONE half per IRQ to avoid double work if flags coalesce. */
+      /* Circular Mode - Use second half of double size buffer on TCF */
 
-      if (priv->circular && (status & DMA_STATUS_HTF))
+      conversion_count = priv->rnchannels * priv->dmabatch;
+      buffer_offset = (priv->circular) ? conversion_count : 0;
+
+      /* Half-Transfer Interrupt enabled for circular mode only */
+
+      if (status & DMA_STATUS_HTF && priv->circular)
         {
-          priv->dmapend |= 0x1; /* first half ready */
-        }
-      else if (status & DMA_STATUS_TCF)
-        {
-          priv->dmapend |= 0x10; /* second half ready */
-        }
-      else
-        {
-          /* nothing to do */
-          return;
+          priv->cb->au_receive_batch(dev,
+                                     priv->r_chanbuffer,
+                                     priv->r_dmabuffer,
+                                     conversion_count);
         }
 
-      /* Queue the drain work (idempotent; work_queue will coalesce). */
+      if (status & DMA_STATUS_TCF)
+        {
+          priv->cb->au_receive_batch(dev,
+                                     priv->r_chanbuffer,
+                                     &priv->r_dmabuffer[buffer_offset],
+                                     conversion_count);
 
-      work_queue(LPWORK, &priv->dmaidle, adc_dma_drain_work, dev, 0);
+        }
     }
 
   /* Restart DMA for the next conversion series if in one-shot mode */
@@ -1330,7 +1290,8 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
 static void adc_dmacfg(struct stm32_dev_s *priv,
                        struct stm32_gpdma_cfg_s *cfg)
 {
-  const uint32_t sdw_log2 = 1;  /* Always 16-bit half-word for ADC_DR */
+  const uint32_t src_sdw_log2 = 1;  /* Always 16-bit half-word for ADC_DR */
+  const uint32_t dst_sdw_log2 = 2;  /* 32-bit word for dmabuffer */
 
   cfg->src_addr   = priv->base + STM32_ADC_DR_OFFSET;
   cfg->dest_addr  = (uintptr_t)priv->r_dmabuffer;
@@ -1343,12 +1304,63 @@ static void adc_dmacfg(struct stm32_dev_s *priv,
 
   cfg->mode       = priv->circular ? GPDMACFG_MODE_CIRC : 0;
 
-  cfg->ntransfers = (priv->cchannels * priv->dmabatch) << sdw_log2;
+  cfg->ntransfers = (priv->cchannels * priv->dmabatch) << src_sdw_log2;
   cfg->ntransfers <<= (priv->circular ? 1 : 0);
 
-  cfg->tr1        = (sdw_log2 << GPDMA_CXTR1_SDW_LOG2_SHIFT)
-                  | (sdw_log2 << GPDMA_CXTR1_DDW_LOG2_SHIFT)
+  cfg->tr1        = (src_sdw_log2 << GPDMA_CXTR1_SDW_LOG2_SHIFT)
+                  | (dst_sdw_log2 << GPDMA_CXTR1_DDW_LOG2_SHIFT)
                   | GPDMA_CXTR1_DINC;  /* dest-inc, source fixed */
+}
+
+/****************************************************************************
+ * Name: adc_dma_init_chanbuf
+ *
+ * Description:
+ *   Initialize the channel buffer for use with au_receive_batch.
+ *
+ * Input Parameters:
+ *   priv     - ADC instance structure
+ *
+ * Returned Value:
+ *   None
+ ****************************************************************************/
+
+ static void adc_dma_init_chanbuf(struct stm32_dev_s *priv)
+{
+  const uint32_t channels = priv->cchannels;
+  const uint32_t conversions = channels * priv->dmabatch;   /* total entries in r_chanbuffer */
+  uint8_t *dst = priv->r_chanbuffer;
+  uint32_t filled = 0;  /* number of valid bytes in dst */
+  uint32_t remain;
+  uint32_t chunk;
+
+  if (channels == 0 || conversions == 0)
+    {
+      return;
+    }
+
+  /* Fast path: single-channel scan → fill with one byte */
+
+  if (channels == 1)
+    {
+      memset(dst, priv->chanlist[0], conversions);
+      return;
+    }
+
+  /* Seed the first frame (one copy of chanlist) */
+
+  memcpy(dst, priv->chanlist, channels * sizeof(dst[0]));
+  filled = channels;
+
+  /* Exponentially replicate: copy the filled prefix onto the tail */
+
+  while (filled < conversions)
+    {
+      remain = conversions - filled;
+      chunk = (filled < remain) ? filled : remain;
+      memcpy(dst + filled, dst, chunk);
+      filled += chunk;
+    }
 }
 #endif
 
@@ -1503,6 +1515,8 @@ static int adc_setup(struct adc_dev_s *dev)
         }
 
       priv->dma = stm32_dmachannel(GPDMA_TTYPE_P2M);
+
+      adc_dma_init_chanbuf(priv);
 
       adc_dmacfg(priv, &dmacfg);
 
