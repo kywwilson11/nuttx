@@ -69,7 +69,7 @@
 
 /* ADC Channels/DMA *********************************************************/
 
-#define ADC_SMPR_DEFAULT    ADC_SMPR_2p5
+#define ADC_SMPR_DEFAULT    ADC_SMPR_640p5
 #define ADC_SMPR1_DEFAULT   ((ADC_SMPR_DEFAULT << ADC_SMPR1_SMP0_SHIFT) | \
                              (ADC_SMPR_DEFAULT << ADC_SMPR1_SMP1_SHIFT) | \
                              (ADC_SMPR_DEFAULT << ADC_SMPR1_SMP2_SHIFT) | \
@@ -146,7 +146,7 @@ struct stm32_dev_s
 #ifdef ADC_HAVE_DMA
   DMA_HANDLE dma;        /* Allocated DMA channel */
   uint32_t *r_dmabuffer; /* DMA transfer buffer */
-  uint8_t *r_chanbuffer; /* DMA Channel buffer */
+  uint8_t *r_chanbuffer; /* DMA channel buffer */
 #endif
 
   bool wdg1_enable;          /* True - Analog Watchdog 1 Enabled */
@@ -1259,7 +1259,6 @@ static void adc_dmaconvcallback(DMA_HANDLE handle, uint8_t status, void *arg)
                                      priv->r_chanbuffer,
                                      &priv->r_dmabuffer[buffer_offset],
                                      conversion_count);
-
         }
     }
 
@@ -1325,7 +1324,7 @@ static void adc_dmacfg(struct stm32_dev_s *priv,
  *   None
  ****************************************************************************/
 
- static void adc_dma_init_chanbuf(struct stm32_dev_s *priv)
+static void adc_dma_init_chanbuf(struct stm32_dev_s *priv)
 {
   const uint32_t channels = priv->cchannels;
   const uint32_t conversions = channels * priv->dmabatch;   /* total entries in r_chanbuffer */
@@ -1339,7 +1338,7 @@ static void adc_dmacfg(struct stm32_dev_s *priv,
       return;
     }
 
-  /* Fast path: single-channel scan → fill with one byte */
+  /* Fast path: single-channel scan ==> fill with one byte */
 
   if (channels == 1)
     {
