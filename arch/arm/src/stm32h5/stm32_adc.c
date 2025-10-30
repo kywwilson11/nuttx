@@ -69,7 +69,7 @@
 
 /* ADC Channels/DMA *********************************************************/
 
-#define ADC_SMPR_DEFAULT    ADC_SMPR_640p5
+#define ADC_SMPR_DEFAULT    ADC_SMPR_2p5
 #define ADC_SMPR1_DEFAULT   ((ADC_SMPR_DEFAULT << ADC_SMPR1_SMP0_SHIFT) | \
                              (ADC_SMPR_DEFAULT << ADC_SMPR1_SMP1_SHIFT) | \
                              (ADC_SMPR_DEFAULT << ADC_SMPR1_SMP2_SHIFT) | \

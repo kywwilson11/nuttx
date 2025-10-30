@@ -47,7 +47,7 @@
 
 /* The number of ADC channels in the conversion list */
 
-//#define ADC1_NCHANNELS 2
+// #define ADC1_NCHANNELS 2
 #define ADC1_NCHANNELS 1
 #define ADC2_NCHANNELS 0
 
@@ -55,9 +55,9 @@
  * ADCx_NCHANNELS <= ADCx_NPINS <= 2 * ADCx_NCHANNELS
  */
 
-//#define ADC1_NPINS     2
-#define ADC1_NPINS     1
-#define ADC2_NPINS     0
+// #define ADC1_NPINS     2
+#define ADC1_NPINS 1
+#define ADC2_NPINS 0
 
 /****************************************************************************
  * Private Function Prototypes
@@ -72,15 +72,15 @@
 #ifdef CONFIG_STM32H5_ADC1
 
 static const uint8_t g_chanlist1[ADC1_NCHANNELS] =
-{
-  3,
-  //10
+    {
+        3,
+        // 10
 };
 
 static uint32_t g_pinlist1[ADC1_NPINS] =
-{
-  GPIO_ADC1_INP3, /* Channel  3 - Positive */
-  //GPIO_ADC1_INP10 /* Channel 10 - Positive */
+    {
+        GPIO_ADC1_INP3, /* Channel  3 - Positive */
+        // GPIO_ADC1_INP10 /* Channel 10 - Positive */
 };
 #endif
 
@@ -115,57 +115,57 @@ int stm32_adc_setup(void)
   /* Check if we have already initialized */
 
   if (!initialized)
-    {
-      /* Configure the pins as analog inputs for the selected channels */
+  {
+    /* Configure the pins as analog inputs for the selected channels */
 
 #ifdef CONFIG_STM32H5_ADC1
-      for (i = 0; i < ADC1_NCHANNELS; i++)
-        {
-          stm32_configgpio(g_pinlist1[i]);
-        }
+    for (i = 0; i < ADC1_NCHANNELS; i++)
+    {
+      stm32_configgpio(g_pinlist1[i]);
+    }
 
-      adc1 = stm32h5_adc_initialize(1, g_chanlist1, ADC1_NCHANNELS);
-      if (adc1 == NULL)
-        {
-          aerr("ERROR: Failed to get ADC interface 1\n");
-          return -ENODEV;
-        }
+    adc1 = stm32h5_adc_initialize(1, g_chanlist1, ADC1_NCHANNELS);
+    if (adc1 == NULL)
+    {
+      aerr("ERROR: Failed to get ADC interface 1\n");
+      return -ENODEV;
+    }
 
-      /* Register the ADC driver at "/dev/adc0" */
+    /* Register the ADC driver at "/dev/adc0" */
 
-      ret = adc_register("/dev/adc0", adc1);
-      if (ret < 0)
-        {
-          aerr("ERROR: adc_register /dev/adc0 failed: %d\n", ret);
-          return ret;
-        }
+    ret = adc_register("/dev/adc0", adc1);
+    if (ret < 0)
+    {
+      aerr("ERROR: adc_register /dev/adc0 failed: %d\n", ret);
+      return ret;
+    }
 #endif
 
 #ifdef CONFIG_STM32H5_ADC2
-      for (i = 0; i < ADC2_NCHANNELS; i++)
-        {
-          stm32_configgpio(g_pinlist2[i]);
-        }
+    for (i = 0; i < ADC2_NCHANNELS; i++)
+    {
+      stm32_configgpio(g_pinlist2[i]);
+    }
 
-      adc2 = stm32h5_adc_initialize(2, g_chanlist2, ADC2_NCHANNELS);
-      if (adc2 == NULL)
-        {
-          aerr("ERROR: Failed to get ADC interface 1\n");
-          return -ENODEV;
-        }
+    adc2 = stm32h5_adc_initialize(2, g_chanlist2, ADC2_NCHANNELS);
+    if (adc2 == NULL)
+    {
+      aerr("ERROR: Failed to get ADC interface 1\n");
+      return -ENODEV;
+    }
 
-      /* Register the ADC driver at "/dev/adc0" */
+    /* Register the ADC driver at "/dev/adc0" */
 
-      ret = adc_register("/dev/adc1", adc2);
-      if (ret < 0)
-        {
-          aerr("ERROR: adc_register /dev/adc1 failed: %d\n", ret);
-          return ret;
-        }
+    ret = adc_register("/dev/adc1", adc2);
+    if (ret < 0)
+    {
+      aerr("ERROR: adc_register /dev/adc1 failed: %d\n", ret);
+      return ret;
+    }
 #endif
 
-      initialized = true;
-    }
+    initialized = true;
+  }
 
   return OK;
 }
