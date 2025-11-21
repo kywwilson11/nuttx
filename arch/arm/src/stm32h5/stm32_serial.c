@@ -216,8 +216,8 @@ struct stm32_serial_s
 #ifdef HAVE_RS485
   const uint32_t    rs485_dir_gpio; /* U[S]ART RS-485 DIR GPIO pin configuration */
   uint8_t           rs485_flags;    /* U[S]ART RS-485 flags
-				     * (compatible with struct serial_rs485)
-				     */
+                                     * (compatible with struct serial_rs485)
+                                     */
 #endif
   const bool        islpuart; /* Is this device a Low Power UART? */
   spinlock_t        lock;
@@ -2011,7 +2011,7 @@ static int stm32serial_setup(struct uart_dev_s *dev)
     {
       stm32_configgpio(priv->rs485_dir_gpio);
       stm32_gpiowrite(priv->rs485_dir_gpio,
-		      (bool) (priv->rs485_flags & SER_RS485_RTS_AFTER_SEND));
+                     (bool) (priv->rs485_flags & SER_RS485_RTS_AFTER_SEND));
     }
 #endif
 
@@ -2432,9 +2432,9 @@ static int stm32serial_interrupt(int irq, void *context, void *arg)
           (priv->ie & USART_CR1_TCIE) != 0 &&
           (priv->ie & USART_CR1_TXEIE) == 0)
         {
-	  stm32_gpiowrite(priv->rs485_dir_gpio,
-			  (bool) (priv->rs485_flags &
-				  SER_RS485_RTS_AFTER_SEND));
+          stm32_gpiowrite(priv->rs485_dir_gpio,
+                         (bool) (priv->rs485_flags &
+                          SER_RS485_RTS_AFTER_SEND));
           stm32serial_restoreusartint(priv, priv->ie & ~USART_CR1_TCIE);
         }
 #endif
@@ -2501,10 +2501,13 @@ static inline int stm32serial_set_rs485_mode(struct stm32serial_dev_s *priv,
   irqstate_t flags;
 
   DEBUGASSERT(priv && mode);
-  if (priv->rs485_dir_gpio == 0) {
-      //Can't configure RS485 dir pin if pin is not defined
+  if (priv->rs485_dir_gpio == 0)
+    {
+      /* Can't configure RS485 dir pin if pin is not defined */
+
       return -ENOTTY;
-  }
+    }
+
   flags = enter_critical_section();
   priv->sr = stm32serial_serialin(priv, STM32_USART_ISR_OFFSET);
 
@@ -2515,26 +2518,28 @@ static inline int stm32serial_set_rs485_mode(struct stm32serial_dev_s *priv,
                      SER_RS485_RX_DURING_TX);
 /* Cases:
  * Enabling, serial transfer currently in progress:
- *  Set the pin to the transfer in progress state and let the interrupt take care of it
+ *  Set the pin to the transfer in progress state and let the interrupt take
+ *  care of it
  * Enabling, no serial transfer currently in progress:
  *  Set the pin to the no transfer in progress state.
  */
+
   if (mode->flags & SER_RS485_ENABLED)
     {
       stm32_configgpio(priv->rs485_dir_gpio);
       if ((priv->sr & USART_ISR_TC) != 0)
         {
           /* Transmission is complete, set to "after send' state */
-          stm32_gpiowrite(priv->rs485_dir_gpio,
-			  (bool) (priv->rs485_flags &
-				  SER_RS485_RTS_AFTER_SEND));
+
+          stm32_gpiowrite(priv->rs485_dir_gpio, (bool) (priv->rs485_flags &
+                          SER_RS485_RTS_AFTER_SEND));
         }
       else
         {
           /* Transmission is currently in progress, set to "on send" state */
-          stm32_gpiowrite(priv->rs485_dir_gpio,
-			  (bool) (priv->rs485_flags &
-				  SER_RS485_RTS_ON_SEND));
+
+          stm32_gpiowrite(priv->rs485_dir_gpio, (bool) (priv->rs485_flags &
+                          SER_RS485_RTS_ON_SEND));
         }
     }
 
@@ -3421,7 +3426,8 @@ static void stm32serial_send(struct uart_dev_s *dev, int ch)
 #ifdef HAVE_RS485
   if ((priv->rs485_flags & SER_RS485_ENABLED) != 0)
     {
-      stm32_gpiowrite(priv->rs485_dir_gpio, (bool) (priv->rs485_flags & SER_RS485_RTS_ON_SEND));
+      stm32_gpiowrite(priv->rs485_dir_gpio, (bool) (priv->rs485_flags &
+                      SER_RS485_RTS_ON_SEND));
     }
 #endif
 
