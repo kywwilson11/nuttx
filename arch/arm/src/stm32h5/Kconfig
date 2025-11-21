@@ -4534,7 +4534,7 @@ config LPUART1_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config LPUART1_UNCONFIG_DIR_ON_CLOSE
-    depends on LPUART1_RS485
+	depends on LPUART1_RS485
 	bool "Unconfigure LPUART1 DIR pin on close"
 	default y
 
@@ -4588,7 +4588,7 @@ config USART1_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config USART1_UNCONFIG_DIR_ON_CLOSE
-    depends on USART1_RS485
+	depends on USART1_RS485
 	bool "Unconfigure USART1 DIR pin on close"
 	default y
 
@@ -4642,7 +4642,7 @@ config USART2_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config USART2_UNCONFIG_DIR_ON_CLOSE
-    depends on USART2_RS485
+	depends on USART2_RS485
 	bool "Unconfigure USART2 DIR pin on close"
 	default y
 
@@ -4696,7 +4696,7 @@ config USART3_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config USART3_UNCONFIG_DIR_ON_CLOSE
-    depends on USART3_RS485
+	depends on USART3_RS485
 	bool "Unconfigure USART3 DIR pin on close"
 	default y
 
@@ -4750,7 +4750,7 @@ config UART4_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config UART4_UNCONFIG_DIR_ON_CLOSE
-    depends on UART4_RS485
+	depends on UART4_RS485
 	bool "Unconfigure UART4 DIR pin on close"
 	default y
 
@@ -4804,7 +4804,7 @@ config UART5_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config UART5_UNCONFIG_DIR_ON_CLOSE
-    depends on UART5_RS485
+	depends on UART5_RS485
 	bool "Unconfigure UART5 DIR pin on close"
 	default y
 
@@ -4858,7 +4858,7 @@ config USART6_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config USART6_UNCONFIG_DIR_ON_CLOSE
-    depends on USART6_RS485
+	depends on USART6_RS485
 	bool "Unconfigure USART6 DIR pin on close"
 	default y
 
@@ -4900,7 +4900,7 @@ config UART7_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config UART7_UNCONFIG_DIR_ON_CLOSE
-    depends on UART7_RS485
+	depends on UART7_RS485
 	bool "Unconfigure UART7 DIR pin on close"
 	default y
 
@@ -4942,7 +4942,7 @@ config UART8_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config UART8_UNCONFIG_DIR_ON_CLOSE
-    depends on UART8_RS485
+	depends on UART8_RS485
 	bool "Unconfigure UART8 DIR pin on close"
 	default y
 
@@ -4984,7 +4984,7 @@ config UART9_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config UART9_UNCONFIG_DIR_ON_CLOSE
-    depends on UART9_RS485
+	depends on UART9_RS485
 	bool "Unconfigure UART9 DIR pin on close"
 	default y
 
@@ -5026,7 +5026,7 @@ config USART10_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config USART10_UNCONFIG_DIR_ON_CLOSE
-    depends on USART10_RS485
+	depends on USART10_RS485
 	bool "Unconfigure USART10 DIR pin on close"
 	default y
 
@@ -5068,7 +5068,7 @@ config USART11_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config USART11_UNCONFIG_DIR_ON_CLOSE
-    depends on USART11_RS485
+	depends on USART11_RS485
 	bool "Unconfigure USART11 DIR pin on close"
 	default y
 
@@ -5110,7 +5110,7 @@ config UART12_UNCONFIG_TX_ON_CLOSE
 	default y
 
 config UART12_UNCONFIG_DIR_ON_CLOSE
-    depends on UART12_RS485
+	depends on UART12_RS485
 	bool "Unconfigure UART12 DIR pin on close"
 	default y
 
