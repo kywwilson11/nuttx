@@ -125,6 +125,12 @@
 #  define CONFIG_STM32H5_PM_SERIAL_ACTIVITY  10
 #endif
 
+/* USART Unconfigure bits */
+
+#define USART_UNCONFIGURE_RX                    (1 << 0)
+#define USART_UNCONFIGURE_TX                    (1 << 1)
+#define USART_UNCONFIGURE_DIR                   (1 << 2)
+
 /* Keep track if a Break was set
  *
  * Note:
@@ -219,7 +225,8 @@ struct stm32_serial_s
                                      * (compatible with struct serial_rs485)
                                      */
 #endif
-  const bool        islpuart; /* Is this device a Low Power UART? */
+  const uint8_t     unconfigure; /* Unconfigure pins on close */
+  const bool        islpuart;    /* Is this device a Low Power UART? */
   spinlock_t        lock;
 };
 
@@ -480,6 +487,20 @@ static struct stm32_serial_s g_lpuart1priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_LPUART1_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_LPUART1_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_LPUART1_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
 };
 #endif
 
@@ -541,6 +562,21 @@ static struct stm32_serial_s g_usart1priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_USART1_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_USART1_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_USART1_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -604,6 +640,21 @@ static struct stm32_serial_s g_usart2priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_USART2_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_USART2_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_USART2_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -667,6 +718,21 @@ static struct stm32_serial_s g_usart3priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_USART3_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_USART3_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_USART3_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -730,6 +796,21 @@ static struct stm32_serial_s g_uart4priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_UART4_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_UART4_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_UART4_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -793,6 +874,21 @@ static struct stm32_serial_s g_uart5priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_UART5_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_UART5_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_UART5_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -856,6 +952,21 @@ static struct stm32_serial_s g_usart6priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_USART6_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_USART6_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_USART6_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -919,6 +1030,21 @@ static struct stm32_serial_s g_uart7priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_UART7_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_UART7_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_UART7_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -982,6 +1108,21 @@ static struct stm32_serial_s g_uart8priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_UART8_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_UART8_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_UART8_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -1045,6 +1186,21 @@ static struct stm32_serial_s g_uart9priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_UART9_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_UART9_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_UART9_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -1108,6 +1264,21 @@ static struct stm32_serial_s g_usart10priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_USART10_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_USART10_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_USART10_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -1171,6 +1342,21 @@ static struct stm32_serial_s g_usart11priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_USART11_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_USART11_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_USART11_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -1234,6 +1420,21 @@ static struct stm32_serial_s g_uart12priv =
 #    endif
 #  endif
   .lock               = SP_UNLOCKED,
+  .unconfigure        = 0
+#if defined(CONFIG_UART12_UNCONFIG_RX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_RX
+#endif
+#if defined(CONFIG_UART12_UNCONFIG_TX_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_TX
+#endif
+#if defined(CONFIG_UART12_UNCONFIG_DIR_ON_CLOSE)
+                      |
+                      USART_UNCONFIGURE_DIR
+#endif
+      ,
+
 };
 #endif
 
@@ -2245,8 +2446,15 @@ static void stm32serial_shutdown(struct uart_dev_s *dev)
    * then this may need to be a configuration option.
    */
 
-  stm32_unconfiggpio(priv->tx_gpio);
-  stm32_unconfiggpio(priv->rx_gpio);
+  if (priv->unconfigure & USART_UNCONFIGURE_TX)
+    {
+      stm32_unconfiggpio(priv->tx_gpio);
+    }
+
+  if (priv->unconfigure & USART_UNCONFIGURE_RX)
+    {
+      stm32_unconfiggpio(priv->rx_gpio);
+    }
 
 #ifdef CONFIG_SERIAL_OFLOWCONTROL
   if (priv->cts_gpio != 0)
@@ -2263,11 +2471,13 @@ static void stm32serial_shutdown(struct uart_dev_s *dev)
 #endif
 
 #ifdef HAVE_RS485
-  if (priv->rs485_dir_gpio != 0)
+  if ((priv->rs485_dir_gpio != 0) &&
+      (priv->unconfigure & USART_UNCONFIGURE_DIR))
     {
       stm32_unconfiggpio(priv->rs485_dir_gpio);
     }
 #endif
+
 }
 
 /****************************************************************************
@@ -2540,6 +2750,13 @@ static inline int stm32serial_set_rs485_mode(struct stm32serial_dev_s *priv,
 
           stm32_gpiowrite(priv->rs485_dir_gpio, (bool) (priv->rs485_flags &
                           SER_RS485_RTS_ON_SEND));
+        }
+    }
+  else
+    {
+      if (priv->unconfigure & USART_UNCONFIGURE_DIR)
+        {
+          stm32_unconfiggpio(priv->rs485_dir_gpio);
         }
     }
 
