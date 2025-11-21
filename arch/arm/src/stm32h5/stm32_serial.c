@@ -576,7 +576,6 @@ static struct stm32_serial_s g_usart1priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -654,7 +653,6 @@ static struct stm32_serial_s g_usart2priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -732,7 +730,6 @@ static struct stm32_serial_s g_usart3priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -810,7 +807,6 @@ static struct stm32_serial_s g_uart4priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -888,7 +884,6 @@ static struct stm32_serial_s g_uart5priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -966,7 +961,6 @@ static struct stm32_serial_s g_usart6priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -1044,7 +1038,6 @@ static struct stm32_serial_s g_uart7priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -1122,7 +1115,6 @@ static struct stm32_serial_s g_uart8priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -1200,7 +1192,6 @@ static struct stm32_serial_s g_uart9priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -1278,7 +1269,6 @@ static struct stm32_serial_s g_usart10priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -1356,7 +1346,6 @@ static struct stm32_serial_s g_usart11priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -1434,7 +1423,6 @@ static struct stm32_serial_s g_uart12priv =
                       USART_UNCONFIGURE_DIR
 #endif
       ,
-
 };
 #endif
 
@@ -2477,7 +2465,6 @@ static void stm32serial_shutdown(struct uart_dev_s *dev)
       stm32_unconfiggpio(priv->rs485_dir_gpio);
     }
 #endif
-
 }
 
 /****************************************************************************
